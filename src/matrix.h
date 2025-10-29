@@ -1,6 +1,5 @@
 #pragma once
 #include <cassert>
-#include <cfloat>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -20,12 +19,16 @@ struct Matrix {
     Matrix() = default;
 
     Matrix(std::initializer_list<std::initializer_list<T>> initializerList) {
-        if (initializerList.size() != ROWS || initializerList.begin()->size() != COLUMNS) {
-            throw std::runtime_error("Initializer list not of same size as Matrix");
+        if (initializerList.size() != ROWS) {
+            throw std::runtime_error("Incorrect number of rows in initializer list");
         }
 
         int r = 0;
         for (const auto& row : initializerList) {
+            if (row.size() != COLUMNS) {
+                throw std::runtime_error("Incorrect number of columns in initializer list");
+            }
+
             int c = 0;
 
             for (const auto element : row) {
@@ -223,7 +226,7 @@ struct Matrix {
      * @return Weather or not the two matrices have the same data
      */
     template<IsConvertableTo<T> OTHER_T>
-    [[nodiscard]] bool compare(const Matrix<ROWS, COLUMNS, OTHER_T>& other) const {
+    [[nodiscard]] bool compare(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const {
         if constexpr (std::is_floating_point_v<T>) {
             T epsilon = std::numeric_limits<T>::epsilon();
             for (int c = 0; c < COLUMNS; c++) {
@@ -252,7 +255,7 @@ struct Matrix {
      * @param other The Matrix to compare against
      * @return Weather or not the two matrices have the same data
      */
-    [[nodiscard]] bool compare(const Matrix<ROWS, COLUMNS, T>& other) const {
+    [[nodiscard]] bool compare(const Matrix<COLUMNS, ROWS, T>& other) const {
         if constexpr (std::is_floating_point_v<T>) {
             T epsilon = std::numeric_limits<T>::epsilon();
             for (int c = 0; c < COLUMNS; c++) {
@@ -277,11 +280,11 @@ struct Matrix {
     }
 
     template<IsConvertableTo<T> OTHER_T>
-    bool operator==(const Matrix<ROWS, COLUMNS, OTHER_T>& other) const {
+    bool operator==(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const {
         return compare(other);
     }
 
-    bool operator==(const Matrix<ROWS, COLUMNS, T>& other) const {
+    bool operator==(const Matrix<COLUMNS, ROWS, T>& other) const {
         return compare(other);
     }
 
@@ -364,27 +367,27 @@ struct Matrix {
             for (int c = 0; c < COLUMNS; c++) {
                 // if the pivot is zero
                 if (temp[c][c] == 0) {
-                    int biggestRow = 0;
-                    int r;
-                    for (r = 0; r < ROWS; r++) {
-                        if (temp[c][r] != 0 && std::abs(temp[c][r]) > std::abs(temp[c][biggestRow])) {
-                            biggestRow = r;
+                    int rowIndex = -1;
+                    for (int r = c + 1; r < ROWS; r++) {
+                        if (temp[c][r] != 0 && (rowIndex == -1 || std::abs(temp[c][r]) > std::abs(temp[c][rowIndex]))) {
+                            rowIndex = r;
                         }
                     }
 
-                    if (temp[c][biggestRow] == 0 || r == ROWS) {
+                    if (rowIndex == -1) {
                         throw std::runtime_error("Determinant cannot be zero");
                     }
 
                     // since c (column) = r (row), the dest row is at temp[row (aka, c}] the src row is the memory address of the start of the biggest row so &temp[c][biggestRow]
-                    temp = temp.swapRows(c, biggestRow);
+                    temp = temp.swapRows(c, rowIndex);
                 }
 
                 // normalize pivot row to 1
                 T value = temp[c][c];
-                for (int cc = 0; cc < temp.columns; cc++) {
+                for (int cc = c + 1; cc < temp.columns; cc++) {
                     temp[cc][c] /= value;
                 }
+                temp[c][c] = 1;
 
                 for (int r = 0; r < ROWS; r++) {
                     // the current value is on the main diagonal. (expected to be a 1). Should be good
@@ -394,10 +397,10 @@ struct Matrix {
                     }
                     // it isnt on the main diagonal, (expected to be a 0)
                     T k = temp[c][r];
-
-                    for (int cc = 0; cc < temp.columns; cc++) {
+                    for (int cc = c + 1; cc < temp.columns; cc++) {
                         temp[cc][r] += -k * temp[cc][c];
                     }
+                    temp[c][r] = 0;
                 }
             }
 
@@ -497,23 +500,14 @@ struct Matrix {
      * @return Matrix rotated by angle
      */
     [[nodiscard]] Matrix<4, 4, T> rotateX(const T amount, const RotationType type = RotationType::degrees) const requires (square && COLUMNS == 4) {
-        T sin;
-        T cos;
-
-        if (type == RotationType::degrees) {
-            sin = std::sin(amount * (static_cast<T>(M_PI) / static_cast<T>(180)));
-            cos = std::cos(amount * (static_cast<T>(M_PI) / static_cast<T>(180)));
-        }
-        else {
-            sin = std::sin(amount);
-            cos = std::cos(amount);
-        }
+        T sin = std::sin(convert(type, RotationType::radians, amount));
+        T cos = std::cos(convert(type, RotationType::radians, amount));
 
         Matrix<4, 4, T> rotationMatrix = Matrix<4, 4, T>::identity();
 
         rotationMatrix.data[1][1] = cos;
-        rotationMatrix.data[1][2] = sin;
         rotationMatrix.data[2][1] = -sin;
+        rotationMatrix.data[1][2] = sin;
         rotationMatrix.data[2][2] = cos;
 
         return multiply(rotationMatrix);
@@ -526,23 +520,14 @@ struct Matrix {
      * @return Matrix rotated by angle
      */
     [[nodiscard]] Matrix<4, 4, T> rotateY(const T amount, const RotationType type = RotationType::degrees) const requires (square && COLUMNS == 4) {
-        T sin;
-        T cos;
+        T sin = std::sin(convert(type, RotationType::radians, amount));
+        T cos = std::cos(convert(type, RotationType::radians, amount));
 
-        if (type == RotationType::degrees) {
-            sin = std::sinf(amount * (static_cast<T>(M_PI) / 180.0f));
-            cos = std::cosf(amount * (static_cast<T>(M_PI) / 180.0f));
-        }
-        else {
-            sin = std::sinf(amount);
-            cos = std::cosf(amount);
-        }
-
-        Matrix<4, 4, T> rotationMatrix = identity();
+        Matrix<4, 4, T> rotationMatrix = Matrix<4, 4, T>::identity();
 
         rotationMatrix.data[0][0] = cos;
-        rotationMatrix.data[0][2] = -sin;
         rotationMatrix.data[2][0] = sin;
+        rotationMatrix.data[0][2] = -sin;
         rotationMatrix.data[2][2] = cos;
 
         return multiply(rotationMatrix);
@@ -555,23 +540,14 @@ struct Matrix {
      * @return Matrix rotated by angle
      */
     [[nodiscard]] Matrix<4, 4, T> rotateZ(const T amount, const RotationType type = RotationType::degrees) const requires (square && COLUMNS == 4) {
-        T sin;
-        T cos;
+        T sin = std::sin(convert(type, RotationType::radians, amount));
+        T cos = std::cos(convert(type, RotationType::radians, amount));
 
-        if (type == RotationType::degrees) {
-            sin = std::sinf(amount * (static_cast<T>(M_PI) / 180.0f));
-            cos = std::cosf(amount * (static_cast<T>(M_PI) / 180.0f));
-        }
-        else {
-            sin = std::sinf(amount);
-            cos = std::cosf(amount);
-        }
-
-        Matrix<4, 4, T> rotationMatrix = identity();
+        Matrix<4, 4, T> rotationMatrix = Matrix<4, 4, T>::identity();
 
         rotationMatrix.data[0][0] = cos;
-        rotationMatrix.data[0][1] = sin;
         rotationMatrix.data[1][0] = -sin;
+        rotationMatrix.data[0][1] = sin;
         rotationMatrix.data[1][1] = cos;
 
         return multiply(rotationMatrix);
@@ -589,7 +565,7 @@ struct Matrix {
      */
     static Matrix<4, 4, T> ortho(const T left, const T right, const T bottom, const T top, const T near, const T far) {
         // identity
-        Matrix<4, 4, T> transformation = identity();
+        Matrix<4, 4, T> transformation = Matrix<4, 4, T>::identity();
         // transformation
         transformation.data[0][0] = 2.0f / (right - left);
         transformation.data[1][1] = 2.0f / (top - bottom);
@@ -610,9 +586,10 @@ struct Matrix {
         std::stringstream ss;
         ss.precision(2);
 
-        for (int r = 0; r < ROWS; r++) {
-            ss << " [";
+        ss << "[";
 
+        for (int r = 0; r < ROWS; r++) {
+            ss << "[";
             for (int c = 0; c < COLUMNS; c++) {
                 ss << data[c][r];
 
@@ -623,11 +600,35 @@ struct Matrix {
             ss << "]";
 
             if (r < ROWS - 1)
-                ss << ",\n";
+                ss << ", ";
         }
 
-        ss << "\n]";
-        ss << "\n";
+        ss << "]";
+        return ss.str();
+    }
+
+    /**
+     * @return The column-major matrix as a string for printing
+     */
+    [[nodiscard]] std::string toLaTex() const {
+        std::stringstream ss;
+        ss.precision(2);
+
+        ss << "\\begin{bmatrix}";
+
+        for (int r = 0; r < ROWS; r++) {
+            for (int c = 0; c < COLUMNS; c++) {
+                ss << data[c][r];
+
+                if (c < COLUMNS - 1)
+                    ss << " & ";
+            }
+
+            if (r < ROWS - 1)
+                ss << "\\\\";
+        }
+
+        ss << "\\end{bmatrix}";
         return ss.str();
     }
 
