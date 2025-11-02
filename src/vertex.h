@@ -1,7 +1,7 @@
 #pragma once
-#include "vector2.h"
+#include "vector.h"
 
 struct Vertex {
-    Vector2 position;
-    Vector2 uv;
+    Vector<2> position;
+    Vector<2> uv;
 };

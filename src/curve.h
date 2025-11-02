@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 
+#include "matrix.h"
 #include "vector.h"
 
 class Curve {

@@ -91,6 +91,7 @@ struct Matrix {
         addEquals(other);
         return *this;
     }
+
     [[nodiscard]] Matrix<COLUMNS, ROWS, T> subtract(const Matrix<COLUMNS, ROWS, T>& other) const {
         Matrix<COLUMNS, ROWS, T> result;
 
@@ -366,8 +367,9 @@ struct Matrix {
             result[0][0] = 1 / data[0][0];
             return result;
         }
+
         // its a two by two, we can do the special fast thing
-        else if constexpr (ROWS == 2) {
+        if constexpr (ROWS == 2) {
             T det = determinant();
 
             if (det == 0) {
@@ -383,72 +385,71 @@ struct Matrix {
 
             return result;
         }
-        else {
-            const Matrix<COLUMNS, ROWS, T> identityMatrix = Matrix<COLUMNS, ROWS, T>::identity();
-            Matrix<COLUMNS * 2, ROWS, T> temp;
 
-            for (int c = 0; c < COLUMNS; c++) {
-                for (int r = 0; r < ROWS; r++) {
-                    temp[c][r] = data[c][r];
-                }
+        const Matrix<COLUMNS, ROWS, T> identityMatrix = Matrix<COLUMNS, ROWS, T>::identity();
+        Matrix<COLUMNS * 2, ROWS, T> temp;
+
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = 0; r < ROWS; r++) {
+                temp[c][r] = data[c][r];
             }
-
-            for (int c = 0; c < COLUMNS; c++) {
-                for (int r = 0; r < ROWS; r++) {
-                    temp[c + COLUMNS][r] = identityMatrix[c][r];
-                }
-            }
-
-            for (int c = 0; c < COLUMNS; c++) {
-                // if the pivot is zero
-                if (temp[c][c] == 0) {
-                    int rowIndex = -1;
-                    for (int r = c + 1; r < ROWS; r++) {
-                        if (temp[c][r] != 0 && (rowIndex == -1 || std::abs(temp[c][r]) > std::abs(temp[c][rowIndex]))) {
-                            rowIndex = r;
-                        }
-                    }
-
-                    if (rowIndex == -1) {
-                        throw std::runtime_error("Cannot find inverse of singular matrix");
-                    }
-
-                    // since c (column) = r (row), the dest row is at temp[row (aka, c}] the src row is the memory address of the start of the biggest row so &temp[c][biggestRow]
-                    temp = temp.swapRows(c, rowIndex);
-                }
-
-                // normalize pivot row to 1
-                T value = temp[c][c];
-                for (int cc = c + 1; cc < temp.columns; cc++) {
-                    temp[cc][c] /= value;
-                }
-                temp[c][c] = 1;
-
-                for (int r = 0; r < ROWS; r++) {
-                    // the current value is on the main diagonal. (expected to be a 1). Should be good
-                    if (r == c) {
-                        // we dont want to affect the pivot
-                        continue;
-                    }
-                    // it isnt on the main diagonal, (expected to be a 0)
-                    T k = temp[c][r];
-                    for (int cc = c + 1; cc < temp.columns; cc++) {
-                        temp[cc][r] += -k * temp[cc][c];
-                    }
-                    temp[c][r] = 0;
-                }
-            }
-
-            Matrix<COLUMNS, ROWS, T> result;
-
-            for (int c = 0; c < COLUMNS; ++c) {
-                for (int r = 0; r < ROWS; r++) {
-                    result[c][r] = temp[c + COLUMNS][r];
-                }
-            }
-
-            return result;
         }
+
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = 0; r < ROWS; r++) {
+                temp[c + COLUMNS][r] = identityMatrix[c][r];
+            }
+        }
+
+        for (int c = 0; c < COLUMNS; c++) {
+            // if the pivot is zero
+            if (temp[c][c] == 0) {
+                int rowIndex = -1;
+                for (int r = c + 1; r < ROWS; r++) {
+                    if (temp[c][r] != 0 && (rowIndex == -1 || std::abs(temp[c][r]) > std::abs(temp[c][rowIndex]))) {
+                        rowIndex = r;
+                    }
+                }
+
+                if (rowIndex == -1) {
+                    throw std::runtime_error("Cannot find inverse of singular matrix");
+                }
+
+                // since c (column) = r (row), the dest row is at temp[row (aka, c}] the src row is the memory address of the start of the biggest row so &temp[c][biggestRow]
+                temp = temp.swapRows(c, rowIndex);
+            }
+
+            // normalize pivot row to 1
+            T value = temp[c][c];
+            for (int cc = c + 1; cc < temp.columns; cc++) {
+                temp[cc][c] /= value;
+            }
+            temp[c][c] = 1;
+
+            for (int r = 0; r < ROWS; r++) {
+                // the current value is on the main diagonal. (expected to be a 1). Should be good
+                if (r == c) {
+                    // we dont want to affect the pivot
+                    continue;
+                }
+                // it isnt on the main diagonal, (expected to be a 0)
+                T k = temp[c][r];
+                for (int cc = c + 1; cc < temp.columns; cc++) {
+                    temp[cc][r] += -k * temp[cc][c];
+                }
+                temp[c][r] = 0;
+            }
+        }
+
+        Matrix<COLUMNS, ROWS, T> result;
+
+        for (int c = 0; c < COLUMNS; ++c) {
+            for (int r = 0; r < ROWS; r++) {
+                result[c][r] = temp[c + COLUMNS][r];
+            }
+        }
+
+        return result;
     }
 
     /**
@@ -459,22 +460,22 @@ struct Matrix {
         if constexpr (ROWS == 1) {
             return data[0][0];
         }
-        else if constexpr (ROWS == 2) {
+
+        if constexpr (ROWS == 2) {
             return data[0][0] * data[1][1] - data[0][1] * data[1][0];
         }
-        else {
-            T result = 0;
-            int sign = 1;
 
-            for (int c = 0; c < COLUMNS; c++) {
-                Matrix<COLUMNS - 1, ROWS - 1, T> insideMatrix = getSubMatrix(0, c);
+        T result = 0;
+        int sign = 1;
 
-                result += sign * data[c][0] * insideMatrix.determinant();
-                sign *= -1;
-            }
+        for (int c = 0; c < COLUMNS; c++) {
+            Matrix<COLUMNS - 1, ROWS - 1, T> insideMatrix = getSubMatrix(0, c);
 
-            return result;
+            result += sign * data[c][0] * insideMatrix.determinant();
+            sign *= -1;
         }
+
+        return result;
     }
 
 #pragma region 4x4 stuffs
@@ -760,4 +761,6 @@ struct Matrix {
 
         return result;
     }
+
+    Vector<COLUMNS, T>
 };

@@ -517,10 +517,10 @@ TEST(Vector, should_const_cast_d) {
     ASSERT_DOUBLE_EQ(ptr[1], 2);
 }
 
-TEST(Vector, multiply_with_matrix) {
-    // assemble
-    Vector<2> a = {2, 5};
-    Matrix<2, 2> b = {{1, 0}, {0, 1}};
+TEST(Vector, should_multiply_with_matrix_4x4) {
+    // arrange
+    Matrix<4, 4> m = Matrix<4, 4>::identity();
+    Vector<4> v = {1, 2, 3, 4};
     // act
-    auto c = b * a;
+    auto r = m * v;
 }
