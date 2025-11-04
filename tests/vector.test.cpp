@@ -522,5 +522,10 @@ TEST(Vector, should_multiply_with_matrix_4x4) {
     Matrix<4, 4> m = Matrix<4, 4>::identity();
     Vector<4> v = {1, 2, 3, 4};
     // act
-    auto r = m * v;
+    Vector<4> r = m * v;
+    // assert
+    ASSERT_FLOAT_EQ(r[0], 1);
+    ASSERT_FLOAT_EQ(r[1], 2);
+    ASSERT_FLOAT_EQ(r[2], 3);
+    ASSERT_FLOAT_EQ(r[3], 4);
 }

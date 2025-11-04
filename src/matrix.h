@@ -460,22 +460,22 @@ struct Matrix {
         if constexpr (ROWS == 1) {
             return data[0][0];
         }
-
-        if constexpr (ROWS == 2) {
+        else if constexpr (ROWS == 2) {
             return data[0][0] * data[1][1] - data[0][1] * data[1][0];
         }
+        else {
+            T result = 0;
+            int sign = 1;
 
-        T result = 0;
-        int sign = 1;
+            for (int c = 0; c < COLUMNS; c++) {
+                Matrix<COLUMNS - 1, ROWS - 1, T> insideMatrix = getSubMatrix(0, c);
 
-        for (int c = 0; c < COLUMNS; c++) {
-            Matrix<COLUMNS - 1, ROWS - 1, T> insideMatrix = getSubMatrix(0, c);
+                result += sign * data[c][0] * insideMatrix.determinant();
+                sign *= -1;
+            }
 
-            result += sign * data[c][0] * insideMatrix.determinant();
-            sign *= -1;
+            return result;
         }
-
-        return result;
     }
 
 #pragma region 4x4 stuffs
@@ -610,6 +610,54 @@ struct Matrix {
         transformation.data[3][2] = -(far + near) / (far - near);
         // return
         return transformation;
+    }
+
+    Vector<2, T> multiply(const Vector<2, T>& other) requires (square && COLUMNS == 4) {
+        Vector<4, T> v = {other[0], other[1], 0, 1};
+        Vector<4> result = multiply(v);
+        return {result[0], result[1]};
+    }
+
+    Vector<2, T> operator*(const Vector<2, T>& other) requires (square && COLUMNS == 4) {
+        Vector<4, T> v = {other[0], other[1], 0, 1};
+        Vector<4> result = multiply(v);
+        return {result[0], result[1]};
+    }
+
+    template<IsConvertableTo<T> OTHER_T>
+    Vector<2, T> operator*(const Vector<2, OTHER_T>& other) requires (square && COLUMNS == 4) {
+        Vector<4, T> v = {other[0], other[1], 0, 1};
+        Vector<4> result = multiply(v);
+        return {result[0], result[1]};
+    }
+
+    template<IsConvertableTo<T> OTHER_T>
+    Vector<2, T> multiply(const Vector<2, OTHER_T>& other) requires (square && COLUMNS == 4) {
+        Vector<4, T> v = {other[0], other[1], 0, 1};
+        Vector<4> result = multiply(v);
+        return {result[0], result[1]};
+    }
+
+    Vector<3, T> multiply(const Vector<3, T>& other) requires (square && COLUMNS == 4) {
+        Vector<4, T> v = {other[0], other[1], other[2], 1};
+        Vector<4> result = multiply(v);
+        return {result[0], result[1], result[2]};
+    }
+
+    Vector<3, T> operator*(const Vector<3, T>& other) requires (square && COLUMNS == 4) {
+        return multiply(other);
+    }
+
+    template<IsConvertableTo<T> OTHER_T>
+    Vector<3, T> multiply(const Vector<3, OTHER_T>& other) requires (square && COLUMNS == 4) {
+        Vector<4, T> v = {other[0], other[1], other[2], 1};
+        Vector<4> result = multiply(v);
+        return {result[0], result[1], result[2]};
+    }
+
+    template<IsConvertableTo<T> OTHER_T>
+    Vector<3, T> operator*(const Vector<3, OTHER_T>& other) requires (square && COLUMNS == 4) {
+        return multiply(other);
     }
 
 #pragma endregion
@@ -762,5 +810,37 @@ struct Matrix {
         return result;
     }
 
-    Vector<COLUMNS, T>
+    Vector<COLUMNS, T> multiply(const Vector<COLUMNS, T>& other) {
+        Vector<COLUMNS, T> result;
+
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = 0; r < ROWS; r++) {
+                result[r] += data[c][r] * other[c];
+            }
+        }
+
+        return result;
+    }
+
+    template<IsConvertableTo<T> OTHER_T>
+    Vector<COLUMNS, T> operator*(const Vector<COLUMNS, OTHER_T>& other) {
+        return multiply(other);
+    }
+
+    template<IsConvertableTo<T> OTHER_T>
+    Vector<COLUMNS, T> multiply(const Vector<COLUMNS, OTHER_T>& other) {
+        Vector<COLUMNS, T> result;
+
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = 0; r < ROWS; r++) {
+                result[r] += data[c][r] * other[c];
+            }
+        }
+
+        return result;
+    }
+
+    Vector<COLUMNS, T> operator*(const Vector<COLUMNS, T>& other) {
+        return multiply(other);
+    }
 };
