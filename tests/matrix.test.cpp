@@ -1158,3 +1158,14 @@ TEST(Matrix, should_d_minus_equals_f) {
     ASSERT_DOUBLE_EQ(a[0][1], 1);
     ASSERT_DOUBLE_EQ(a[1][1], 3);
 }
+
+TEST(Matrix, should_lu_decomposition) {
+    // arrange
+    Matrix<3, 3> a = {{0, 0, 1}, {6, 1, 1}, {-3, 1, 0}};
+    // act
+    auto lup = a.lupDecomposition();
+    // print
+    for (const auto& m : lup) {
+        std::cout << m.toString() << std::endl;
+    }
+}

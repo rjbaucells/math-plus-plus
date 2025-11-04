@@ -662,6 +662,40 @@ struct Matrix {
 
 #pragma endregion
 
+    Vector<COLUMNS, T> multiply(const Vector<COLUMNS, T>& other) {
+        Vector<COLUMNS, T> result;
+
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = 0; r < ROWS; r++) {
+                result[r] += data[c][r] * other[c];
+            }
+        }
+
+        return result;
+    }
+
+    template<IsConvertableTo<T> OTHER_T>
+    Vector<COLUMNS, T> operator*(const Vector<COLUMNS, OTHER_T>& other) {
+        return multiply(other);
+    }
+
+    template<IsConvertableTo<T> OTHER_T>
+    Vector<COLUMNS, T> multiply(const Vector<COLUMNS, OTHER_T>& other) {
+        Vector<COLUMNS, T> result;
+
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = 0; r < ROWS; r++) {
+                result[r] += data[c][r] * other[c];
+            }
+        }
+
+        return result;
+    }
+
+    Vector<COLUMNS, T> operator*(const Vector<COLUMNS, T>& other) {
+        return multiply(other);
+    }
+
     [[nodiscard]] std::string toString() const {
         std::stringstream ss;
         ss.precision(2);
@@ -810,37 +844,45 @@ struct Matrix {
         return result;
     }
 
-    Vector<COLUMNS, T> multiply(const Vector<COLUMNS, T>& other) {
-        Vector<COLUMNS, T> result;
+    std::array<Matrix<COLUMNS, ROWS, T>, 3> lupDecomposition() requires (square) {
+        Matrix<COLUMNS, ROWS, T> l = Matrix<COLUMNS, ROWS, T>::identity();
+        Matrix<COLUMNS, ROWS, T> u = *this;
+        Matrix<COLUMNS, ROWS, T> p = Matrix<COLUMNS, ROWS, T>::identity();
 
+        // iterate through all columns of matrix
         for (int c = 0; c < COLUMNS; c++) {
-            for (int r = 0; r < ROWS; r++) {
-                result[r] += data[c][r] * other[c];
+            if (u[c][c] == 0) {
+                int rowIndex = -1;
+                for (int r = c + 1; r < ROWS; r++) {
+                    if (u[c][r] != 0 && (rowIndex == -1 || std::abs(u[c][r]) > std::abs(u[c][rowIndex]))) {
+                        rowIndex = r;
+                    }
+                }
+
+                if (rowIndex == -1) {
+                    throw std::runtime_error("Cannot find lu decomp of singular matrix");
+                }
+
+                u = u.swapRows(c, rowIndex);
+                p = p.swapRows(c, rowIndex);
+            }
+
+            T pivot = u[c][c];
+
+            // iterate through things beneath that pivot in the matrix
+            for (int r = c + 1; r < ROWS; r++) {
+                T val = u[c][r];
+
+                T multiplierToPivotRow = -(val / pivot);
+
+                l[c][r] = -multiplierToPivotRow;
+
+                for (int i = 0; i < COLUMNS; i++) {
+                    u[i][r] += multiplierToPivotRow * u[i][c];
+                }
             }
         }
 
-        return result;
-    }
-
-    template<IsConvertableTo<T> OTHER_T>
-    Vector<COLUMNS, T> operator*(const Vector<COLUMNS, OTHER_T>& other) {
-        return multiply(other);
-    }
-
-    template<IsConvertableTo<T> OTHER_T>
-    Vector<COLUMNS, T> multiply(const Vector<COLUMNS, OTHER_T>& other) {
-        Vector<COLUMNS, T> result;
-
-        for (int c = 0; c < COLUMNS; c++) {
-            for (int r = 0; r < ROWS; r++) {
-                result[r] += data[c][r] * other[c];
-            }
-        }
-
-        return result;
-    }
-
-    Vector<COLUMNS, T> operator*(const Vector<COLUMNS, T>& other) {
-        return multiply(other);
+        return {l, u, p};
     }
 };
