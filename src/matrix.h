@@ -844,6 +844,42 @@ struct Matrix {
         return result;
     }
 
+    Matrix<COLUMNS, ROWS, T> rowEchelonForm() const {
+
+    }
+
+    bool isRowEchelon() const {
+        int last1Collumn = -1;
+
+        for (int r = 0; r < ROWS; r++) {
+            bool foundNonZero = false;
+
+            for (int c = 0; c < COLUMNS; c++) {
+                if (data[c][r] == 1) {
+                    // we found a 1 after another number | or | we found a 1 to the right of the last one
+                    if (foundNonZero || c > last1Collumn)
+                        return false;
+
+                    last1Collumn = c;
+                }
+
+                if (data[c][r] != 0)
+                    foundNonZero = true;
+            }
+
+            // this entire row had all zeros
+            if (!foundNonZero) {
+                if (r == ROWS - 1)
+                    return false;
+            }
+        }
+    }
+
+    bool isReducedRowEchelon() const {
+
+    }
+
+#pragma region Decomposiitons
     std::array<Matrix<COLUMNS, ROWS, T>, 3> lupDecomposition() const requires (square) {
         Matrix<COLUMNS, ROWS, T> l = Matrix<COLUMNS, ROWS, T>::identity();
         Matrix<COLUMNS, ROWS, T> u = *this;
@@ -901,9 +937,36 @@ struct Matrix {
         return {l, u, p};
     }
 
+    std::array<Matrix<COLUMNS, ROWS, T>, 2> luDecomposition() const requires (square) {
+        if (auto [l, u, p] = lupDecomposition(); p == identity()) {
+            return {l, u};
+        }
+
+        throw std::runtime_error("Could not find LU decomposition, must use LUP decomposition instead");
+    }
+
+    std::array<Matrix<COLUMNS, ROWS, T>, 3> lduDecomposition() const requires (square) {
+        auto [l, u] = luDecomposition();
+
+        Matrix<COLUMNS, ROWS, T> uPrime = u;
+
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = 0; r < ROWS; r++) {
+                uPrime[c][r] *= 1 / u[r][r];
+            }
+        }
+
+        Matrix<COLUMNS, ROWS, T> d;
+
+        for (int c = 0; c < COLUMNS; c++) {
+            d[c][c] = u[c][c];
+        }
+
+        return {l, d, uPrime};
+    }
+
     std::array<Matrix<COLUMNS, ROWS, T>, 2> qrDecomposition() const requires (square) {
         Matrix<COLUMNS, ROWS, T> q;
-        Matrix<COLUMNS, ROWS, T> r;
 
         std::array<Vector<ROWS>, COLUMNS> vectorsInData = {};
 
@@ -925,8 +988,10 @@ struct Matrix {
             }
         }
 
-        r = q.transpose() * *this;
+        Matrix<COLUMNS, ROWS, T> r = q.transpose() * *this;
 
         return {q, r};
     }
+
+#pragma endregion
 };
