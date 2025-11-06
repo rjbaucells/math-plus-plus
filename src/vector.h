@@ -345,23 +345,43 @@ struct Vector {
         return data[index];
     }
 
-    template<unsigned long V_SIZE>
-    static std::array<Vector<N, T>, V_SIZE> orthonormalize(const std::array<Vector<N, T>, V_SIZE>& vectors) {
-        std::array<Vector<N, T>, V_SIZE> vecs = vectors;
+    template<int V_SIZE>
+    static std::array<Vector<N, T>, V_SIZE> orthonormalize(const std::array<Vector<N, T>, V_SIZE>& v) {
+        auto orthoV = orthogonalize(v);
 
-        for (auto& v : vecs) {
-            T magnitude = v.magnitude();
-            v /= magnitude;
+        for (auto& vec: orthoV) {
+            vec /= vec.magnitude();
         }
 
-        return vecs;
+        return orthoV;
+    }
+
+    template<int V_SIZE>
+    static std::array<Vector<N, T>, V_SIZE> orthogonalize(const std::array<Vector<N, T>, V_SIZE>& v) {
+        std::array<Vector<N, T>, V_SIZE> u;
+
+        // first vectors always same
+        u[1] = v[1];
+
+        for (int k = 0; k < V_SIZE; k++) {
+            u[k] = v[k];
+
+            for (int i = 0; i < k; i++) {
+                u[k] -= (v[k].componentDot(u[i]) / u[i].componentDot(u[i])) * u[i];
+            }
+        }
+
+        return u;
     }
 
     template<int V_SIZE>
     static bool orthogonal(const std::array<Vector<N, T>, V_SIZE>& vectors) {
         for (int i = 0; i < vectors.size(); i++) {
             for (int j = i; j < vectors.size(); j++) {
-                if (vectors[i].componentDot(vectors[j]) == 0) {
+                if (i == j)
+                    continue;
+
+                if (vectors[i].componentDot(vectors[j]) != 0) {
                     return false;
                 }
             }
@@ -372,12 +392,16 @@ struct Vector {
 
     template<int V_SIZE>
     static bool orthonormal(const std::array<Vector<N, T>, V_SIZE>& vectors) {
-        if (!orthogonal(vectors))
-            return false;
-
         for (int i = 0; i < vectors.size(); i++) {
+            if (vectors[i].componentDot(vectors[i]) != 1) {
+                return false;
+            }
+
             for (int j = i; j < vectors.size(); j++) {
-                if (vectors[i].componentDot(vectors[i]) == 0) {
+                if (i == j)
+                    continue;
+
+                if (vectors[i].componentDot(vectors[j]) != 0) {
                     return false;
                 }
             }

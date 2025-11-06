@@ -917,41 +917,51 @@ struct Matrix {
     }
 
 #pragma region Decomposiitons
-    std::array<Matrix<COLUMNS, ROWS, T>, 3> lupDecomposition() const requires (square) {
-        Matrix<COLUMNS, ROWS, T> l = Matrix<COLUMNS, ROWS, T>::identity();
-        Matrix<COLUMNS, ROWS, T> u = *this;
-        Matrix<COLUMNS, ROWS, T> p = Matrix<COLUMNS, ROWS, T>::identity();
+    template<typename L_TYPE, typename U_TYPE, typename P_TYPE>
+    struct LUPDecomposition {
+        L_TYPE l;
+        U_TYPE u;
+        P_TYPE p;
+    };
 
-        // iterate through all columns of matrix
+    LUPDecomposition<Matrix<ROWS, ROWS, T>, Matrix<COLUMNS, ROWS, T>, Matrix<ROWS, ROWS, T>> lupDecomposition() const {
+        Matrix<ROWS, ROWS, T> l = Matrix<ROWS, ROWS, T>::identity();
+        Matrix<COLUMNS, ROWS, T> u = *this;
+        Matrix<ROWS, ROWS, T> p = Matrix<ROWS, ROWS, T>::identity();
+
         for (int c = 0; c < COLUMNS; c++) {
-            if (u[c][c] == 0) {
+            // handle row swaps
+            {
                 int rowIndex = -1;
+                const T pivot = u[c][c];
+                T rowValue = std::abs(pivot);
+
+                // iterate through rows of this column. Looking for the biggest boi
                 for (int r = c + 1; r < ROWS; r++) {
-                    if (u[c][r] != 0 && (rowIndex == -1 || std::abs(u[c][r]) > std::abs(u[c][rowIndex]))) {
+                    T curValue = std::abs(u[c][r]);
+
+                    if (curValue > rowValue) {
                         rowIndex = r;
+                        rowValue = curValue;
                     }
                 }
 
-                if (rowIndex == -1) {
-                    throw std::runtime_error("Cannot find lu decomp of singular matrix");
+                // we found nothing but we needed to find something
+                if (rowIndex == -1 && pivot == 0) {
+                    throw std::runtime_error("Cannot LUP decompose singular matrix");
                 }
 
-                u = u.swapRows(c, rowIndex);
-                p = p.swapRows(c, rowIndex);
+                if (rowIndex != -1 && rowIndex != c) {
+                    // swap u and p rows like normal
+                    u.swapRows(c, rowIndex);
+                    p.swapRows(c, rowIndex);
 
-                // we need to swap the row of L but only the ones that have been modified
-                T temp[COLUMNS] = {};
-
-                for (int i = 0; i < c; i++) {
-                    temp[i] = l[i][c];
-                }
-
-                for (int i = 0; i < c; i++) {
-                    l[i][c] = l[i][rowIndex];
-                }
-
-                for (int i = 0; i < c; i++) {
-                    l[i][rowIndex] = temp[c];
+                    // swap rows of l before column c
+                    for (int i = 0; i < c; ++i) {
+                        T temp = l[i][c];
+                        l[i][c] = l[i][rowIndex];
+                        l[i][rowIndex] = temp;
+                    }
                 }
             }
 
@@ -965,7 +975,8 @@ struct Matrix {
 
                 l[c][r] = multiplierToPivotRow;
 
-                for (int i = 0; i < COLUMNS; i++) {
+                // do this row minus other row times multiplier
+                for (int i = c; i < COLUMNS; i++) {
                     u[i][r] += -multiplierToPivotRow * u[i][c];
                 }
             }
@@ -974,60 +985,159 @@ struct Matrix {
         return {l, u, p};
     }
 
-    std::array<Matrix<COLUMNS, ROWS, T>, 2> luDecomposition() const requires (square) {
-        if (auto [l, u, p] = lupDecomposition(); p == identity()) {
-            return {l, u};
-        }
+    template<typename L_TYPE, typename U_TYPE, typename P_TYPE, typename Q_TYPE>
+    struct LUPQDecomposition {
+        L_TYPE l;
+        U_TYPE u;
+        P_TYPE p;
+        Q_TYPE q;
+    };
 
-        throw std::runtime_error("Could not find LU decomposition, must use LUP decomposition instead");
-    }
-
-    std::array<Matrix<COLUMNS, ROWS, T>, 3> lduDecomposition() const requires (square) {
-        auto [l, u] = luDecomposition();
-
-        Matrix<COLUMNS, ROWS, T> uPrime = u;
+    LUPQDecomposition<Matrix<ROWS, ROWS, T>, Matrix<COLUMNS, ROWS, T>, Matrix<ROWS, ROWS, T>, Matrix<COLUMNS, COLUMNS, T>> lupqDecomposition() const {
+        Matrix<ROWS, ROWS, T> l = Matrix<ROWS, ROWS, T>::identity();
+        Matrix<COLUMNS, ROWS, T> u = *this;
+        Matrix<ROWS, ROWS, T> p = Matrix<ROWS, ROWS, T>::identity();
+        Matrix<COLUMNS, COLUMNS, T> q = Matrix<COLUMNS, COLUMNS, T>::identity();
 
         for (int c = 0; c < COLUMNS; c++) {
-            for (int r = 0; r < ROWS; r++) {
-                uPrime[c][r] *= 1 / u[r][r];
+            // handle row AND column swaps
+            {
+                int rowIndex = -1;
+                int columnIndex = -1;
+
+                const T pivot = u[c][c];
+
+                T maxValue = std::abs(pivot);
+
+                for (int i = c; i < COLUMNS; i++) {
+                    for (int j = c; j < ROWS; j++) {
+                        T curValue = std::abs(u[i][j]);
+
+                        if (curValue > maxValue) {
+                            maxValue = curValue;
+                            columnIndex = i;
+                            rowIndex = j;
+                        }
+                    }
+                }
+
+                if (rowIndex == -1 && columnIndex == -1 && pivot == 0) {
+                    throw std::runtime_error("Cannot LUPQ decompose singular matrix");
+                }
+
+                if (rowIndex != c) {
+                    u.swapRows(c, rowIndex);
+                    p.swapRows(c, rowIndex);
+                    // swap rows of L before column c
+                    for (int i = 0; i < c; ++i) {
+                        T temp = l[i][c];
+                        l[i][c] = l[i][rowIndex];
+                        l[i][rowIndex] = temp;
+                    }
+                }
+
+                if (columnIndex != c) {
+                    u.swapColumns(c, columnIndex);
+                    q.swapColumns(c, columnIndex);
+                }
+            }
+
+            T pivot = u[c][c];
+
+            // iterate through things beneath that pivot in the matrix
+            for (int r = c + 1; r < ROWS; r++) {
+                T val = u[c][r];
+
+                T multiplierToPivotRow = val / pivot;
+
+                l[c][r] = multiplierToPivotRow;
+
+                // do this row minus other row times multiplier
+                for (int i = c; i < COLUMNS; i++) {
+                    u[i][r] += -multiplierToPivotRow * u[i][c];
+                }
             }
         }
 
-        Matrix<COLUMNS, ROWS, T> d;
+        return {l, u, p, q};
+    }
+
+    template<typename L_TYPE, typename U_TYPE>
+    struct LUDecomposition {
+        L_TYPE l;
+        U_TYPE u;
+    };
+
+    LUDecomposition<Matrix<ROWS, ROWS, T>, Matrix<COLUMNS, ROWS, T>> luDecomposition() const {
+        Matrix<ROWS, ROWS, T> l = Matrix<ROWS, ROWS, T>::identity();
+        Matrix<COLUMNS, ROWS, T> u = *this;
+
+        for (int c = 0; c < COLUMNS; c++) {
+            T pivot = u[c][c];
+
+            if (pivot == 0)
+                throw std::runtime_error("Cannot LU decompose matrix due to zero pivot, try LUP or LUPQ");
+
+            // iterate through things beneath that pivot in the matrix
+            for (int r = c + 1; r < ROWS; r++) {
+                T val = u[c][r];
+
+                T multiplierToPivotRow = val / pivot;
+
+                l[c][r] = multiplierToPivotRow;
+
+                // do this row minus other row times multiplier
+                for (int i = c; i < COLUMNS; i++) {
+                    u[i][r] += -multiplierToPivotRow * u[i][c];
+                }
+            }
+        }
+
+        return {l, u};
+    }
+
+    template<typename L_TYPE, typename D_TYPE, typename U_TYPE>
+    struct LDUDecomposition {
+        L_TYPE l;
+        D_TYPE d;
+        U_TYPE u;
+    };
+
+    LDUDecomposition<Matrix<ROWS, ROWS, T>, Matrix<COLUMNS, ROWS, T>, Matrix<COLUMNS, COLUMNS, T>> lduDecomposition() const {
+        Matrix<ROWS, ROWS, T> l = Matrix<ROWS, ROWS, T>::identity();
+        Matrix<COLUMNS, COLUMNS, T> d = Matrix<COLUMNS, COLUMNS, T>::identity();
+        Matrix<COLUMNS, ROWS, T> u = *this;
+
+        for (int c = 0; c < COLUMNS; c++) {
+            T pivot = u[c][c];
+
+            if (pivot == 0)
+                throw std::runtime_error("Cannot LDU decompose matrix due to zero pivot");
+
+            // iterate through things beneath that pivot in the matrix
+            for (int r = c + 1; r < ROWS; r++) {
+                T val = u[c][r];
+
+                T multiplierToPivotRow = val / pivot;
+
+                l[c][r] = multiplierToPivotRow;
+
+                // do this row minus other row times multiplier
+                for (int i = c; i < COLUMNS; i++) {
+                    u[i][r] += -multiplierToPivotRow * u[i][c];
+                }
+            }
+        }
 
         for (int c = 0; c < COLUMNS; c++) {
             d[c][c] = u[c][c];
-        }
 
-        return {l, d, uPrime};
-    }
-
-    std::array<Matrix<COLUMNS, ROWS, T>, 2> qrDecomposition() const requires (square) {
-        Matrix<COLUMNS, ROWS, T> q;
-
-        std::array<Vector<ROWS>, COLUMNS> vectorsInData = {};
-
-        for (int c = 0; c < COLUMNS; c++) {
-            Vector<ROWS> v;
-
-            for (int i = 0; i < ROWS; i++) {
-                v[i] = data[c][i];
-            }
-
-            vectorsInData[c] = v;
-        }
-
-        std::array<Vector<ROWS>, COLUMNS> orthoVectorsInData = Vector<ROWS>::orthonormalize(vectorsInData);
-
-        for (int i = 0; i < COLUMNS; i++) {
-            for (int j = 0; j < ROWS; j++) {
-                q[i][j] = orthoVectorsInData[i][j];
+            for (int r = 0; r < ROWS; r++) {
+                u[c][r] /= d[c][c];
             }
         }
 
-        Matrix<COLUMNS, ROWS, T> r = q.transpose() * *this;
-
-        return {q, r};
+        return {l, d, u};
     }
 
 #pragma endregion
