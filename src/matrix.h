@@ -924,7 +924,7 @@ struct Matrix {
         P_TYPE p;
     };
 
-    LUPDecomposition<Matrix<ROWS, ROWS, T>, Matrix<COLUMNS, ROWS, T>, Matrix<ROWS, ROWS, T>> lupDecomposition() const {
+    LUPDecomposition<Matrix<std::min(ROWS, COLUMNS), ROWS, T>, Matrix<COLUMNS, std::min(ROWS, COLUMNS), T>, Matrix<ROWS, ROWS, T>> lupDecomposition() const {
         Matrix<std::min(ROWS, COLUMNS), ROWS, T> l = Matrix<ROWS, ROWS, T>::identity();
         Matrix<COLUMNS, std::min(ROWS, COLUMNS), T> u = *this;
         Matrix<ROWS, ROWS, T> p = Matrix<ROWS, ROWS, T>::identity();
@@ -994,7 +994,7 @@ struct Matrix {
         Q_TYPE q;
     };
 
-    LUPQDecomposition<Matrix<ROWS, ROWS, T>, Matrix<COLUMNS, ROWS, T>, Matrix<ROWS, ROWS, T>, Matrix<COLUMNS, COLUMNS, T>> lupqDecomposition() const {
+    LUPQDecomposition<Matrix<std::min(ROWS, COLUMNS), ROWS, T>, Matrix<COLUMNS, std::min(ROWS, COLUMNS), T>, Matrix<ROWS, ROWS, T>, Matrix<COLUMNS, COLUMNS, T>> lupqDecomposition() const {
         Matrix<std::min(ROWS, COLUMNS), ROWS, T> l = Matrix<ROWS, ROWS, T>::identity();
         Matrix<COLUMNS, std::min(ROWS, COLUMNS), T> u = *this;
         Matrix<ROWS, ROWS, T> p = Matrix<ROWS, ROWS, T>::identity();
@@ -1070,7 +1070,7 @@ struct Matrix {
         U_TYPE u;
     };
 
-    LUDecomposition<Matrix<ROWS, ROWS, T>, Matrix<COLUMNS, ROWS, T>> luDecomposition() const {
+    LUDecomposition<Matrix<std::min(ROWS, COLUMNS), ROWS, T>, Matrix<COLUMNS, std::min(ROWS, COLUMNS), T>> luDecomposition() const {
         Matrix<std::min(ROWS, COLUMNS), ROWS, T> l = Matrix<ROWS, ROWS, T>::identity();
         Matrix<COLUMNS, std::min(ROWS, COLUMNS), T> u = *this;
 
@@ -1106,7 +1106,7 @@ struct Matrix {
         U_TYPE u;
     };
 
-    LDUDecomposition<Matrix<ROWS, ROWS, T>, Matrix<COLUMNS, ROWS, T>, Matrix<COLUMNS, COLUMNS, T>> lduDecomposition() const {
+    LDUDecomposition<Matrix<std::min(ROWS, COLUMNS), ROWS, T>, Matrix<std::min(ROWS, COLUMNS), std::min(ROWS, COLUMNS), T>, Matrix<COLUMNS, std::min(ROWS, COLUMNS), T>> lduDecomposition() const {
         Matrix<std::min(ROWS, COLUMNS), ROWS, T> l = Matrix<ROWS, ROWS, T>::identity();
         Matrix<std::min(ROWS, COLUMNS), std::min(ROWS, COLUMNS), T> d = Matrix<std::min(ROWS, COLUMNS), std::min(ROWS, COLUMNS), T>::identity();
         Matrix<COLUMNS, std::min(ROWS, COLUMNS), T> u = *this;
