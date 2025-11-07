@@ -8,9 +8,9 @@
 
 template<int COLUMNS, int ROWS, typename T = float>
 struct Matrix {
-    const int rows = ROWS;
-    const int columns = COLUMNS;
-    static const bool square = ROWS == COLUMNS;
+    static constexpr int rows = ROWS;
+    static constexpr int columns = COLUMNS;
+    static constexpr bool square = ROWS == COLUMNS;
 
     T data[COLUMNS][ROWS] = {};
 
@@ -1023,6 +1023,32 @@ struct Matrix {
         return m;
     }
 
+    int rank() const {
+        Matrix<COLUMNS, ROWS, T> ref = toRowEchelon();
+        int result = 0;
+
+        for (int r = 0; r < ROWS; r++) {
+            if (ref[0][r] != 0) {
+                result++;
+            }
+            else {
+                bool nonZero = false;
+
+                for (int c = 0; c < COLUMNS; c++) {
+                    if (ref[c][r] != 0) {
+                        nonZero = true;
+                        break;
+                    }
+                }
+
+                if (nonZero)
+                    result++;
+            }
+        }
+
+        return result;
+    }
+
 #pragma region Decomposiitons
     template<typename L_TYPE, typename U_TYPE, typename P_TYPE>
     struct LUPDecomposition {
@@ -1249,6 +1275,18 @@ struct Matrix {
         }
 
         return {l, d, u};
+    }
+
+    template<typename C_TYPE, typename F_TYPE>
+    struct RankFactorization {
+        C_TYPE c;
+        F_TYPE f;
+        int rank;
+    };
+
+    RankFactorization<Matrix<COLUMNS, ROWS, T>, Matrix<COLUMNS, ROWS, T>> rankFactorization() const {
+        Matrix<COLUMNS, ROWS, T> c = *this;
+        Matrix<COLUMNS, ROWS, T> f = toReducedRowEchelon();
     }
 
 #pragma endregion
