@@ -1,5 +1,7 @@
 #pragma once
 #include <cassert>
+#include <complex>
+#include <regex>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -1049,6 +1051,16 @@ struct Matrix {
         return result;
     }
 
+    bool isPositiveDefinite() const {
+        if (!square)
+            return false;
+
+        if (*this != transpose())
+            return false;
+
+        return true;
+    }
+
 #pragma region Decomposiitons
     template<typename L_TYPE, typename U_TYPE, typename P_TYPE>
     struct LUPDecomposition {
@@ -1277,16 +1289,25 @@ struct Matrix {
         return {l, d, u};
     }
 
-    template<typename C_TYPE, typename F_TYPE>
-    struct RankFactorization {
-        C_TYPE c;
-        F_TYPE f;
-        int rank;
+    template<typename G_TYPE>
+    struct CholeskyDecomposition {
+        G_TYPE g;
+        G_TYPE gTranspose;
     };
 
-    RankFactorization<Matrix<COLUMNS, ROWS, T>, Matrix<COLUMNS, ROWS, T>> rankFactorization() const {
-        Matrix<COLUMNS, ROWS, T> c = *this;
-        Matrix<COLUMNS, ROWS, T> f = toReducedRowEchelon();
+    CholeskyDecomposition<Matrix<COLUMNS, ROWS, T>> choleskyDecomposition() const requires (square) {
+        auto [l, d, u] = lduDecomposition();
+
+        Matrix<COLUMNS, ROWS, T> s = d;
+
+        for (int c = 0; c < COLUMNS; c++) {
+            s[c][c] = std::sqrt(d[c][c]);
+        }
+
+        Matrix<COLUMNS, ROWS, T> g = l * s;
+        Matrix<COLUMNS, ROWS, T> gTranspose = g.transpose();
+
+        return {g, gTranspose};
     }
 
 #pragma endregion
