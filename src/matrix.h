@@ -877,6 +877,55 @@ struct Matrix {
         return true;
     }
 
+    Matrix<COLUMNS, ROWS, T> toRowEchelon() const {
+        Matrix<COLUMNS, ROWS, T> m = *this;
+
+        for (int c = 0; c < std::min(ROWS, COLUMNS); c++) {
+            // handle row swaps
+            {
+                int rowIndex = -1;
+                const T pivot = m[c][c];
+                T rowValue = std::abs(pivot);
+
+                // iterate through rows of this column. Looking for the biggest boi
+                for (int r = c + 1; r < ROWS; r++) {
+                    T curValue = std::abs(m[c][r]);
+
+                    if (curValue > rowValue) {
+                        rowIndex = r;
+                        rowValue = curValue;
+                    }
+                }
+
+                // we found nothing so we skip this column
+                if (rowIndex == -1 && pivot == 0) {
+                    continue;
+                }
+
+                if (rowIndex != -1 && rowIndex != c) {
+                    // swap u and p rows like normal
+                    m.swapRows(c, rowIndex);
+                }
+            }
+
+            const T pivot = m[c][c];
+
+            // iterate through things beneath that pivot in the matrix
+            for (int r = c + 1; r < ROWS; r++) {
+                T val = m[c][r];
+
+                T multiplierToPivotRow = val / pivot;
+
+                // do this row minus other row times multiplier
+                for (int i = c; i < COLUMNS; i++) {
+                    m[i][r] += -multiplierToPivotRow * m[i][c];
+                }
+            }
+        }
+
+        return m;
+    }
+
     bool isReducedRowEchelon() const {
         int lastPivotColumn = -1;
 
@@ -914,6 +963,64 @@ struct Matrix {
         }
 
         return true;
+    }
+
+    Matrix<COLUMNS, ROWS, T> toReducedRowEchelon() const {
+        Matrix<COLUMNS, ROWS, T> m = *this;
+
+        for (int c = 0; c < std::min(ROWS, COLUMNS); c++) {
+            // handle row swaps
+            {
+                int rowIndex = -1;
+                const T pivot = m[c][c];
+                T rowValue = std::abs(pivot);
+
+                // iterate through rows of this column. Looking for the biggest boi
+                for (int r = c + 1; r < ROWS; r++) {
+                    T curValue = std::abs(m[c][r]);
+
+                    if (curValue > rowValue) {
+                        rowIndex = r;
+                        rowValue = curValue;
+                    }
+                }
+
+                // we found nothing so we skip this column
+                if (rowIndex == -1 && pivot == 0) {
+                    continue;
+                }
+
+                if (rowIndex != -1 && rowIndex != c) {
+                    // swap u and p rows like normal
+                    m.swapRows(c, rowIndex);
+                }
+            }
+
+            {
+                // normalize pivot row to 1
+                T value = m[c][c];
+                for (int cc = c + 1; cc < COLUMNS; cc++) {
+                    m[cc][c] /= value;
+                }
+                m[c][c] = 1;
+            }
+
+            const T pivot = m[c][c];
+
+            // iterate through things beneath that pivot in the matrix
+            for (int r = c + 1; r < ROWS; r++) {
+                T val = m[c][r];
+
+                T multiplierToPivotRow = val / pivot;
+
+                // do this row minus other row times multiplier
+                for (int i = c; i < COLUMNS; i++) {
+                    m[i][r] += -multiplierToPivotRow * m[i][c];
+                }
+            }
+        }
+
+        return m;
     }
 
 #pragma region Decomposiitons
