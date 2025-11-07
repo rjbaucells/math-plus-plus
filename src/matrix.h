@@ -925,11 +925,12 @@ struct Matrix {
     };
 
     LUPDecomposition<Matrix<ROWS, ROWS, T>, Matrix<COLUMNS, ROWS, T>, Matrix<ROWS, ROWS, T>> lupDecomposition() const {
-        Matrix<ROWS, ROWS, T> l = Matrix<ROWS, ROWS, T>::identity();
-        Matrix<COLUMNS, ROWS, T> u = *this;
+        Matrix<std::min(ROWS, COLUMNS), ROWS, T> l = Matrix<ROWS, ROWS, T>::identity();
+        Matrix<COLUMNS, std::min(ROWS, COLUMNS), T> u = *this;
         Matrix<ROWS, ROWS, T> p = Matrix<ROWS, ROWS, T>::identity();
 
-        for (int c = 0; c < COLUMNS; c++) {
+        // use std::min so we never access the pivot that's out of the matrix
+        for (int c = 0; c < std::min(ROWS, COLUMNS); c++) {
             // handle row swaps
             {
                 int rowIndex = -1;
@@ -994,12 +995,13 @@ struct Matrix {
     };
 
     LUPQDecomposition<Matrix<ROWS, ROWS, T>, Matrix<COLUMNS, ROWS, T>, Matrix<ROWS, ROWS, T>, Matrix<COLUMNS, COLUMNS, T>> lupqDecomposition() const {
-        Matrix<ROWS, ROWS, T> l = Matrix<ROWS, ROWS, T>::identity();
-        Matrix<COLUMNS, ROWS, T> u = *this;
+        Matrix<std::min(ROWS, COLUMNS), ROWS, T> l = Matrix<ROWS, ROWS, T>::identity();
+        Matrix<COLUMNS, std::min(ROWS, COLUMNS), T> u = *this;
         Matrix<ROWS, ROWS, T> p = Matrix<ROWS, ROWS, T>::identity();
         Matrix<COLUMNS, COLUMNS, T> q = Matrix<COLUMNS, COLUMNS, T>::identity();
 
-        for (int c = 0; c < COLUMNS; c++) {
+        // use std::min so we never access the pivot that's out of the matrix
+        for (int c = 0; c < std::min(ROWS, COLUMNS); c++) {
             // handle row AND column swaps
             {
                 int rowIndex = -1;
@@ -1069,10 +1071,11 @@ struct Matrix {
     };
 
     LUDecomposition<Matrix<ROWS, ROWS, T>, Matrix<COLUMNS, ROWS, T>> luDecomposition() const {
-        Matrix<ROWS, ROWS, T> l = Matrix<ROWS, ROWS, T>::identity();
-        Matrix<COLUMNS, ROWS, T> u = *this;
+        Matrix<std::min(ROWS, COLUMNS), ROWS, T> l = Matrix<ROWS, ROWS, T>::identity();
+        Matrix<COLUMNS, std::min(ROWS, COLUMNS), T> u = *this;
 
-        for (int c = 0; c < COLUMNS; c++) {
+        // use std::min so we never access the pivot that's out of the matrix
+        for (int c = 0; c < std::min(ROWS, COLUMNS); c++) {
             T pivot = u[c][c];
 
             if (pivot == 0)
@@ -1104,11 +1107,12 @@ struct Matrix {
     };
 
     LDUDecomposition<Matrix<ROWS, ROWS, T>, Matrix<COLUMNS, ROWS, T>, Matrix<COLUMNS, COLUMNS, T>> lduDecomposition() const {
-        Matrix<ROWS, ROWS, T> l = Matrix<ROWS, ROWS, T>::identity();
-        Matrix<COLUMNS, COLUMNS, T> d = Matrix<COLUMNS, COLUMNS, T>::identity();
-        Matrix<COLUMNS, ROWS, T> u = *this;
+        Matrix<std::min(ROWS, COLUMNS), ROWS, T> l = Matrix<ROWS, ROWS, T>::identity();
+        Matrix<std::min(ROWS, COLUMNS), std::min(ROWS, COLUMNS), T> d = Matrix<std::min(ROWS, COLUMNS), std::min(ROWS, COLUMNS), T>::identity();
+        Matrix<COLUMNS, std::min(ROWS, COLUMNS), T> u = *this;
 
-        for (int c = 0; c < COLUMNS; c++) {
+        // use std::min so we never access the pivot that's out of the matrix
+        for (int c = 0; c < std::min(ROWS, COLUMNS); c++) {
             T pivot = u[c][c];
 
             if (pivot == 0)
