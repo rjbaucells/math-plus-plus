@@ -5,10 +5,12 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include "complex.h"
+
 #include "rotation.h"
 #include "vector.h"
 
-template<int COLUMNS, int ROWS, typename T = float>
+template<int COLUMNS, int ROWS, typename T = float> requires (std::is_arithmetic_v<T>)
 struct Matrix {
     static constexpr int rows = ROWS;
     static constexpr int columns = COLUMNS;
@@ -1051,12 +1053,26 @@ struct Matrix {
         return result;
     }
 
-    bool isPositiveDefinite() const {
+    bool symmetrical() const requires (!IsComplex<T>::value) {
         if (!square)
             return false;
 
-        if (*this != transpose())
+        return *this == transpose();
+    }
+
+    bool hermitian() const requires (IsComplex<T>::value) {
+        if (!square)
             return false;
+
+        auto ts = transpose();
+
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = 0; r < ROWS; r++) {
+                if (data[c][r] != ts[c][r].complexConjugate()) {
+                    return false;
+                }
+            }
+        }
 
         return true;
     }

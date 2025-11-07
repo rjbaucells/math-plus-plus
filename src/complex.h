@@ -22,3 +22,9 @@ struct Complex {
         return ss.str();
     }
 };
+
+template<typename T>
+struct IsComplex : std::false_type {};
+
+template<typename U>
+struct IsComplex<Complex<U>> : std::true_type {};
