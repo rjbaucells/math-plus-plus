@@ -339,7 +339,6 @@ struct Matrix {
 
     /**
      * @brief Swaps elements on row r and column c to row c and column r (Reflection across main diagonal; data[c][r] = data[r][c])
-     * @note Matrix must be a square matrix (n x n)
      * @return Matrix with columns and rows swapped
      */
     [[nodiscard]] Matrix<ROWS, COLUMNS, T> transpose() const {
@@ -348,6 +347,26 @@ struct Matrix {
         for (int c = 0; c < ROWS; c++) {
             for (int r = 0; r < COLUMNS; r++) {
                 result[c][r] = data[r][c];
+            }
+        }
+
+        return result;
+    }
+
+    /**
+    * @brief Swaps elements on row r and column c to row c and column r using the complex `ugate (Reflection across main diagonal; data[c][r] = data[r][c])
+    * @return Matrix with columns and rows swapped
+    */
+    [[nodiscard]] Matrix<ROWS, COLUMNS, T> conjugateTranspose() const {
+        if (!IsComplex<T>::value)
+            return transpose();
+
+        Matrix<ROWS, COLUMNS, T> result;
+
+        for (int c = 0; c < ROWS; c++) {
+            for (int r = 0; r < COLUMNS; r++) {
+                result[c][r].real = data[r][c].real;
+                result[c][r].real = data[r][c].imag;
             }
         }
 
@@ -1060,17 +1079,84 @@ struct Matrix {
         return *this == transpose();
     }
 
-    bool hermitian() const requires (IsComplex<T>::value) {
+    bool hermitian() const {
+        if (!IsComplex<T>::value)
+            return symmetrical();
+
         if (!square)
             return false;
 
-        auto ts = transpose();
+        auto ts = conjugateTranspose();
 
         for (int c = 0; c < COLUMNS; c++) {
             for (int r = 0; r < ROWS; r++) {
-                if (data[c][r] != ts[c][r].complexConjugate()) {
+                if (data[c][r] != ts[c][r]) {
                     return false;
                 }
+            }
+        }
+
+        return true;
+    }
+
+    bool positiveDefinite() const requires (square) {
+        for (int c = 0; c < COLUMNS; c++) {
+            Vector<ROWS> x;
+
+            for (int r = 0; r < ROWS; r++) {
+                x[r] = data[c][r];
+            }
+
+            if (!(x.componentDot(x) > 0)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    bool positiveSemiDefinite() const requires (square) {
+        for (int c = 0; c < COLUMNS; c++) {
+            Vector<ROWS> x;
+
+            for (int r = 0; r < ROWS; r++) {
+                x[r] = data[c][r];
+            }
+
+            if (!(x.componentDot(x) >= 0)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    bool negativeDefinite() const requires (square) {
+        for (int c = 0; c < COLUMNS; c++) {
+            Vector<ROWS> x;
+
+            for (int r = 0; r < ROWS; r++) {
+                x[r] = data[c][r];
+            }
+
+            if (!(x.componentDot(x) < 0)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    bool negativeSemiDefinite() const requires (square) {
+        for (int c = 0; c < COLUMNS; c++) {
+            Vector<ROWS> x;
+
+            for (int r = 0; r < ROWS; r++) {
+                x[r] = data[c][r];
+            }
+
+            if (!(x.componentDot(x) <= 0)) {
+                return false;
             }
         }
 
@@ -1113,7 +1199,7 @@ struct Matrix {
                     throw std::runtime_error("Cannot LUP decompose singular matrix");
                 }
 
-                if (rowIndex != -1 && rowIndex != c) {
+                if (rowIndex != -1) {
                     // swap u and p rows like normal
                     u.swapRows(c, rowIndex);
                     p.swapRows(c, rowIndex);
@@ -1305,25 +1391,40 @@ struct Matrix {
         return {l, d, u};
     }
 
-    template<typename G_TYPE>
+    template<typename L_TYPE, typename L_TRANSPOSE_TYPE>
     struct CholeskyDecomposition {
-        G_TYPE g;
-        G_TYPE gTranspose;
+        L_TYPE l;
+        L_TRANSPOSE_TYPE lTranspose;
     };
 
-    CholeskyDecomposition<Matrix<COLUMNS, ROWS, T>> choleskyDecomposition() const requires (square) {
-        auto [l, d, u] = lduDecomposition();
-
-        Matrix<COLUMNS, ROWS, T> s = d;
-
-        for (int c = 0; c < COLUMNS; c++) {
-            s[c][c] = std::sqrt(d[c][c]);
+    CholeskyDecomposition<Matrix<COLUMNS, ROWS, T>, Matrix<ROWS, COLUMNS, T>> choleskyDecomposition(bool allowPositiveSemiDefinite = false) const requires (square) {
+        if (!hermitian()) {
+            throw std::runtime_error("Cannot find Cholesky Decomposition of non hermitian/symmetric matrix");
         }
 
-        Matrix<COLUMNS, ROWS, T> g = l * s;
-        Matrix<COLUMNS, ROWS, T> gTranspose = g.transpose();
+        Matrix<COLUMNS, ROWS, T> l;
 
-        return {g, gTranspose};
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = 0; r < ROWS; r++) {
+                T value = data[c][c];
+
+                for (int k = 0; k < c; k++) {
+                    value -= l[k][c] * l[k][r];
+                }
+
+                if (c == r) {
+                    if (value <= 0)
+                        throw std::runtime_error("Cannot cholesky decompose non positive definite matrix");
+
+                    l[c][c] = std::sqrt(value);
+                }
+                else {
+                    l[c][r] = (1 / l[c][c]) * value;
+                }
+            }
+        }
+
+        return {l, l.conjugateTranspose()};
     }
 
 #pragma endregion
