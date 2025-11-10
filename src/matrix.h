@@ -1407,7 +1407,7 @@ struct Matrix {
         for (int c = 0; c < COLUMNS; c++) {
             for (int r = 0; r <= c; r++) {
                 if constexpr (!IsComplex<T>::value) {
-                    if (c == r) {
+                    if (r == c) {
                         T value = data[c][c];
 
                         for (int k = 0; k < c; k++) {
@@ -1424,7 +1424,7 @@ struct Matrix {
 
                         l[c][c] = std::sqrt(value);
                     }
-                    else {
+                    else if (r > c) {
                         T value = data[c][r];
 
                         for (int k = 0; k < c; k++) {
@@ -1435,7 +1435,7 @@ struct Matrix {
                     }
                 }
                 else {
-                    if (c == r) {
+                    if (r == c) {
                         T value = data[c][c];
 
                         for (int k = 0; k < c; k++) {
@@ -1470,6 +1470,70 @@ struct Matrix {
         }
 
         return {l, l.conjugateTranspose()};
+    }
+
+    template<typename L_TYPE, typename D_TYPE, typename L_TRANSPOSE_TYPE>
+    struct LDLDecomposition {
+        L_TYPE l;
+        D_TYPE d;
+        L_TRANSPOSE_TYPE lTranspose;
+    };
+
+    LDLDecomposition<Matrix<COLUMNS, ROWS, T>, Matrix<COLUMNS, ROWS, T>, Matrix<ROWS, COLUMNS, T>> ldlDecomposition() const requires (square) {
+        Matrix<COLUMNS, ROWS, T> l;
+        Matrix<COLUMNS, ROWS, T> d;
+
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = 0; r <= c; r++) {
+                if constexpr (!IsComplex<T>::value) {
+                    if (r == c) {
+                        T value = data[c][c];
+
+                        for (int k = 0; k < c; k++) {
+                            value -= std::pow(l[k][c], 2) * d[k][k];
+                        }
+
+                        d[c][c] = value;
+                    }
+                    else if (r > c) {
+                        T value = data[c][r];
+
+                        for (int k = 0; k < c; k++) {
+                            value -= l[k][r] * l[k][c] * d[k][k];
+                        }
+
+                        l[c][r] = (1 / d[c][c]) * value;
+                    }
+                }
+                else {
+                    if (r == c) {
+                        T value = data[c][c];
+
+                        for (int k = 0; k < c; k++) {
+                            T complexConjugate = l[k][c];
+                            complexConjugate.imag *= -1;
+                            value -= l[k][c] * complexConjugate * d[k][k];
+                        }
+
+                        d[c][c] = value;
+                    }
+                    else if (r > c) {
+                        T value = data[c][r];
+
+                        for (int k = 0; k < c; k++) {
+                            T complexConjugate = l[k][c];
+                            complexConjugate.imag *= -1;
+
+                            value -= l[k][r] * complexConjugate * d[k][k];
+                        }
+
+                        l[c][r] = (1 / d[c][c]) * value;
+                    }
+                }
+            }
+        }
+
+        return {l , d, l.conjugateTranspose()};
     }
 
 #pragma endregion
