@@ -1405,21 +1405,66 @@ struct Matrix {
         Matrix<COLUMNS, ROWS, T> l;
 
         for (int c = 0; c < COLUMNS; c++) {
-            for (int r = 0; r < ROWS; r++) {
-                T value = data[c][c];
+            for (int r = 0; r <= c; r++) {
+                if constexpr (!IsComplex<T>::value) {
+                    if (c == r) {
+                        T value = data[c][c];
 
-                for (int k = 0; k < c; k++) {
-                    value -= l[k][c] * l[k][r];
-                }
+                        for (int k = 0; k < c; k++) {
+                            value -= std::pow(l[k][c], 2);
+                        }
 
-                if (c == r) {
-                    if (value <= 0)
-                        throw std::runtime_error("Cannot cholesky decompose non positive definite matrix");
+                        if (value < 0) {
+                            throw std::runtime_error("Cannot cholesky decompose non positive definite matrix");
+                        }
 
-                    l[c][c] = std::sqrt(value);
+                        if (value == 0 && !allowPositiveSemiDefinite) {
+                            throw std::runtime_error("Cannot cholesky decompose non semi-positive definite matrix");
+                        }
+
+                        l[c][c] = std::sqrt(value);
+                    }
+                    else {
+                        T value = data[c][r];
+
+                        for (int k = 0; k < c; k++) {
+                            value -= l[k][r] * l[k][c];
+                        }
+
+                        l[c][r] = (1 / l[c][c]) * value;
+                    }
                 }
                 else {
-                    l[c][r] = (1 / l[c][c]) * value;
+                    if (c == r) {
+                        T value = data[c][c];
+
+                        for (int k = 0; k < c; k++) {
+                            T complexConjugate = l[k][c];
+                            complexConjugate.imag *= -1;
+                            value -= l[k][c] * complexConjugate;
+                        }
+
+                        if (value < 0) {
+                            throw std::runtime_error("Cannot cholesky decompose non positive definite matrix");
+                        }
+
+                        if (value == 0 && !allowPositiveSemiDefinite) {
+                            throw std::runtime_error("Cannot cholesky decompose non semi-positive definite matrix");
+                        }
+
+                        l[c][c] = std::sqrt(value);
+                    }
+                    else if (r > c) {
+                        T value = data[c][r];
+
+                        for (int k = 0; k < c; k++) {
+                            T complexConjugate = l[k][c];
+                            complexConjugate.imag *= -1;
+                            value -= l[k][r] * complexConjugate;
+                        }
+
+                        l[c][r] = (1 / l[c][c]) * value;
+                    }
                 }
             }
         }
