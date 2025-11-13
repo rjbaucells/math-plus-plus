@@ -1163,6 +1163,30 @@ struct Matrix {
         return true;
     }
 
+    std::array<Vector<ROWS>, COLUMNS> getColumnVectors() const {
+        std::array<Vector<ROWS>, COLUMNS> vecs;
+
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = 0; r < ROWS; r++) {
+                vecs[c][r] = data[c][r];
+            }
+        }
+
+        return vecs;
+    }
+
+    std::array<Vector<COLUMNS>, ROWS> getRowVectors() const {
+        std::array<Vector<COLUMNS>, ROWS> vecs;
+
+        for (int r = 0; r < ROWS; r++) {
+            for (int c = 0; c < COLUMNS; c++) {
+                vecs[r][c] = data[c][r];
+            }
+        }
+
+        return vecs;
+    }
+
 #pragma region Decomposiitons
     template<typename L_TYPE, typename U_TYPE, typename P_TYPE>
     struct LUPDecomposition {
@@ -1533,7 +1557,46 @@ struct Matrix {
             }
         }
 
-        return {l , d, l.conjugateTranspose()};
+        return {l, d, l.conjugateTranspose()};
+    }
+
+    template<typename Q_TYPE, typename R_TYPE>
+    struct QRDecomposition {
+        Q_TYPE q;
+        R_TYPE r;
+    };
+
+    QRDecomposition<Matrix<ROWS, ROWS, T>, Matrix<COLUMNS, ROWS, T>> qrDecomposition() const requires (square) {
+        std::array<Vector<ROWS>, COLUMNS> a = getColumnVectors();
+        std::array<Vector<ROWS>, COLUMNS> e = {};
+        std::array<Vector<ROWS>, COLUMNS> u = {};
+
+        Matrix<COLUMNS, ROWS, T> r;
+
+        for (int k = 0; k < COLUMNS; k++) {
+            u[k] = a[k];
+
+            for (int i = 0; i < k; i++) {
+                r[k][i] = a[k].componentDot(e[i]);
+                u[k] - e[i] * r[k][i];
+            }
+
+            T magnitude = u[k].magnitude();
+
+            for (int i = 0; i < ROWS; i++) {
+                e[k][i] = u[k][i] / magnitude;
+            }
+        }
+
+        Matrix<ROWS, ROWS, T> q;
+
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int j = 0; j < ROWS; j++) {
+                q[c][j] = e[c][j];
+            }
+        }
+
+        return {q, r};
     }
 
 #pragma endregion
