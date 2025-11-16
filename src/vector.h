@@ -158,6 +158,10 @@ struct Vector {
         return multiply(scalar);
     }
 
+    T operator*(const Vector<N, T>& other) const {
+        return componentDot(other);
+    }
+
     Vector<N, T> operator/(T scalar) const {
         return divide(scalar);
     }
@@ -194,6 +198,11 @@ struct Vector {
         return subtract(other);
     }
 
+    template<IsConvertableTo<T> OTHER_T>
+    T operator*(const Vector<N, OTHER_T>& other) const {
+        return componentDot(other);
+    }
+
     void addEquals(const Vector<N, T>& other) {
         for (int i = 0; i < N; i++) {
             data[i] += other[i];
@@ -225,6 +234,11 @@ struct Vector {
 
     Vector<N, T>& operator-=(const Vector<N, T>& other) {
         subtractEquals(other);
+        return *this;
+    }
+
+    T operator*=(const Vector<N, T>& other) {
+        *this = componentDot(other);
         return *this;
     }
 
@@ -261,6 +275,12 @@ struct Vector {
     template<IsConvertableTo<T> OTHER_T>
     Vector<N, T>& operator-=(const Vector<N, OTHER_T>& other) {
         subtractEquals(other);
+        return *this;
+    }
+
+    template<IsConvertableTo<T> OTHER_T>
+    T operator*=(const Vector<N, OTHER_T>& other) {
+        *this = componentDot(other);
         return *this;
     }
 
@@ -349,7 +369,7 @@ struct Vector {
     static std::array<Vector<N, T>, V_SIZE> orthonormalize(const std::array<Vector<N, T>, V_SIZE>& v) {
         auto orthoV = orthogonalize(v);
 
-        for (auto& vec: orthoV) {
+        for (auto& vec : orthoV) {
             vec /= vec.magnitude();
         }
 
@@ -408,5 +428,9 @@ struct Vector {
         }
 
         return true;
+    }
+
+    Vector<N, T> projection(const Vector<N, T>& other) {
+        return (componentDot(other) / other.componentDot(other)) * other;
     }
 };

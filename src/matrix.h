@@ -1568,33 +1568,24 @@ struct Matrix {
 
     QRDecomposition<Matrix<ROWS, ROWS, T>, Matrix<COLUMNS, ROWS, T>> qrDecomposition() const requires (square) {
         std::array<Vector<ROWS>, COLUMNS> a = getColumnVectors();
-        std::array<Vector<ROWS>, COLUMNS> e = {};
         std::array<Vector<ROWS>, COLUMNS> u = {};
-
-        Matrix<COLUMNS, ROWS, T> r;
+        Matrix<ROWS, ROWS, T> q;
 
         for (int k = 0; k < COLUMNS; k++) {
             u[k] = a[k];
 
-            for (int i = 0; i < k; i++) {
-                r[k][i] = a[k].componentDot(e[i]);
-                u[k] - e[i] * r[k][i];
+            for (int j = 0; j < k; j++) {
+                u[k] -= u[j].projection(a[k]);
             }
 
-            T magnitude = u[k].magnitude();
+            T uMagnitude = u[k].magnitude();
 
             for (int i = 0; i < ROWS; i++) {
-                e[k][i] = u[k][i] / magnitude;
+                q[k][i] = u[k][i] / uMagnitude;
             }
         }
 
-        Matrix<ROWS, ROWS, T> q;
-
-        for (int c = 0; c < COLUMNS; c++) {
-            for (int j = 0; j < ROWS; j++) {
-                q[c][j] = e[c][j];
-            }
-        }
+        Matrix<COLUMNS, ROWS, T> r = q.transpose() * *this;
 
         return {q, r};
     }
