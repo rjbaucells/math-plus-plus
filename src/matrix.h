@@ -67,7 +67,7 @@ struct Matrix {
         return *this;
     }
 
-    [[nodiscard]] Matrix<COLUMNS, ROWS, T> add(const Matrix<COLUMNS, ROWS, T>& other) const {
+    Matrix<COLUMNS, ROWS, T> add(const Matrix<COLUMNS, ROWS, T>& other) const {
         Matrix<COLUMNS, ROWS, T> result;
 
         for (int c = 0; c < COLUMNS; c++) {
@@ -83,20 +83,21 @@ struct Matrix {
         return add(other);
     }
 
-    void addEquals(const Matrix<COLUMNS, ROWS, T>& other) {
+    Matrix<COLUMNS, ROWS, T>& addEquals(const Matrix<COLUMNS, ROWS, T>& other) {
         for (int c = 0; c < COLUMNS; c++) {
             for (int r = 0; r < ROWS; r++) {
                 data[c][r] += other.data[c][r];
             }
         }
-    }
 
-    Matrix<COLUMNS, ROWS, T>& operator+=(const Matrix<COLUMNS, ROWS, T>& other) {
-        addEquals(other);
         return *this;
     }
 
-    [[nodiscard]] Matrix<COLUMNS, ROWS, T> subtract(const Matrix<COLUMNS, ROWS, T>& other) const {
+    Matrix<COLUMNS, ROWS, T>& operator+=(const Matrix<COLUMNS, ROWS, T>& other) {
+        return addEquals(other);
+    }
+
+    Matrix<COLUMNS, ROWS, T> subtract(const Matrix<COLUMNS, ROWS, T>& other) const {
         Matrix<COLUMNS, ROWS, T> result;
 
         for (int c = 0; c < COLUMNS; c++) {
@@ -112,24 +113,20 @@ struct Matrix {
         return subtract(other);
     }
 
-    void subtractEquals(const Matrix<COLUMNS, ROWS, T>& other) {
+    Matrix<COLUMNS, ROWS, T>& subtractEquals(const Matrix<COLUMNS, ROWS, T>& other) {
         for (int c = 0; c < COLUMNS; c++) {
             for (int r = 0; r < ROWS; r++) {
                 data[c][r] -= other.data[c][r];
             }
         }
-    }
 
-    Matrix<COLUMNS, ROWS, T> operator-=(const Matrix<COLUMNS, ROWS, T>& other) {
-        subtractEquals(other);
         return *this;
     }
 
-    /**
-   * @brief Multiplies this matrix by other. (this x other)
-   * @param other Matrix to multiply this * other
-   * @return The product of the two matrix. Having Number of rows as this, and number of columns as other
-   */
+    Matrix<COLUMNS, ROWS, T> operator-=(const Matrix<COLUMNS, ROWS, T>& other) {
+        return subtractEquals(other);
+    }
+
     template<int OTHER_COLUMNS>
     Matrix<OTHER_COLUMNS, ROWS, T> multiply(const Matrix<OTHER_COLUMNS, COLUMNS, T>& other) const {
         Matrix<OTHER_COLUMNS, ROWS, T> result;
@@ -150,12 +147,37 @@ struct Matrix {
         return multiply(other);
     }
 
-    /**
-     * @brief Compares this matrix with the other (this == other)
-     * @param other The Matrix to compare against
-     * @return Weather or not the two matrices have the same data
-     */
-    [[nodiscard]] bool compare(const Matrix<COLUMNS, ROWS, T>& other) const {
+    Matrix<COLUMNS, ROWS, T> multiply(const T& val) const {
+        Matrix<COLUMNS, ROWS, T> result;
+
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = 0; r < ROWS; r++) {
+                result[c][r] = data[c][r] * val;
+            }
+        }
+
+        return result;
+    }
+
+    Matrix<COLUMNS, ROWS, T> operator*(const T& val) const {
+        return multiply(val);
+    }
+
+    Matrix<COLUMNS, ROWS, T>& multiplyEquals(const T& val) {
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = 0; r < ROWS; r++) {
+                data[c][r] *= val;
+            }
+        }
+
+        return *this;
+    }
+
+    Matrix<COLUMNS, ROWS, T>& operator*=(const T& val) const {
+        return multiplyEquals(val);
+    }
+
+    bool compare(const Matrix<COLUMNS, ROWS, T>& other) const {
         if constexpr (std::is_floating_point_v<T>) {
             T epsilon = std::numeric_limits<T>::epsilon();
             for (int c = 0; c < COLUMNS; c++) {
@@ -200,7 +222,7 @@ struct Matrix {
     }
 
     template<IsConvertableTo<T> OTHER_T>
-    [[nodiscard]] Matrix<COLUMNS, ROWS, T> add(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const {
+    Matrix<COLUMNS, ROWS, T> add(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const {
         Matrix<COLUMNS, ROWS, T> result;
 
         for (int c = 0; c < COLUMNS; c++) {
@@ -218,22 +240,23 @@ struct Matrix {
     }
 
     template<IsConvertableTo<T> OTHER_T>
-    void addEquals(const Matrix<COLUMNS, ROWS, OTHER_T>& other) {
+    Matrix<COLUMNS, ROWS, T>& addEquals(const Matrix<COLUMNS, ROWS, OTHER_T>& other) {
         for (int c = 0; c < COLUMNS; c++) {
             for (int r = 0; r < ROWS; r++) {
                 data[c][r] += other.data[c][r];
             }
         }
-    }
 
-    template<IsConvertableTo<T> OTHER_T>
-    Matrix<COLUMNS, ROWS, T>& operator+=(const Matrix<COLUMNS, ROWS, OTHER_T>& other) {
-        addEquals(other);
         return *this;
     }
 
     template<IsConvertableTo<T> OTHER_T>
-    [[nodiscard]] Matrix<COLUMNS, ROWS, T> subtract(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const {
+    Matrix<COLUMNS, ROWS, T>& operator+=(const Matrix<COLUMNS, ROWS, OTHER_T>& other) {
+        return addEquals(other);
+    }
+
+    template<IsConvertableTo<T> OTHER_T>
+    Matrix<COLUMNS, ROWS, T> subtract(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const {
         Matrix<COLUMNS, ROWS, T> result;
 
         for (int c = 0; c < COLUMNS; c++) {
@@ -251,25 +274,21 @@ struct Matrix {
     }
 
     template<IsConvertableTo<T> OTHER_T>
-    void subtractEquals(const Matrix<COLUMNS, ROWS, OTHER_T>& other) {
+    Matrix<COLUMNS, ROWS, T>& subtractEquals(const Matrix<COLUMNS, ROWS, OTHER_T>& other) {
         for (int c = 0; c < COLUMNS; c++) {
             for (int r = 0; r < ROWS; r++) {
                 data[c][r] -= other.data[c][r];
             }
         }
+
+        return *this;
     }
 
     template<IsConvertableTo<T> OTHER_T>
     Matrix<COLUMNS, ROWS, T>& operator-=(const Matrix<COLUMNS, ROWS, OTHER_T>& other) {
-        subtractEquals(other);
-        return *this;
+        return subtractEquals(other);
     }
 
-    /**
-   * @brief Multiplies this matrix by other. (this x other)
-   * @param other Matrix to multiply this * other
-   * @return The product of the two matrix. Having Number of rows as this, and number of columns as other
-   */
     template<int OTHER_COLUMNS, IsConvertableTo<T> OTHER_T>
     Matrix<OTHER_COLUMNS, ROWS, T> multiply(const Matrix<OTHER_COLUMNS, COLUMNS, OTHER_T>& other) const {
         Matrix<OTHER_COLUMNS, ROWS, T> result;
@@ -290,13 +309,42 @@ struct Matrix {
         return multiply(other);
     }
 
-    /**
-     * @brief Compares this matrix with the other (this == other)
-     * @param other The Matrix to compare against
-     * @return Weather or not the two matrices have the same data
-     */
     template<IsConvertableTo<T> OTHER_T>
-    [[nodiscard]] bool compare(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const {
+    Matrix<COLUMNS, ROWS, T> multiply(const OTHER_T& val) const {
+        Matrix<COLUMNS, ROWS, T> result;
+
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = 0; r < ROWS; r++) {
+                result[c][r] = data[c][r] * val;
+            }
+        }
+
+        return result;
+    }
+
+    template<IsConvertableTo<T> OTHER_T>
+    Matrix<COLUMNS, ROWS, T> operator*(const OTHER_T& val) const {
+        return multiply(val);
+    }
+
+    template<IsConvertableTo<T> OTHER_T>
+    Matrix<COLUMNS, ROWS, T>& multiplyEquals(const OTHER_T& val) {
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = 0; r < ROWS; r++) {
+                data[c][r] *= val;
+            }
+        }
+
+        return *this;
+    }
+
+    template<IsConvertableTo<T> OTHER_T>
+    Matrix<COLUMNS, ROWS, T>& operator*=(const OTHER_T& val) const {
+        return multiplyEquals(val);
+    }
+
+    template<IsConvertableTo<T> OTHER_T>
+    bool compare(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const {
         if constexpr (std::is_floating_point_v<T>) {
             T epsilon = std::numeric_limits<T>::epsilon();
             for (int c = 0; c < COLUMNS; c++) {
@@ -337,11 +385,7 @@ struct Matrix {
         return &data[index][0];
     }
 
-    /**
-     * @brief Swaps elements on row r and column c to row c and column r (Reflection across main diagonal; data[c][r] = data[r][c])
-     * @return Matrix with columns and rows swapped
-     */
-    [[nodiscard]] Matrix<ROWS, COLUMNS, T> transpose() const {
+    Matrix<ROWS, COLUMNS, T> transpose() const requires (!IsComplex<T>::value) {
         Matrix<ROWS, COLUMNS, T> result;
 
         for (int c = 0; c < ROWS; c++) {
@@ -353,14 +397,7 @@ struct Matrix {
         return result;
     }
 
-    /**
-    * @brief Swaps elements on row r and column c to row c and column r using the complex `ugate (Reflection across main diagonal; data[c][r] = data[r][c])
-    * @return Matrix with columns and rows swapped
-    */
-    [[nodiscard]] Matrix<ROWS, COLUMNS, T> conjugateTranspose() const {
-        if (!IsComplex<T>::value)
-            return transpose();
-
+    Matrix<ROWS, COLUMNS, T> conjugateTranspose() const requires (IsComplex<T>::value) {
         Matrix<ROWS, COLUMNS, T> result;
 
         for (int c = 0; c < ROWS; c++) {
@@ -373,12 +410,7 @@ struct Matrix {
         return result;
     }
 
-    /**
-     * @brief Finds the inverse of the matrix if invertible (1 / matrix)
-     * @throws Runtime errors if matrix is singular (not invertible)
-     * @return The inverse of the matrix
-     */
-    [[nodiscard]] Matrix<COLUMNS, ROWS, T> inverse() const requires (square) {
+    Matrix<COLUMNS, ROWS, T> inverse() const requires (square) {
         // its a one by one, we can just return 1 / value
         if constexpr (ROWS == 1) {
             if (data[0][0] == 0) {
@@ -475,11 +507,7 @@ struct Matrix {
         return result;
     }
 
-    /**
-     * @warning if zero do not attempt to find inverse of this matrix
-     * @return The determinant of this matrix
-     */
-    [[nodiscard]] T determinant() const requires (square) {
+    T determinant() const requires (square) {
         if constexpr (ROWS == 1) {
             return data[0][0];
         }
@@ -502,125 +530,6 @@ struct Matrix {
     }
 
 #pragma region 4x4 stuffs
-    /**
-     * @brief Uniformly scales the matrix along all dimensions (this * scaleMatrix)
-     * @param value The scalar to multiply with each element
-     * @return The matrix scaled Uniformly
-     */
-    [[nodiscard]] Matrix<4, 4, T> scale(const T value) const requires (square && COLUMNS == 4) {
-        Matrix<4, 4, T> scalingMatrix = Matrix<4, 4, T>::identity();
-
-        scalingMatrix.data[0][0] = value;
-        scalingMatrix.data[1][1] = value;
-        scalingMatrix.data[2][2] = value;
-
-        return multiply(scalingMatrix);
-    }
-
-    /**
-     * @brief Scales matrix non-uniformly along the x, y, and z axis (this * scaleMatrix)
-     * @param x The scale factor for the x-axis.
-     * @param y The scale factor for the y-axis.
-     * @param z The scale factor for the z-axis.
-     * @return The matrix scaled along {x, y, z}
-     */
-    [[nodiscard]] Matrix<4, 4, T> scaleAnisotropic(const T x, const T y, const T z) const requires (square && COLUMNS == 4) {
-        Matrix<4, 4, T> scaleMatrix = Matrix<4, 4, T>::identity();
-
-        scaleMatrix.data[0][0] = x;
-        scaleMatrix.data[1][1] = y;
-        scaleMatrix.data[2][2] = z;
-
-        return multiply(scaleMatrix);
-    }
-
-    /**
-     * @brief Translates matrix by x, y, and z (this * translationMatrix)
-     * @param x How much to translate along the x
-     * @param y How much to translate along the y
-     * @param z How much to translate along the z
-     * @return The matrix translated by x, y, and z
-     */
-    [[nodiscard]] Matrix<4, 4, T> translate(const T x, const T y, const T z) const requires (square && COLUMNS == 4) {
-        Matrix<4, 4, T> translationMatrix = Matrix<4, 4, T>::identity();
-
-        translationMatrix.data[3][0] = x;
-        translationMatrix.data[3][1] = y;
-        translationMatrix.data[3][2] = z;
-
-        return multiply(translationMatrix);
-    }
-
-    /**
-     * @brief Rotates the matrix by angle along the x (this * rotationMatrix)
-     * @param amount How many DEGREES to rotate along the x
-     * @param type Rotation type of angle
-     * @return Matrix rotated by angle
-     */
-    [[nodiscard]] Matrix<4, 4, T> rotateX(const T amount, const RotationType type = RotationType::degrees) const requires (square && COLUMNS == 4) {
-        T sin = std::sin(convert(type, RotationType::radians, amount));
-        T cos = std::cos(convert(type, RotationType::radians, amount));
-
-        Matrix<4, 4, T> rotationMatrix = Matrix<4, 4, T>::identity();
-
-        rotationMatrix.data[1][1] = cos;
-        rotationMatrix.data[2][1] = -sin;
-        rotationMatrix.data[1][2] = sin;
-        rotationMatrix.data[2][2] = cos;
-
-        return multiply(rotationMatrix);
-    }
-
-    /**
-     * @brief Rotates the matrix by angle along the y (this * rotationMatrix)
-     * @param amount How many DEGREES to rotate along the y
-     * * @param type Rotation type of angle
-     * @return Matrix rotated by angle
-     */
-    [[nodiscard]] Matrix<4, 4, T> rotateY(const T amount, const RotationType type = RotationType::degrees) const requires (square && COLUMNS == 4) {
-        T sin = std::sin(convert(type, RotationType::radians, amount));
-        T cos = std::cos(convert(type, RotationType::radians, amount));
-
-        Matrix<4, 4, T> rotationMatrix = Matrix<4, 4, T>::identity();
-
-        rotationMatrix.data[0][0] = cos;
-        rotationMatrix.data[2][0] = sin;
-        rotationMatrix.data[0][2] = -sin;
-        rotationMatrix.data[2][2] = cos;
-
-        return multiply(rotationMatrix);
-    }
-
-    /**
-     * @brief Rotates the matrix by angle along the y (this * rotationMatrix)
-     * @param amount How many DEGREES to rotate along the y
-     * * @param type Rotation type of angle
-     * @return Matrix rotated by angle
-     */
-    [[nodiscard]] Matrix<4, 4, T> rotateZ(const T amount, const RotationType type = RotationType::degrees) const requires (square && COLUMNS == 4) {
-        T sin = std::sin(convert(type, RotationType::radians, amount));
-        T cos = std::cos(convert(type, RotationType::radians, amount));
-
-        Matrix<4, 4, T> rotationMatrix = Matrix<4, 4, T>::identity();
-
-        rotationMatrix.data[0][0] = cos;
-        rotationMatrix.data[1][0] = -sin;
-        rotationMatrix.data[0][1] = sin;
-        rotationMatrix.data[1][1] = cos;
-
-        return multiply(rotationMatrix);
-    }
-
-    /**
-     * @brief Creates an orthographic projection matrix.
-     * @param left The coordinate of the left vertical clipping plane
-     * @param right The coordinate of the right vertical clipping plane
-     * @param bottom The coordinate of the bottom horizontal clipping plane
-     * @param top The coordinate of the top horizontal clipping plane
-     * @param near The coordinate of the near depth clipping plane
-     * @param far The coordinate of the far depth clipping plane
-     * @return A 4x4 orthographic projection matrix
-     */
     static Matrix<4, 4, T> ortho(const T left, const T right, const T bottom, const T top, const T near, const T far) {
         // identity
         Matrix<4, 4, T> transformation = Matrix<4, 4, T>::identity();
@@ -635,56 +544,7 @@ struct Matrix {
         return transformation;
     }
 
-    Vector<2, T> multiply(const Vector<2, T>& other) requires (square && COLUMNS == 4) {
-        Vector<4, T> v = {other[0], other[1], 0, 1};
-        Vector<4> result = multiply(v);
-        return {result[0], result[1]};
-    }
-
-    Vector<2, T> operator*(const Vector<2, T>& other) requires (square && COLUMNS == 4) {
-        Vector<4, T> v = {other[0], other[1], 0, 1};
-        Vector<4> result = multiply(v);
-        return {result[0], result[1]};
-    }
-
-    template<IsConvertableTo<T> OTHER_T>
-    Vector<2, T> operator*(const Vector<2, OTHER_T>& other) requires (square && COLUMNS == 4) {
-        Vector<4, T> v = {other[0], other[1], 0, 1};
-        Vector<4> result = multiply(v);
-        return {result[0], result[1]};
-    }
-
-    template<IsConvertableTo<T> OTHER_T>
-    Vector<2, T> multiply(const Vector<2, OTHER_T>& other) requires (square && COLUMNS == 4) {
-        Vector<4, T> v = {other[0], other[1], 0, 1};
-        Vector<4> result = multiply(v);
-        return {result[0], result[1]};
-    }
-
-    Vector<3, T> multiply(const Vector<3, T>& other) requires (square && COLUMNS == 4) {
-        Vector<4, T> v = {other[0], other[1], other[2], 1};
-        Vector<4> result = multiply(v);
-        return {result[0], result[1], result[2]};
-    }
-
-    Vector<3, T> operator*(const Vector<3, T>& other) requires (square && COLUMNS == 4) {
-        return multiply(other);
-    }
-
-    template<IsConvertableTo<T> OTHER_T>
-    Vector<3, T> multiply(const Vector<3, OTHER_T>& other) requires (square && COLUMNS == 4) {
-        Vector<4, T> v = {other[0], other[1], other[2], 1};
-        Vector<4> result = multiply(v);
-        return {result[0], result[1], result[2]};
-    }
-
-    template<IsConvertableTo<T> OTHER_T>
-    Vector<3, T> operator*(const Vector<3, OTHER_T>& other) requires (square && COLUMNS == 4) {
-        return multiply(other);
-    }
-
 #pragma endregion
-
     Vector<COLUMNS, T> multiply(const Vector<COLUMNS, T>& other) {
         Vector<COLUMNS, T> result;
 
@@ -719,7 +579,7 @@ struct Matrix {
         return multiply(other);
     }
 
-    [[nodiscard]] std::string toString() const {
+    std::string toString() const {
         std::stringstream ss;
         ss.precision(2);
 
@@ -744,7 +604,7 @@ struct Matrix {
         return ss.str();
     }
 
-    [[nodiscard]] std::string toLaTex() const {
+    std::string toLaTex() const {
         std::stringstream ss;
         ss.precision(2);
 
@@ -766,13 +626,7 @@ struct Matrix {
         return ss.str();
     }
 
-    /**
-     * @brief Makes a matrix made up of this matrix without rowToRemove and without columnToRemove
-     * @param rowToRemove What row shouldnt be included
-     * @param columnToRemove What column shouldnt be included
-     * @return A matrix of <ROWS - 1, COLUMNS - 1> without the rowToRemove and columnToRemove
-     */
-    [[nodiscard]] Matrix<COLUMNS - 1, ROWS - 1, T> getSubMatrix(const int rowToRemove, const int columnToRemove) const {
+    Matrix<COLUMNS - 1, ROWS - 1, T> getSubMatrix(const int rowToRemove, const int columnToRemove) const {
         Matrix<COLUMNS - 1, ROWS - 1, T> subMatrix;
         int subMatrixR = 0;
         for (int r = 0; r < ROWS; r++) {
@@ -793,12 +647,30 @@ struct Matrix {
         return subMatrix;
     }
 
-    /**
-     * @brief swap row a with row b
-     * @param rowA The index of the first row
-     * @param rowB The index of the second row
-     * @return This with row a and row b swapped
-     */
+    template<int NUM_COLUMNS_TO_REMOVE, int NUM_ROWS_TO_REMOVE>
+    Matrix<COLUMNS - NUM_COLUMNS_TO_REMOVE, ROWS - NUM_ROWS_TO_REMOVE, T> getSubMatrix(const std::array<int, NUM_COLUMNS_TO_REMOVE>& columnsToRemove, const std::array<int, NUM_ROWS_TO_REMOVE>& rowsToRemove) const {
+        Matrix<COLUMNS - NUM_COLUMNS_TO_REMOVE, ROWS - NUM_ROWS_TO_REMOVE, T> subMatrix;
+
+        int subMatrixC = 0;
+        for (int c = 0; c < COLUMNS; c++) {
+            if (std::find(columnsToRemove.begin(), columnsToRemove.end(), c))
+                continue;
+
+            int subMatrixR = 0;
+            for (int r = 0; r < ROWS; r++) {
+                if (std::find(rowsToRemove.begin(), rowsToRemove.end(), r))
+                    continue;
+
+                subMatrix[subMatrixC][subMatrixR] = data[c][r];
+                subMatrixR++;
+            }
+
+            subMatrixC++;
+        }
+
+        return subMatrix;
+    }
+
     Matrix<COLUMNS, ROWS, T> swapRows(const int rowA, const int rowB) {
         Matrix<COLUMNS, ROWS, T> m = *this;
 
@@ -819,12 +691,6 @@ struct Matrix {
         return m;
     }
 
-    /**
-     * @brief swap column a with column b
-     * @param columnA The index of the first column
-     * @param columnB The index of the second column
-     * @return This with column a and column b swapped
-     */
     Matrix<COLUMNS, ROWS, T> swapColumns(const int columnA, const int columnB) {
         Matrix<COLUMNS, ROWS, T> m = *this;
 
@@ -853,10 +719,6 @@ struct Matrix {
         return &data[0][0];
     }
 
-    /**
-     * @brief Generates the identity matrix of size this Rows x this Rows
-     * @return Matrix with 1s on main diagonal, 0s everywhere else
-     */
     static Matrix<COLUMNS, ROWS, T> identity() requires (square) {
         Matrix<COLUMNS, ROWS, T> result;
 
@@ -1072,20 +934,22 @@ struct Matrix {
         return result;
     }
 
-    bool symmetrical() const requires (!IsComplex<T>::value) {
-        if (!square)
-            return false;
-
+    bool symmetrical() const requires (!IsComplex<T>::value && square) {
         return *this == transpose();
     }
 
-    bool hermitian() const {
-        if (!IsComplex<T>::value)
-            return symmetrical();
+    bool skewSymmetrical() const requires (!IsComplex<T>::value && square) {
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = 0; r < ROWS; r++) {
+                if (data[r][c] != -data[c][r])
+                    return false;
+            }
+        }
 
-        if (!square)
-            return false;
+        return true;
+    }
 
+    bool hermitian() const requires (IsComplex<T>::value && square) {
         auto ts = conjugateTranspose();
 
         for (int c = 0; c < COLUMNS; c++) {
@@ -1093,6 +957,20 @@ struct Matrix {
                 if (data[c][r] != ts[c][r]) {
                     return false;
                 }
+            }
+        }
+
+        return true;
+    }
+
+    bool skewHermitian() const requires (IsComplex<T>::value && square) {
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = 0; r < ROWS; r++) {
+                T complexConjugate = data[c][r];
+                complexConjugate.imag *= -1;
+
+                if (data[r][c] != -complexConjugate)
+                    return false;
             }
         }
 
@@ -1185,6 +1063,91 @@ struct Matrix {
         }
 
         return vecs;
+    }
+
+    T trace() const requires (square) {
+        T sum = {};
+
+        for (int c = 0; c < COLUMNS; c++) {
+            sum += data[c][c];
+        }
+
+        return sum;
+    }
+
+    bool unitary() const requires (IsComplex<T>::value && square) {
+        auto iden = identity();
+        auto tr = conjugateTranspose();
+
+        if (multiply(tr) != iden)
+            return false;
+
+        if (tr.multiply(*this) != iden)
+            return false;
+
+        return true;
+    }
+
+    bool specialUnitary() const requires (IsComplex<T>::value && square) {
+        auto iden = identity();
+        auto tr = conjugateTranspose();
+
+        if (multiply(tr) != iden)
+            return false;
+
+        if (tr.multiply(*this) != iden)
+            return false;
+
+        return determinant() == 1;
+    }
+
+    bool orthogonal() const requires (!IsComplex<T>::value && square) {
+        auto iden = identity();
+        auto tr = transpose();
+
+        if (multiply(tr) != iden)
+            return false;
+
+        if (tr.multiply(*this) != iden)
+            return false;
+
+        return true;
+    }
+
+    bool upperTriangleMatrix() const requires (square) {
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = 0; r < c; r++) {
+                if (data[c][r] != 0)
+                    return false;
+            }
+        }
+
+        return true;
+    }
+
+    bool lowerTriangleMatrix() const requires (square) {
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = c; r < ROWS; r++) {
+                if (data[c][r] != 0)
+                    return false;
+            }
+        }
+
+        return true;
+    }
+
+    bool diagonalMatrix() const requires (square) {
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = 0; r < ROWS; r++) {
+                if (c == r)
+                    continue;
+
+                if (data[c][r] != 0)
+                    return false;
+            }
+        }
+
+        return true;
     }
 
 #pragma region Decomposiitons
@@ -1422,7 +1385,7 @@ struct Matrix {
     };
 
     CholeskyDecomposition<Matrix<COLUMNS, ROWS, T>, Matrix<ROWS, COLUMNS, T>> choleskyDecomposition(bool allowPositiveSemiDefinite = false) const requires (square) {
-        if (!hermitian()) {
+        if ((IsComplex<T>::value && !hermitian()) || (!IsComplex<T>::value && !symmetrical())) {
             throw std::runtime_error("Cannot find Cholesky Decomposition of non hermitian/symmetric matrix");
         }
 
