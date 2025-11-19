@@ -1,4 +1,7 @@
 #pragma once
+#include <complex>
+
+#include "complex.h"
 #include "rotation.h"
 
 template<typename T, typename U>
@@ -432,5 +435,20 @@ struct Vector {
 
     Vector<N, T> projection(const Vector<N, T>& other) {
         return (componentDot(other) / other.componentDot(other)) * other;
+    }
+
+    Vector<N, T> normalize() const {
+        return *this / magnitude();
+    }
+
+    Vector<N, T> conjugate() const requires (IsComplex<T>::value) {
+        Vector<N, T> result;
+
+        for (int i = 0; i < N; i++) {
+            result[i].real = data[i].real;
+            result[i].imag = data[i].imag;
+        }
+
+        return result;
     }
 };

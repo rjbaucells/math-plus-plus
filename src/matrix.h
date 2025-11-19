@@ -6,11 +6,9 @@
 #include <stdexcept>
 #include <string>
 #include "complex.h"
-
-#include "rotation.h"
 #include "vector.h"
 
-template<int COLUMNS, int ROWS, typename T = float> requires (std::is_arithmetic_v<T>)
+template<int COLUMNS, int ROWS, typename T = float>
 struct Matrix {
     static constexpr int rows = ROWS;
     static constexpr int columns = COLUMNS;
@@ -1554,4 +1552,99 @@ struct Matrix {
     }
 
 #pragma endregion
+
+    T rayleighQuotient(const Vector<COLUMNS, T>& x) {
+        if constexpr (IsComplex<T>::value) {
+            return (x.conjugate() * *this * x) / (x.conjugate() * x);
+        }
+        else {
+            return (x * *this * x) / x * x;
+        }
+    }
+
+    Matrix<COLUMNS, ROWS, T> cofactor() const requires (square) {
+        if constexpr (COLUMNS == 1) {
+            return 1;
+        }
+        else if constexpr (COLUMNS == 2) {
+            return {{data[1][1], -data[1][0]}, {-data[0][1], data[0][0]}};
+        }
+        else if constexpr (COLUMNS >= 3) {
+            Matrix<COLUMNS, ROWS, T> result;
+
+            int sign = 1;
+            for (int c = 0; c < COLUMNS; c++) {
+                for (int r = 0; r < ROWS; r++) {
+                    result[c][r] = getSubMatrix(c, r).determinant() * sign;
+                    sign *= -1;
+                }
+            }
+
+            return result;
+        }
+    }
+
+    Matrix<COLUMNS, ROWS, T> adjugate() const requires (square) {
+        return cofactor().transpose();
+    }
+
+    T getEigenValueGivenEigenVector(const Vector<COLUMNS, T>& v) {
+
+    }
+
+    template<typename EIGENVALUE_TYPE, typename EIGENVECTOR_TYPE>
+    struct BiggestEigenValueAndVector {
+        EIGENVALUE_TYPE eigenValue;
+        EIGENVECTOR_TYPE eigenVector;
+    };
+
+    BiggestEigenValueAndVector<T, Vector<COLUMNS, T>> biggestEigenValueAndVector(const T tolerance = 0.01, const int maxIterations = 100) const {
+        // approximation or just a random vector
+        Vector<COLUMNS, T> b;
+        for (int c = 0; c < COLUMNS; c++) {
+            b[c] = c;
+        }
+
+        for (int i = 0; i < maxIterations; i++) {
+            Vector<COLUMNS> b_i = multiply(b);
+
+            // if we have reached the tolerance
+            for (int c = 0; c < COLUMNS; c++) {
+                if (b_i[c] - b[c] < tolerance)
+                    return b_i;
+            }
+
+            // re-normalize
+            Vector<COLUMNS> normB_i = b_i.normalize();
+            b = b_i / normB_i;
+        }
+
+        return {getEigenValueGivenEigenVector(b), b};
+    }
 };
+
+template<int COLUMNS, int ROWS, typename T>
+Vector<COLUMNS, T> multiply(const Vector<COLUMNS, T>& v, const Matrix<COLUMNS, ROWS, T>& m) {
+    Vector<COLUMNS, T> result;
+
+    for (int c = 0; c < COLUMNS; c++) {
+        for (int r = 0; r < ROWS; r++) {
+            result[r] += v[c] * m.data[c][r];
+        }
+    }
+
+    return result;
+}
+
+template<int COLUMNS, int ROWS, typename T, typename OTHER_T>
+Vector<COLUMNS, T> multiply(const Vector<COLUMNS, OTHER_T>& v, const Matrix<COLUMNS, ROWS, T>& m) {
+    Vector<COLUMNS, T> result;
+
+    for (int c = 0; c < COLUMNS; c++) {
+        for (int r = 0; r < ROWS; r++) {
+            result[r] += v[c] * m.data[c][r];
+        }
+    }
+
+    return result;
+}
