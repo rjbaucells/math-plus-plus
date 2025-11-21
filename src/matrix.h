@@ -5,14 +5,27 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
-#include "complex.h"
+#include "helper.h"
 #include "vector.h"
 
-template<int COLUMNS, int ROWS, typename T = float>
+template<int COLUMNS, int ROWS, is_scalar_v T>
+struct Matrix;
+
+template<is_scalar_v T>
+struct IsMatrix : std::false_type {};
+
+template<int COLUMNS, int ROWS, is_scalar_v T>
+struct IsMatrix<Matrix<COLUMNS, ROWS, T>> : std::true_type {};
+
+template<int COLUMNS, int ROWS, is_scalar_v T = float>
 struct Matrix {
-    static constexpr int rows = ROWS;
     static constexpr int columns = COLUMNS;
-    static constexpr bool square = ROWS == COLUMNS;
+    static constexpr int rows = ROWS;
+
+    static constexpr bool isSquare = ROWS == COLUMNS;
+    static constexpr bool isComplex = is_complex_v<T>;
+
+    static constexpr T epsilon = ::epsilon<T>();
 
     T data[COLUMNS][ROWS] = {};
 
@@ -337,7 +350,7 @@ struct Matrix {
     }
 
     template<IsConvertableTo<T> OTHER_T>
-    Matrix<COLUMNS, ROWS, T>& operator*=(const OTHER_T& val) const {
+    Matrix<COLUMNS, ROWS, T>& operator*=(const OTHER_T& val) {
         return multiplyEquals(val);
     }
 
@@ -383,7 +396,7 @@ struct Matrix {
         return &data[index][0];
     }
 
-    Matrix<ROWS, COLUMNS, T> transpose() const requires (!IsComplex<T>::value) {
+    Matrix<ROWS, COLUMNS, T> transpose() const {
         Matrix<ROWS, COLUMNS, T> result;
 
         for (int c = 0; c < ROWS; c++) {
@@ -395,23 +408,27 @@ struct Matrix {
         return result;
     }
 
-    Matrix<ROWS, COLUMNS, T> conjugateTranspose() const requires (IsComplex<T>::value) {
-        Matrix<ROWS, COLUMNS, T> result;
-
-        for (int c = 0; c < ROWS; c++) {
-            for (int r = 0; r < COLUMNS; r++) {
-                result[c][r].real = data[r][c].real;
-                result[c][r].real = data[r][c].imag;
-            }
+    Matrix<ROWS, COLUMNS, T> conjugateTranspose() const {
+        if constexpr (!isComplex) {
+            return transpose();
         }
+        else {
+            Matrix<ROWS, COLUMNS, T> result;
 
-        return result;
+            for (int c = 0; c < ROWS; c++) {
+                for (int r = 0; r < COLUMNS; r++) {
+                    result[c][r] = std::conj(data[r][c]);
+                }
+            }
+
+            return result;
+        }
     }
 
-    Matrix<COLUMNS, ROWS, T> inverse() const requires (square) {
+    Matrix<COLUMNS, ROWS, T> inverse() const requires (isSquare) {
         // its a one by one, we can just return 1 / value
         if constexpr (ROWS == 1) {
-            if (data[0][0] == 0) {
+            if (compare(data[0][0], 0)) {
                 throw std::runtime_error("Cannot find inverse of singular matrix");
             }
 
@@ -425,7 +442,7 @@ struct Matrix {
         if constexpr (ROWS == 2) {
             T det = determinant();
 
-            if (det == 0) {
+            if (compare(det, 0)) {
                 throw std::runtime_error("Cannot find inverse of singular matrix");
             }
 
@@ -439,27 +456,27 @@ struct Matrix {
             return result;
         }
 
-        const Matrix<COLUMNS, ROWS, T> identityMatrix = Matrix<COLUMNS, ROWS, T>::identity();
-        Matrix<COLUMNS * 2, ROWS, T> temp;
+        const Matrix<COLUMNS, ROWS, T> identity = Matrix<COLUMNS, ROWS, T>::identity();
+        Matrix<COLUMNS * 2, ROWS, T> augmented;
 
         for (int c = 0; c < COLUMNS; c++) {
             for (int r = 0; r < ROWS; r++) {
-                temp[c][r] = data[c][r];
+                augmented[c][r] = data[c][r];
             }
         }
 
         for (int c = 0; c < COLUMNS; c++) {
             for (int r = 0; r < ROWS; r++) {
-                temp[c + COLUMNS][r] = identityMatrix[c][r];
+                augmented[c + COLUMNS][r] = identity[c][r];
             }
         }
 
         for (int c = 0; c < COLUMNS; c++) {
             // if the pivot is zero
-            if (temp[c][c] == 0) {
+            if (augmented[c][c] == 0) {
                 int rowIndex = -1;
                 for (int r = c + 1; r < ROWS; r++) {
-                    if (temp[c][r] != 0 && (rowIndex == -1 || std::abs(temp[c][r]) > std::abs(temp[c][rowIndex]))) {
+                    if (augmented[c][r] != 0 && (rowIndex == -1 || std::abs(augmented[c][r]) > std::abs(augmented[c][rowIndex]))) {
                         rowIndex = r;
                     }
                 }
@@ -469,15 +486,15 @@ struct Matrix {
                 }
 
                 // since c (column) = r (row), the dest row is at temp[row (aka, c}] the src row is the memory address of the start of the biggest row so &temp[c][biggestRow]
-                temp = temp.swapRows(c, rowIndex);
+                augmented = augmented.swapRows(c, rowIndex);
             }
 
             // normalize pivot row to 1
-            T value = temp[c][c];
-            for (int cc = c + 1; cc < temp.columns; cc++) {
-                temp[cc][c] /= value;
+            T value = augmented[c][c];
+            for (int cc = c + 1; cc < augmented.columns; cc++) {
+                augmented[cc][c] /= value;
             }
-            temp[c][c] = 1;
+            augmented[c][c] = 1;
 
             for (int r = 0; r < ROWS; r++) {
                 // the current value is on the main diagonal. (expected to be a 1). Should be good
@@ -486,11 +503,11 @@ struct Matrix {
                     continue;
                 }
                 // it isnt on the main diagonal, (expected to be a 0)
-                T k = temp[c][r];
-                for (int cc = c + 1; cc < temp.columns; cc++) {
-                    temp[cc][r] += -k * temp[cc][c];
+                T k = augmented[c][r];
+                for (int cc = c + 1; cc < augmented.columns; cc++) {
+                    augmented[cc][r] += -k * augmented[cc][c];
                 }
-                temp[c][r] = 0;
+                augmented[c][r] = 0;
             }
         }
 
@@ -498,14 +515,14 @@ struct Matrix {
 
         for (int c = 0; c < COLUMNS; ++c) {
             for (int r = 0; r < ROWS; r++) {
-                result[c][r] = temp[c + COLUMNS][r];
+                result[c][r] = augmented[c + COLUMNS][r];
             }
         }
 
         return result;
     }
 
-    T determinant() const requires (square) {
+    T determinant() const requires (isSquare) {
         if constexpr (ROWS == 1) {
             return data[0][0];
         }
@@ -532,9 +549,9 @@ struct Matrix {
         // identity
         Matrix<4, 4, T> transformation = Matrix<4, 4, T>::identity();
         // transformation
-        transformation.data[0][0] = 2.0f / (right - left);
-        transformation.data[1][1] = 2.0f / (top - bottom);
-        transformation.data[2][2] = -2.0f / (far - near);
+        transformation.data[0][0] = 2 / (right - left);
+        transformation.data[1][1] = 2 / (top - bottom);
+        transformation.data[2][2] = -2 / (far - near);
         transformation.data[3][0] = -(right + left) / (right - left);
         transformation.data[3][1] = -(top + bottom) / (top - bottom);
         transformation.data[3][2] = -(far + near) / (far - near);
@@ -555,8 +572,7 @@ struct Matrix {
         return result;
     }
 
-    template<IsConvertableTo<T> OTHER_T>
-    Vector<COLUMNS, T> operator*(const Vector<COLUMNS, OTHER_T>& other) {
+    Vector<COLUMNS, T> operator*(const Vector<COLUMNS, T>& other) {
         return multiply(other);
     }
 
@@ -573,7 +589,8 @@ struct Matrix {
         return result;
     }
 
-    Vector<COLUMNS, T> operator*(const Vector<COLUMNS, T>& other) {
+    template<IsConvertableTo<T> OTHER_T>
+    Vector<COLUMNS, T> operator*(const Vector<COLUMNS, OTHER_T>& other) {
         return multiply(other);
     }
 
@@ -717,7 +734,7 @@ struct Matrix {
         return &data[0][0];
     }
 
-    static Matrix<COLUMNS, ROWS, T> identity() requires (square) {
+    static Matrix<COLUMNS, ROWS, T> identity() requires (isSquare) {
         Matrix<COLUMNS, ROWS, T> result;
 
         for (int i = 0; i < COLUMNS; i++) {
@@ -735,19 +752,19 @@ struct Matrix {
 
             for (int c = 0; c < COLUMNS; c++) {
                 // this is a pivot
-                if (!foundNonZero && data[c][r] != 0) {
+                if (!foundNonZero && !compare(data[c][r], 0)) {
                     // this is to the left of the last pivot
                     if (c < lastPivotColumn)
                         return false;
 
                     // the pivot must be one and it isn't
-                    if (data[c][r] != 1 && pivotMustBeOne)
+                    if (!compare(data[c][r], 1) && pivotMustBeOne)
                         return false;
 
                     lastPivotColumn = c;
                 }
 
-                if (data[c][r] != 0)
+                if (!compare(data[c][r], 0))
                     foundNonZero = true;
             }
 
@@ -817,25 +834,25 @@ struct Matrix {
 
             for (int c = 0; c < COLUMNS; c++) {
                 // this is a pivot
-                if (!foundNonZero && data[c][r] != 0) {
+                if (!foundNonZero && !compare(data[c][r], 0)) {
                     // this is to the left of the last pivot
                     if (c < lastPivotColumn)
                         return false;
 
                     // the pivot isn't 1
-                    if (data[c][r] != 1)
+                    if (!compare(data[c][r], 1))
                         return false;
 
                     // check that no other number in that column is a nonzero value
                     for (int i = 0; i < ROWS; i++) {
-                        if (data[c][i] != 0 && data[c][i] != data[c][r])
+                        if (!compare(data[c][i], 0) && !compare(data[c][i], data[c][r]))
                             return false;
                     }
 
                     lastPivotColumn = c;
                 }
 
-                if (data[c][r] != 0)
+                if (!compare(data[c][r], 0))
                     foundNonZero = true;
             }
 
@@ -911,14 +928,14 @@ struct Matrix {
         int result = 0;
 
         for (int r = 0; r < ROWS; r++) {
-            if (ref[0][r] != 0) {
+            if (!compare(ref[0][r], 0)) {
                 result++;
             }
             else {
                 bool nonZero = false;
 
                 for (int c = 0; c < COLUMNS; c++) {
-                    if (ref[c][r] != 0) {
+                    if (!compare(ref[c][r], 0)) {
                         nonZero = true;
                         break;
                     }
@@ -932,14 +949,14 @@ struct Matrix {
         return result;
     }
 
-    bool symmetrical() const requires (!IsComplex<T>::value && square) {
+    bool isSymmetrical() const requires (!isComplex && isSquare) {
         return *this == transpose();
     }
 
-    bool skewSymmetrical() const requires (!IsComplex<T>::value && square) {
+    bool isSkewSymmetrical() const requires (!isComplex && isSquare) {
         for (int c = 0; c < COLUMNS; c++) {
             for (int r = 0; r < ROWS; r++) {
-                if (data[r][c] != -data[c][r])
+                if (!compare(data[r][c], -data[c][r]))
                     return false;
             }
         }
@@ -947,12 +964,10 @@ struct Matrix {
         return true;
     }
 
-    bool hermitian() const requires (IsComplex<T>::value && square) {
-        auto ts = conjugateTranspose();
-
+    bool isHermitian() const requires (isComplex && isSquare) {
         for (int c = 0; c < COLUMNS; c++) {
             for (int r = 0; r < ROWS; r++) {
-                if (data[c][r] != ts[c][r]) {
+                if (!compare(data[c][r], std::conj(data[r][c]))) {
                     return false;
                 }
             }
@@ -961,13 +976,10 @@ struct Matrix {
         return true;
     }
 
-    bool skewHermitian() const requires (IsComplex<T>::value && square) {
+    bool isSkewHermitian() const requires (isComplex && isSquare) {
         for (int c = 0; c < COLUMNS; c++) {
             for (int r = 0; r < ROWS; r++) {
-                T complexConjugate = data[c][r];
-                complexConjugate.imag *= -1;
-
-                if (data[r][c] != -complexConjugate)
+                if (!compare(data[c][r], -std::conj(data[r][c])))
                     return false;
             }
         }
@@ -975,7 +987,7 @@ struct Matrix {
         return true;
     }
 
-    bool positiveDefinite() const requires (square) {
+    bool isPositiveDefinite() const requires (isSquare) {
         for (int c = 0; c < COLUMNS; c++) {
             Vector<ROWS> x;
 
@@ -983,7 +995,7 @@ struct Matrix {
                 x[r] = data[c][r];
             }
 
-            if (!(x.componentDot(x) > 0)) {
+            if (x.componentDot(x) <= 0) {
                 return false;
             }
         }
@@ -991,7 +1003,7 @@ struct Matrix {
         return true;
     }
 
-    bool positiveSemiDefinite() const requires (square) {
+    bool isPositiveSemiDefinite() const requires (isSquare) {
         for (int c = 0; c < COLUMNS; c++) {
             Vector<ROWS> x;
 
@@ -999,7 +1011,7 @@ struct Matrix {
                 x[r] = data[c][r];
             }
 
-            if (!(x.componentDot(x) >= 0)) {
+            if (x.componentDot(x) < 0) {
                 return false;
             }
         }
@@ -1007,7 +1019,7 @@ struct Matrix {
         return true;
     }
 
-    bool negativeDefinite() const requires (square) {
+    bool isNegativeDefinite() const requires (isSquare) {
         for (int c = 0; c < COLUMNS; c++) {
             Vector<ROWS> x;
 
@@ -1015,7 +1027,7 @@ struct Matrix {
                 x[r] = data[c][r];
             }
 
-            if (!(x.componentDot(x) < 0)) {
+            if (x.componentDot(x) >= 0) {
                 return false;
             }
         }
@@ -1023,7 +1035,7 @@ struct Matrix {
         return true;
     }
 
-    bool negativeSemiDefinite() const requires (square) {
+    bool isNegativeSemiDefinite() const requires (isSquare) {
         for (int c = 0; c < COLUMNS; c++) {
             Vector<ROWS> x;
 
@@ -1031,7 +1043,7 @@ struct Matrix {
                 x[r] = data[c][r];
             }
 
-            if (!(x.componentDot(x) <= 0)) {
+            if (x.componentDot(x) > 0) {
                 return false;
             }
         }
@@ -1063,7 +1075,7 @@ struct Matrix {
         return vecs;
     }
 
-    T trace() const requires (square) {
+    T trace() const requires (isSquare) {
         T sum = {};
 
         for (int c = 0; c < COLUMNS; c++) {
@@ -1073,7 +1085,7 @@ struct Matrix {
         return sum;
     }
 
-    bool unitary() const requires (IsComplex<T>::value && square) {
+    bool isUnitary() const requires (isComplex && isSquare) {
         auto iden = identity();
         auto tr = conjugateTranspose();
 
@@ -1086,7 +1098,7 @@ struct Matrix {
         return true;
     }
 
-    bool specialUnitary() const requires (IsComplex<T>::value && square) {
+    bool isSpecialUnitary() const requires (isComplex && isSquare) {
         auto iden = identity();
         auto tr = conjugateTranspose();
 
@@ -1099,7 +1111,7 @@ struct Matrix {
         return determinant() == 1;
     }
 
-    bool orthogonal() const requires (!IsComplex<T>::value && square) {
+    bool isOrthogonal() const requires (!isComplex && isSquare) {
         auto iden = identity();
         auto tr = transpose();
 
@@ -1112,10 +1124,10 @@ struct Matrix {
         return true;
     }
 
-    bool upperTriangleMatrix() const requires (square) {
+    bool isUpperTriangleMatrix() const requires (isSquare) {
         for (int c = 0; c < COLUMNS; c++) {
             for (int r = 0; r < c; r++) {
-                if (data[c][r] != 0)
+                if (!compare(data[c][r], 0))
                     return false;
             }
         }
@@ -1123,10 +1135,13 @@ struct Matrix {
         return true;
     }
 
-    bool lowerTriangleMatrix() const requires (square) {
+    bool isLowerTriangleMatrix() const requires (isSquare) {
         for (int c = 0; c < COLUMNS; c++) {
             for (int r = c; r < ROWS; r++) {
-                if (data[c][r] != 0)
+                if (c == r)
+                    continue;
+
+                if (!compare(data[c][r], 0))
                     return false;
             }
         }
@@ -1134,14 +1149,95 @@ struct Matrix {
         return true;
     }
 
-    bool diagonalMatrix() const requires (square) {
+    bool isDiagonalMatrix() const requires (isSquare) {
         for (int c = 0; c < COLUMNS; c++) {
             for (int r = 0; r < ROWS; r++) {
                 if (c == r)
                     continue;
 
-                if (data[c][r] != 0)
+                if (!compare(data[c][r], 0))
                     return false;
+            }
+        }
+
+        return true;
+    }
+
+    bool isUpperUnitriangularMatrix() const requires (isSquare) {
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = 0; r <= c; r++) {
+                if (c == r) {
+                    if (!compare(data[c][r], 1)) {
+                        return false;
+                    }
+                }
+                else if (!compare(data[c][r], 0)) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    bool isLowerUnitriangularMatrix() const requires (isSquare) {
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = c; r < ROWS; r++) {
+                if (c == r) {
+                    if (!compare(data[c][r], 1)) {
+                        return false;
+                    }
+                }
+                else if (!compare(data[c][r], 0))
+                    return false;
+            }
+        }
+
+        return true;
+    }
+
+    bool isStrictlyUpperTriangularMatrix() const requires (isSquare) {
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = 0; r <= c; r++) {
+                if (!compare(data[c][r], 0)) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    bool isStrictlyLowerTriangularMatrix() const requires (isSquare) {
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = c; r < ROWS; r++) {
+                if (!compare(data[c][r], 0))
+                    return false;
+            }
+        }
+
+        return true;
+    }
+
+    bool isFrobeniusMatrix() const requires (isSquare) {
+        int columnWithNonZero = -1;
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = 0; r < ROWS; r++) {
+                // not a one on diagonal
+                if (c == r && !compare(data[c][r], 1)) {
+                    return false;
+                }
+                if (!compare(data[c][r], 0)) {
+                    // its above
+                    if (r <= c)
+                        return false;
+
+                    // too many columns with nonzero
+                    if (columnWithNonZero != c)
+                        return false;
+
+                    columnWithNonZero = c;
+                }
             }
         }
 
@@ -1382,8 +1478,8 @@ struct Matrix {
         L_TRANSPOSE_TYPE lTranspose;
     };
 
-    CholeskyDecomposition<Matrix<COLUMNS, ROWS, T>, Matrix<ROWS, COLUMNS, T>> choleskyDecomposition(bool allowPositiveSemiDefinite = false) const requires (square) {
-        if ((IsComplex<T>::value && !hermitian()) || (!IsComplex<T>::value && !symmetrical())) {
+    CholeskyDecomposition<Matrix<COLUMNS, ROWS, T>, Matrix<ROWS, COLUMNS, T>> choleskyDecomposition(const bool allowPositiveSemiDefinite = false) const requires (isSquare) {
+        if ((isComplex && !isHermitian()) || (!isComplex && !isSymmetrical())) {
             throw std::runtime_error("Cannot find Cholesky Decomposition of non hermitian/symmetric matrix");
         }
 
@@ -1391,7 +1487,7 @@ struct Matrix {
 
         for (int c = 0; c < COLUMNS; c++) {
             for (int r = 0; r <= c; r++) {
-                if constexpr (!IsComplex<T>::value) {
+                if constexpr (!isComplex) {
                     if (r == c) {
                         T value = data[c][c];
 
@@ -1416,7 +1512,7 @@ struct Matrix {
                             value -= l[k][r] * l[k][c];
                         }
 
-                        l[c][r] = (1 / l[c][c]) * value;
+                        l[c][r] = value / l[c][c];
                     }
                 }
                 else {
@@ -1464,13 +1560,13 @@ struct Matrix {
         L_TRANSPOSE_TYPE lTranspose;
     };
 
-    LDLDecomposition<Matrix<COLUMNS, ROWS, T>, Matrix<COLUMNS, ROWS, T>, Matrix<ROWS, COLUMNS, T>> ldlDecomposition() const requires (square) {
+    LDLDecomposition<Matrix<COLUMNS, ROWS, T>, Matrix<COLUMNS, ROWS, T>, Matrix<ROWS, COLUMNS, T>> ldlDecomposition() const requires (isSquare) {
         Matrix<COLUMNS, ROWS, T> l;
         Matrix<COLUMNS, ROWS, T> d;
 
         for (int c = 0; c < COLUMNS; c++) {
             for (int r = 0; r <= c; r++) {
-                if constexpr (!IsComplex<T>::value) {
+                if constexpr (!isComplex) {
                     if (r == c) {
                         T value = data[c][c];
 
@@ -1527,7 +1623,7 @@ struct Matrix {
         R_TYPE r;
     };
 
-    QRDecomposition<Matrix<ROWS, ROWS, T>, Matrix<COLUMNS, ROWS, T>> qrDecomposition() const requires (square) {
+    QRDecomposition<Matrix<ROWS, ROWS, T>, Matrix<COLUMNS, ROWS, T>> qrDecomposition() const requires (isSquare) {
         std::array<Vector<ROWS>, COLUMNS> a = getColumnVectors();
         std::array<Vector<ROWS>, COLUMNS> u = {};
         Matrix<ROWS, ROWS, T> q;
@@ -1553,73 +1649,40 @@ struct Matrix {
 
 #pragma endregion
 
-    T rayleighQuotient(const Vector<COLUMNS, T>& x) {
-        if constexpr (IsComplex<T>::value) {
-            return (x.conjugate() * *this * x) / (x.conjugate() * x);
-        }
-        else {
-            return (x * *this * x) / x * x;
-        }
+    T minor(const int c, const int r) const requires (isSquare) {
+        return getSubMatrix(c, r).determinant();
     }
 
-    Matrix<COLUMNS, ROWS, T> cofactor() const requires (square) {
-        if constexpr (COLUMNS == 1) {
-            return 1;
-        }
-        else if constexpr (COLUMNS == 2) {
-            return {{data[1][1], -data[1][0]}, {-data[0][1], data[0][0]}};
-        }
-        else if constexpr (COLUMNS >= 3) {
-            Matrix<COLUMNS, ROWS, T> result;
+    Matrix<COLUMNS, ROWS, T> minor() const requires (isSquare) {
+        Matrix<COLUMNS, ROWS, T> result;
 
-            int sign = 1;
-            for (int c = 0; c < COLUMNS; c++) {
-                for (int r = 0; r < ROWS; r++) {
-                    result[c][r] = getSubMatrix(c, r).determinant() * sign;
-                    sign *= -1;
-                }
-            }
-
-            return result;
-        }
-    }
-
-    Matrix<COLUMNS, ROWS, T> adjugate() const requires (square) {
-        return cofactor().transpose();
-    }
-
-    T getEigenValueGivenEigenVector(const Vector<COLUMNS, T>& v) {
-
-    }
-
-    template<typename EIGENVALUE_TYPE, typename EIGENVECTOR_TYPE>
-    struct BiggestEigenValueAndVector {
-        EIGENVALUE_TYPE eigenValue;
-        EIGENVECTOR_TYPE eigenVector;
-    };
-
-    BiggestEigenValueAndVector<T, Vector<COLUMNS, T>> biggestEigenValueAndVector(const T tolerance = 0.01, const int maxIterations = 100) const {
-        // approximation or just a random vector
-        Vector<COLUMNS, T> b;
         for (int c = 0; c < COLUMNS; c++) {
-            b[c] = c;
-        }
-
-        for (int i = 0; i < maxIterations; i++) {
-            Vector<COLUMNS> b_i = multiply(b);
-
-            // if we have reached the tolerance
-            for (int c = 0; c < COLUMNS; c++) {
-                if (b_i[c] - b[c] < tolerance)
-                    return b_i;
+            for (int r = 0; r < ROWS; r++) {
+                result[c][r] = minor(c, r);
             }
-
-            // re-normalize
-            Vector<COLUMNS> normB_i = b_i.normalize();
-            b = b_i / normB_i;
         }
 
-        return {getEigenValueGivenEigenVector(b), b};
+        return result;
+    }
+
+    T cofactor(const int c, const int r) const requires (isSquare) {
+        return minor(c, r) * std::pow(-1, c + r);
+    }
+
+    Matrix<COLUMNS, ROWS, T> cofactor() const requires (isSquare) {
+        Matrix<COLUMNS, ROWS, T> result;
+
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = 0; r < ROWS; r++) {
+                result[c][r] = cofactor(c, r);
+            }
+        }
+
+        return result;
+    }
+
+    Matrix<ROWS, COLUMNS, T> adjoint() const requires (isSquare) {
+        return cofactor().transpose();
     }
 };
 
@@ -1647,4 +1710,14 @@ Vector<COLUMNS, T> multiply(const Vector<COLUMNS, OTHER_T>& v, const Matrix<COLU
     }
 
     return result;
+}
+
+template<int COLUMNS, int ROWS, typename T>
+Matrix<COLUMNS, ROWS, T> divide(const T& lhs, const Matrix<COLUMNS, ROWS, T>& rhs) {
+    return rhs.inverse() * lhs;
+}
+
+template<int COLUMNS, int ROWS, typename T, typename OTHER_T>
+Matrix<COLUMNS, ROWS, T> divide(const OTHER_T& lhs, const Matrix<COLUMNS, ROWS, T>& rhs) {
+    return rhs.inverse() * lhs;
 }

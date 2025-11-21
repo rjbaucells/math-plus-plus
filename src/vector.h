@@ -1,7 +1,7 @@
 #pragma once
 #include <complex>
 
-#include "complex.h"
+#include "helper.h"
 #include "rotation.h"
 
 template<typename T, typename U>
@@ -441,7 +441,7 @@ struct Vector {
         return *this / magnitude();
     }
 
-    Vector<N, T> conjugate() const requires (IsComplex<T>::value) {
+    Vector<N, T> conjugate() const requires (is_complex<T>::value) {
         Vector<N, T> result;
 
         for (int i = 0; i < N; i++) {

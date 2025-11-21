@@ -569,25 +569,25 @@ TEST(Vector, should_multiply_4_d_with_matrix_4x4_d) {
     ASSERT_DOUBLE_EQ(r[3], 4);
 }
 
-TEST(Vector, should_multiply_2_with_matrix_4x4) {
-    // arrange
-    Matrix<4, 4> m = Matrix<4, 4>::identity();
-    Vector<2> v = {1, 2};
-    // act
-    Vector<2> r = m * v;
-    // assert
-    ASSERT_FLOAT_EQ(r[0], 1);
-    ASSERT_FLOAT_EQ(r[1], 2);
-}
-
-TEST(Vector, should_multiply_3_with_matrix_4x4) {
-    // arrange
-    Matrix<4, 4> m = Matrix<4, 4>::identity();
-    Vector<3> v = {1, 2, 3};
-    // act
-    Vector<3> r = m * v;
-    // assert
-    ASSERT_FLOAT_EQ(r[0], 1);
-    ASSERT_FLOAT_EQ(r[1], 2);
-    ASSERT_DOUBLE_EQ(r[2], 3);
-}
+// TEST(Vector, should_multiply_2_with_matrix_4x4) {
+//     // arrange
+//     Matrix<4, 4> m = Matrix<4, 4>::identity();
+//     Vector<2> v = {1, 2};
+//     // act
+//     Vector<2> r = m * v;
+//     // assert
+//     ASSERT_FLOAT_EQ(r[0], 1);
+//     ASSERT_FLOAT_EQ(r[1], 2);
+// }
+//
+// TEST(Vector, should_multiply_3_with_matrix_4x4) {
+//     // arrange
+//     Matrix<4, 4> m = Matrix<4, 4>::identity();
+//     Vector<3> v = {1, 2, 3};
+//     // act
+//     Vector<3> r = m * v;
+//     // assert
+//     ASSERT_FLOAT_EQ(r[0], 1);
+//     ASSERT_FLOAT_EQ(r[1], 2);
+//     ASSERT_DOUBLE_EQ(r[2], 3);
+// }

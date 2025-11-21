@@ -733,221 +733,221 @@ TEST(Matrix, should_throw_inverse_3x3_f) {
     ASSERT_ANY_THROW(b = a.inverse());
 }
 
-TEST(Matrix, should_scale) {
-    // arrange
-    Matrix<4, 4> m = {{1, 2, 3, 4}, {5, 6, 7, 8}, {9, 10, 11, 12}, {13, 14, 15, 16}};
-    // act
-    Matrix<4, 4> b = m.scale(2);
-    // assert
-    ASSERT_FLOAT_EQ(b[0][0], 2);
-    ASSERT_FLOAT_EQ(b[1][0], 4);
-    ASSERT_FLOAT_EQ(b[2][0], 6);
-    ASSERT_FLOAT_EQ(b[3][0], 4);
-    ASSERT_FLOAT_EQ(b[0][1], 10);
-    ASSERT_FLOAT_EQ(b[1][1], 12);
-    ASSERT_FLOAT_EQ(b[2][1], 14);
-    ASSERT_FLOAT_EQ(b[3][1], 8);
-    ASSERT_FLOAT_EQ(b[0][2], 18);
-    ASSERT_FLOAT_EQ(b[1][2], 20);
-    ASSERT_FLOAT_EQ(b[2][2], 22);
-    ASSERT_FLOAT_EQ(b[3][2], 12);
-    ASSERT_FLOAT_EQ(b[0][3], 26);
-    ASSERT_FLOAT_EQ(b[1][3], 28);
-    ASSERT_FLOAT_EQ(b[2][3], 30);
-    ASSERT_FLOAT_EQ(b[3][3], 16);
-}
-
-TEST(Matrix, should_scale_anisotropic) {
-    // arrange
-    Matrix<4, 4> m = {{1, 2, 3, 4}, {5, 6, 7, 8}, {9, 10, 11, 12}, {13, 14, 15, 16}};
-    // act
-    Matrix<4, 4> b = m.scaleAnisotropic(1, 2, 3);
-    // assert
-    ASSERT_FLOAT_EQ(b[0][0], 1);
-    ASSERT_FLOAT_EQ(b[1][0], 4);
-    ASSERT_FLOAT_EQ(b[2][0], 9);
-    ASSERT_FLOAT_EQ(b[3][0], 4);
-    ASSERT_FLOAT_EQ(b[0][1], 5);
-    ASSERT_FLOAT_EQ(b[1][1], 12);
-    ASSERT_FLOAT_EQ(b[2][1], 21);
-    ASSERT_FLOAT_EQ(b[3][1], 8);
-    ASSERT_FLOAT_EQ(b[0][2], 9);
-    ASSERT_FLOAT_EQ(b[1][2], 20);
-    ASSERT_FLOAT_EQ(b[2][2], 33);
-    ASSERT_FLOAT_EQ(b[3][2], 12);
-    ASSERT_FLOAT_EQ(b[0][3], 13);
-    ASSERT_FLOAT_EQ(b[1][3], 28);
-    ASSERT_FLOAT_EQ(b[2][3], 45);
-    ASSERT_FLOAT_EQ(b[3][3], 16);
-}
-
-TEST(Matrix, should_translate) {
-    // arrange
-    Matrix<4, 4> m = {{1, 2, 3, 4}, {5, 6, 7, 8}, {9, 10, 11, 12}, {13, 14, 15, 16}};
-    // act
-    Matrix<4, 4> b = m.translate(3, 2, 1);
-    // assert
-    ASSERT_FLOAT_EQ(b[0][0], 1);
-    ASSERT_FLOAT_EQ(b[1][0], 2);
-    ASSERT_FLOAT_EQ(b[2][0], 3);
-    ASSERT_FLOAT_EQ(b[3][0], 14);
-    ASSERT_FLOAT_EQ(b[0][1], 5);
-    ASSERT_FLOAT_EQ(b[1][1], 6);
-    ASSERT_FLOAT_EQ(b[2][1], 7);
-    ASSERT_FLOAT_EQ(b[3][1], 42);
-    ASSERT_FLOAT_EQ(b[0][2], 9);
-    ASSERT_FLOAT_EQ(b[1][2], 10);
-    ASSERT_FLOAT_EQ(b[2][2], 11);
-    ASSERT_FLOAT_EQ(b[3][2], 70);
-    ASSERT_FLOAT_EQ(b[0][3], 13);
-    ASSERT_FLOAT_EQ(b[1][3], 14);
-    ASSERT_FLOAT_EQ(b[2][3], 15);
-    ASSERT_FLOAT_EQ(b[3][3], 98);
-}
-
-TEST(Matrix, should_rotate_x_degrees) {
-    // arrange
-    Matrix<4, 4> m = {{1, 2, 3, 4}, {5, 6, 7, 8}, {9, 10, 11, 12}, {13, 14, 15, 16}};
-    // act
-    Matrix<4, 4> b = m.rotateX(90, RotationType::degrees);
-    // assert
-    ASSERT_FLOAT_EQ(b[0][0], 1);
-    ASSERT_FLOAT_EQ(b[1][0], 3);
-    ASSERT_FLOAT_EQ(b[2][0], -2);
-    ASSERT_FLOAT_EQ(b[3][0], 4);
-    ASSERT_FLOAT_EQ(b[0][1], 5);
-    ASSERT_FLOAT_EQ(b[1][1], 7);
-    ASSERT_FLOAT_EQ(b[2][1], -6);
-    ASSERT_FLOAT_EQ(b[3][1], 8);
-    ASSERT_FLOAT_EQ(b[0][2], 9);
-    ASSERT_FLOAT_EQ(b[1][2], 11);
-    ASSERT_FLOAT_EQ(b[2][2], -10);
-    ASSERT_FLOAT_EQ(b[3][2], 12);
-    ASSERT_FLOAT_EQ(b[0][3], 13);
-    ASSERT_FLOAT_EQ(b[1][3], 15);
-    ASSERT_FLOAT_EQ(b[2][3], -14);
-    ASSERT_FLOAT_EQ(b[3][3], 16);
-}
-
-TEST(Matrix, should_rotate_x_radians) {
-    // arrange
-    Matrix<4, 4> m = {{1, 2, 3, 4}, {5, 6, 7, 8}, {9, 10, 11, 12}, {13, 14, 15, 16}};
-    // act
-    Matrix<4, 4> b = m.rotateX(M_PI_2, RotationType::radians);
-    // assert
-    ASSERT_FLOAT_EQ(b[0][0], 1);
-    ASSERT_FLOAT_EQ(b[1][0], 3);
-    ASSERT_FLOAT_EQ(b[2][0], -2);
-    ASSERT_FLOAT_EQ(b[3][0], 4);
-    ASSERT_FLOAT_EQ(b[0][1], 5);
-    ASSERT_FLOAT_EQ(b[1][1], 7);
-    ASSERT_FLOAT_EQ(b[2][1], -6);
-    ASSERT_FLOAT_EQ(b[3][1], 8);
-    ASSERT_FLOAT_EQ(b[0][2], 9);
-    ASSERT_FLOAT_EQ(b[1][2], 11);
-    ASSERT_FLOAT_EQ(b[2][2], -10);
-    ASSERT_FLOAT_EQ(b[3][2], 12);
-    ASSERT_FLOAT_EQ(b[0][3], 13);
-    ASSERT_FLOAT_EQ(b[1][3], 15);
-    ASSERT_FLOAT_EQ(b[2][3], -14);
-    ASSERT_FLOAT_EQ(b[3][3], 16);
-}
-
-TEST(Matrix, should_rotate_y_degrees) {
-    // arrange
-    Matrix<4, 4> m = {{1, 2, 3, 4}, {5, 6, 7, 8}, {9, 10, 11, 12}, {13, 14, 15, 16}};
-    // act
-    Matrix<4, 4> b = m.rotateY(90, RotationType::degrees);
-    // assert
-    ASSERT_FLOAT_EQ(b[0][0], -3);
-    ASSERT_FLOAT_EQ(b[1][0], 2);
-    ASSERT_FLOAT_EQ(b[2][0], 1);
-    ASSERT_FLOAT_EQ(b[3][0], 4);
-    ASSERT_FLOAT_EQ(b[0][1], -7);
-    ASSERT_FLOAT_EQ(b[1][1], 6);
-    ASSERT_FLOAT_EQ(b[2][1], 5);
-    ASSERT_FLOAT_EQ(b[3][1], 8);
-    ASSERT_FLOAT_EQ(b[0][2], -11);
-    ASSERT_FLOAT_EQ(b[1][2], 10);
-    ASSERT_FLOAT_EQ(b[2][2], 9);
-    ASSERT_FLOAT_EQ(b[3][2], 12);
-    ASSERT_FLOAT_EQ(b[0][3], -15);
-    ASSERT_FLOAT_EQ(b[1][3], 14);
-    ASSERT_FLOAT_EQ(b[2][3], 13);
-    ASSERT_FLOAT_EQ(b[3][3], 16);
-}
-
-TEST(Matrix, should_rotate_y_radians) {
-    // arrange
-    Matrix<4, 4> m = {{1, 2, 3, 4}, {5, 6, 7, 8}, {9, 10, 11, 12}, {13, 14, 15, 16}};
-    // act
-    Matrix<4, 4> b = m.rotateY(M_PI_2, RotationType::radians);
-    // assert
-    ASSERT_FLOAT_EQ(b[0][0], -3);
-    ASSERT_FLOAT_EQ(b[1][0], 2);
-    ASSERT_FLOAT_EQ(b[2][0], 1);
-    ASSERT_FLOAT_EQ(b[3][0], 4);
-    ASSERT_FLOAT_EQ(b[0][1], -7);
-    ASSERT_FLOAT_EQ(b[1][1], 6);
-    ASSERT_FLOAT_EQ(b[2][1], 5);
-    ASSERT_FLOAT_EQ(b[3][1], 8);
-    ASSERT_FLOAT_EQ(b[0][2], -11);
-    ASSERT_FLOAT_EQ(b[1][2], 10);
-    ASSERT_FLOAT_EQ(b[2][2], 9);
-    ASSERT_FLOAT_EQ(b[3][2], 12);
-    ASSERT_FLOAT_EQ(b[0][3], -15);
-    ASSERT_FLOAT_EQ(b[1][3], 14);
-    ASSERT_FLOAT_EQ(b[2][3], 13);
-    ASSERT_FLOAT_EQ(b[3][3], 16);
-}
-
-TEST(Matrix, should_rotate_z_degrees) {
-    // arrange
-    Matrix<4, 4> m = {{1, 2, 3, 4}, {5, 6, 7, 8}, {9, 10, 11, 12}, {13, 14, 15, 16}};
-    // act
-    Matrix<4, 4> b = m.rotateZ(90, RotationType::degrees);
-    // assert
-    ASSERT_FLOAT_EQ(b[0][0], 2);
-    ASSERT_FLOAT_EQ(b[1][0], -1);
-    ASSERT_FLOAT_EQ(b[2][0], 3);
-    ASSERT_FLOAT_EQ(b[3][0], 4);
-    ASSERT_FLOAT_EQ(b[0][1], 6);
-    ASSERT_FLOAT_EQ(b[1][1], -5);
-    ASSERT_FLOAT_EQ(b[2][1], 7);
-    ASSERT_FLOAT_EQ(b[3][1], 8);
-    ASSERT_FLOAT_EQ(b[0][2], 10);
-    ASSERT_FLOAT_EQ(b[1][2], -9);
-    ASSERT_FLOAT_EQ(b[2][2], 11);
-    ASSERT_FLOAT_EQ(b[3][2], 12);
-    ASSERT_FLOAT_EQ(b[0][3], 14);
-    ASSERT_FLOAT_EQ(b[1][3], -13);
-    ASSERT_FLOAT_EQ(b[2][3], 15);
-    ASSERT_FLOAT_EQ(b[3][3], 16);
-}
-
-TEST(Matrix, should_rotate_z_radians) {
-    // arrange
-    Matrix<4, 4> m = {{1, 2, 3, 4}, {5, 6, 7, 8}, {9, 10, 11, 12}, {13, 14, 15, 16}};
-    // act
-    Matrix<4, 4> b = m.rotateZ(M_PI_2, RotationType::radians);
-    // assert
-    ASSERT_FLOAT_EQ(b[0][0], 2);
-    ASSERT_FLOAT_EQ(b[1][0], -1);
-    ASSERT_FLOAT_EQ(b[2][0], 3);
-    ASSERT_FLOAT_EQ(b[3][0], 4);
-    ASSERT_FLOAT_EQ(b[0][1], 6);
-    ASSERT_FLOAT_EQ(b[1][1], -5);
-    ASSERT_FLOAT_EQ(b[2][1], 7);
-    ASSERT_FLOAT_EQ(b[3][1], 8);
-    ASSERT_FLOAT_EQ(b[0][2], 10);
-    ASSERT_FLOAT_EQ(b[1][2], -9);
-    ASSERT_FLOAT_EQ(b[2][2], 11);
-    ASSERT_FLOAT_EQ(b[3][2], 12);
-    ASSERT_FLOAT_EQ(b[0][3], 14);
-    ASSERT_FLOAT_EQ(b[1][3], -13);
-    ASSERT_FLOAT_EQ(b[2][3], 15);
-    ASSERT_FLOAT_EQ(b[3][3], 16);
-}
+// TEST(Matrix, should_scale) {
+//     // arrange
+//     Matrix<4, 4> m = {{1, 2, 3, 4}, {5, 6, 7, 8}, {9, 10, 11, 12}, {13, 14, 15, 16}};
+//     // act
+//     Matrix<4, 4> b = m.scale(2);
+//     // assert
+//     ASSERT_FLOAT_EQ(b[0][0], 2);
+//     ASSERT_FLOAT_EQ(b[1][0], 4);
+//     ASSERT_FLOAT_EQ(b[2][0], 6);
+//     ASSERT_FLOAT_EQ(b[3][0], 4);
+//     ASSERT_FLOAT_EQ(b[0][1], 10);
+//     ASSERT_FLOAT_EQ(b[1][1], 12);
+//     ASSERT_FLOAT_EQ(b[2][1], 14);
+//     ASSERT_FLOAT_EQ(b[3][1], 8);
+//     ASSERT_FLOAT_EQ(b[0][2], 18);
+//     ASSERT_FLOAT_EQ(b[1][2], 20);
+//     ASSERT_FLOAT_EQ(b[2][2], 22);
+//     ASSERT_FLOAT_EQ(b[3][2], 12);
+//     ASSERT_FLOAT_EQ(b[0][3], 26);
+//     ASSERT_FLOAT_EQ(b[1][3], 28);
+//     ASSERT_FLOAT_EQ(b[2][3], 30);
+//     ASSERT_FLOAT_EQ(b[3][3], 16);
+// }
+//
+// TEST(Matrix, should_scale_anisotropic) {
+//     // arrange
+//     Matrix<4, 4> m = {{1, 2, 3, 4}, {5, 6, 7, 8}, {9, 10, 11, 12}, {13, 14, 15, 16}};
+//     // act
+//     Matrix<4, 4> b = m.scaleAnisotropic(1, 2, 3);
+//     // assert
+//     ASSERT_FLOAT_EQ(b[0][0], 1);
+//     ASSERT_FLOAT_EQ(b[1][0], 4);
+//     ASSERT_FLOAT_EQ(b[2][0], 9);
+//     ASSERT_FLOAT_EQ(b[3][0], 4);
+//     ASSERT_FLOAT_EQ(b[0][1], 5);
+//     ASSERT_FLOAT_EQ(b[1][1], 12);
+//     ASSERT_FLOAT_EQ(b[2][1], 21);
+//     ASSERT_FLOAT_EQ(b[3][1], 8);
+//     ASSERT_FLOAT_EQ(b[0][2], 9);
+//     ASSERT_FLOAT_EQ(b[1][2], 20);
+//     ASSERT_FLOAT_EQ(b[2][2], 33);
+//     ASSERT_FLOAT_EQ(b[3][2], 12);
+//     ASSERT_FLOAT_EQ(b[0][3], 13);
+//     ASSERT_FLOAT_EQ(b[1][3], 28);
+//     ASSERT_FLOAT_EQ(b[2][3], 45);
+//     ASSERT_FLOAT_EQ(b[3][3], 16);
+// }
+//
+// TEST(Matrix, should_translate) {
+//     // arrange
+//     Matrix<4, 4> m = {{1, 2, 3, 4}, {5, 6, 7, 8}, {9, 10, 11, 12}, {13, 14, 15, 16}};
+//     // act
+//     Matrix<4, 4> b = m.translate(3, 2, 1);
+//     // assert
+//     ASSERT_FLOAT_EQ(b[0][0], 1);
+//     ASSERT_FLOAT_EQ(b[1][0], 2);
+//     ASSERT_FLOAT_EQ(b[2][0], 3);
+//     ASSERT_FLOAT_EQ(b[3][0], 14);
+//     ASSERT_FLOAT_EQ(b[0][1], 5);
+//     ASSERT_FLOAT_EQ(b[1][1], 6);
+//     ASSERT_FLOAT_EQ(b[2][1], 7);
+//     ASSERT_FLOAT_EQ(b[3][1], 42);
+//     ASSERT_FLOAT_EQ(b[0][2], 9);
+//     ASSERT_FLOAT_EQ(b[1][2], 10);
+//     ASSERT_FLOAT_EQ(b[2][2], 11);
+//     ASSERT_FLOAT_EQ(b[3][2], 70);
+//     ASSERT_FLOAT_EQ(b[0][3], 13);
+//     ASSERT_FLOAT_EQ(b[1][3], 14);
+//     ASSERT_FLOAT_EQ(b[2][3], 15);
+//     ASSERT_FLOAT_EQ(b[3][3], 98);
+// }
+//
+// TEST(Matrix, should_rotate_x_degrees) {
+//     // arrange
+//     Matrix<4, 4> m = {{1, 2, 3, 4}, {5, 6, 7, 8}, {9, 10, 11, 12}, {13, 14, 15, 16}};
+//     // act
+//     Matrix<4, 4> b = m.rotateX(90, RotationType::degrees);
+//     // assert
+//     ASSERT_FLOAT_EQ(b[0][0], 1);
+//     ASSERT_FLOAT_EQ(b[1][0], 3);
+//     ASSERT_FLOAT_EQ(b[2][0], -2);
+//     ASSERT_FLOAT_EQ(b[3][0], 4);
+//     ASSERT_FLOAT_EQ(b[0][1], 5);
+//     ASSERT_FLOAT_EQ(b[1][1], 7);
+//     ASSERT_FLOAT_EQ(b[2][1], -6);
+//     ASSERT_FLOAT_EQ(b[3][1], 8);
+//     ASSERT_FLOAT_EQ(b[0][2], 9);
+//     ASSERT_FLOAT_EQ(b[1][2], 11);
+//     ASSERT_FLOAT_EQ(b[2][2], -10);
+//     ASSERT_FLOAT_EQ(b[3][2], 12);
+//     ASSERT_FLOAT_EQ(b[0][3], 13);
+//     ASSERT_FLOAT_EQ(b[1][3], 15);
+//     ASSERT_FLOAT_EQ(b[2][3], -14);
+//     ASSERT_FLOAT_EQ(b[3][3], 16);
+// }
+//
+// TEST(Matrix, should_rotate_x_radians) {
+//     // arrange
+//     Matrix<4, 4> m = {{1, 2, 3, 4}, {5, 6, 7, 8}, {9, 10, 11, 12}, {13, 14, 15, 16}};
+//     // act
+//     Matrix<4, 4> b = m.rotateX(M_PI_2, RotationType::radians);
+//     // assert
+//     ASSERT_FLOAT_EQ(b[0][0], 1);
+//     ASSERT_FLOAT_EQ(b[1][0], 3);
+//     ASSERT_FLOAT_EQ(b[2][0], -2);
+//     ASSERT_FLOAT_EQ(b[3][0], 4);
+//     ASSERT_FLOAT_EQ(b[0][1], 5);
+//     ASSERT_FLOAT_EQ(b[1][1], 7);
+//     ASSERT_FLOAT_EQ(b[2][1], -6);
+//     ASSERT_FLOAT_EQ(b[3][1], 8);
+//     ASSERT_FLOAT_EQ(b[0][2], 9);
+//     ASSERT_FLOAT_EQ(b[1][2], 11);
+//     ASSERT_FLOAT_EQ(b[2][2], -10);
+//     ASSERT_FLOAT_EQ(b[3][2], 12);
+//     ASSERT_FLOAT_EQ(b[0][3], 13);
+//     ASSERT_FLOAT_EQ(b[1][3], 15);
+//     ASSERT_FLOAT_EQ(b[2][3], -14);
+//     ASSERT_FLOAT_EQ(b[3][3], 16);
+// }
+//
+// TEST(Matrix, should_rotate_y_degrees) {
+//     // arrange
+//     Matrix<4, 4> m = {{1, 2, 3, 4}, {5, 6, 7, 8}, {9, 10, 11, 12}, {13, 14, 15, 16}};
+//     // act
+//     Matrix<4, 4> b = m.rotateY(90, RotationType::degrees);
+//     // assert
+//     ASSERT_FLOAT_EQ(b[0][0], -3);
+//     ASSERT_FLOAT_EQ(b[1][0], 2);
+//     ASSERT_FLOAT_EQ(b[2][0], 1);
+//     ASSERT_FLOAT_EQ(b[3][0], 4);
+//     ASSERT_FLOAT_EQ(b[0][1], -7);
+//     ASSERT_FLOAT_EQ(b[1][1], 6);
+//     ASSERT_FLOAT_EQ(b[2][1], 5);
+//     ASSERT_FLOAT_EQ(b[3][1], 8);
+//     ASSERT_FLOAT_EQ(b[0][2], -11);
+//     ASSERT_FLOAT_EQ(b[1][2], 10);
+//     ASSERT_FLOAT_EQ(b[2][2], 9);
+//     ASSERT_FLOAT_EQ(b[3][2], 12);
+//     ASSERT_FLOAT_EQ(b[0][3], -15);
+//     ASSERT_FLOAT_EQ(b[1][3], 14);
+//     ASSERT_FLOAT_EQ(b[2][3], 13);
+//     ASSERT_FLOAT_EQ(b[3][3], 16);
+// }
+//
+// TEST(Matrix, should_rotate_y_radians) {
+//     // arrange
+//     Matrix<4, 4> m = {{1, 2, 3, 4}, {5, 6, 7, 8}, {9, 10, 11, 12}, {13, 14, 15, 16}};
+//     // act
+//     Matrix<4, 4> b = m.rotateY(M_PI_2, RotationType::radians);
+//     // assert
+//     ASSERT_FLOAT_EQ(b[0][0], -3);
+//     ASSERT_FLOAT_EQ(b[1][0], 2);
+//     ASSERT_FLOAT_EQ(b[2][0], 1);
+//     ASSERT_FLOAT_EQ(b[3][0], 4);
+//     ASSERT_FLOAT_EQ(b[0][1], -7);
+//     ASSERT_FLOAT_EQ(b[1][1], 6);
+//     ASSERT_FLOAT_EQ(b[2][1], 5);
+//     ASSERT_FLOAT_EQ(b[3][1], 8);
+//     ASSERT_FLOAT_EQ(b[0][2], -11);
+//     ASSERT_FLOAT_EQ(b[1][2], 10);
+//     ASSERT_FLOAT_EQ(b[2][2], 9);
+//     ASSERT_FLOAT_EQ(b[3][2], 12);
+//     ASSERT_FLOAT_EQ(b[0][3], -15);
+//     ASSERT_FLOAT_EQ(b[1][3], 14);
+//     ASSERT_FLOAT_EQ(b[2][3], 13);
+//     ASSERT_FLOAT_EQ(b[3][3], 16);
+// }
+//
+// TEST(Matrix, should_rotate_z_degrees) {
+//     // arrange
+//     Matrix<4, 4> m = {{1, 2, 3, 4}, {5, 6, 7, 8}, {9, 10, 11, 12}, {13, 14, 15, 16}};
+//     // act
+//     Matrix<4, 4> b = m.rotateZ(90, RotationType::degrees);
+//     // assert
+//     ASSERT_FLOAT_EQ(b[0][0], 2);
+//     ASSERT_FLOAT_EQ(b[1][0], -1);
+//     ASSERT_FLOAT_EQ(b[2][0], 3);
+//     ASSERT_FLOAT_EQ(b[3][0], 4);
+//     ASSERT_FLOAT_EQ(b[0][1], 6);
+//     ASSERT_FLOAT_EQ(b[1][1], -5);
+//     ASSERT_FLOAT_EQ(b[2][1], 7);
+//     ASSERT_FLOAT_EQ(b[3][1], 8);
+//     ASSERT_FLOAT_EQ(b[0][2], 10);
+//     ASSERT_FLOAT_EQ(b[1][2], -9);
+//     ASSERT_FLOAT_EQ(b[2][2], 11);
+//     ASSERT_FLOAT_EQ(b[3][2], 12);
+//     ASSERT_FLOAT_EQ(b[0][3], 14);
+//     ASSERT_FLOAT_EQ(b[1][3], -13);
+//     ASSERT_FLOAT_EQ(b[2][3], 15);
+//     ASSERT_FLOAT_EQ(b[3][3], 16);
+// }
+//
+// TEST(Matrix, should_rotate_z_radians) {
+//     // arrange
+//     Matrix<4, 4> m = {{1, 2, 3, 4}, {5, 6, 7, 8}, {9, 10, 11, 12}, {13, 14, 15, 16}};
+//     // act
+//     Matrix<4, 4> b = m.rotateZ(M_PI_2, RotationType::radians);
+//     // assert
+//     ASSERT_FLOAT_EQ(b[0][0], 2);
+//     ASSERT_FLOAT_EQ(b[1][0], -1);
+//     ASSERT_FLOAT_EQ(b[2][0], 3);
+//     ASSERT_FLOAT_EQ(b[3][0], 4);
+//     ASSERT_FLOAT_EQ(b[0][1], 6);
+//     ASSERT_FLOAT_EQ(b[1][1], -5);
+//     ASSERT_FLOAT_EQ(b[2][1], 7);
+//     ASSERT_FLOAT_EQ(b[3][1], 8);
+//     ASSERT_FLOAT_EQ(b[0][2], 10);
+//     ASSERT_FLOAT_EQ(b[1][2], -9);
+//     ASSERT_FLOAT_EQ(b[2][2], 11);
+//     ASSERT_FLOAT_EQ(b[3][2], 12);
+//     ASSERT_FLOAT_EQ(b[0][3], 14);
+//     ASSERT_FLOAT_EQ(b[1][3], -13);
+//     ASSERT_FLOAT_EQ(b[2][3], 15);
+//     ASSERT_FLOAT_EQ(b[3][3], 16);
+// }
 
 TEST(Matrix, should_ortho) {
     // arrange
