@@ -33,6 +33,38 @@ constexpr T epsilon() {
 }
 
 template<typename T>
-bool compare(const T& val, const T& target) {
+bool compare(const T val, const T target) {
     return std::abs(val - target) < epsilon<T>();
+}
+
+template<typename T, typename OTHER_T>
+bool compare(const T val, const OTHER_T target) {
+    return std::abs(val - target) < epsilon<T>();
+}
+
+template<typename T>
+T signum(const T val) {
+    if (val < 0)
+        return -1;
+
+    if (compare(val, 0))
+        return 0;
+
+    if (val > 0)
+        return 1;
+
+    throw std::runtime_error("Value for signum function is bad");
+}
+
+template<int N>
+int leviCivitiaSymbol(const std::array<int, N>& a) {
+    int result = 1;
+
+    for (int i = 0; i < N; i++) {
+        for (int j = 0; j < i; j++) {
+            result *= signum(a[j] - a[i]);
+        }
+    }
+
+    return result;
 }

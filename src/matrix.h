@@ -158,7 +158,7 @@ struct Matrix {
         return multiply(other);
     }
 
-    Matrix<COLUMNS, ROWS, T> multiply(const T& val) const {
+    Matrix<COLUMNS, ROWS, T> multiply(const T val) const {
         Matrix<COLUMNS, ROWS, T> result;
 
         for (int c = 0; c < COLUMNS; c++) {
@@ -170,11 +170,11 @@ struct Matrix {
         return result;
     }
 
-    Matrix<COLUMNS, ROWS, T> operator*(const T& val) const {
+    Matrix<COLUMNS, ROWS, T> operator*(const T val) const {
         return multiply(val);
     }
 
-    Matrix<COLUMNS, ROWS, T>& multiplyEquals(const T& val) {
+    Matrix<COLUMNS, ROWS, T>& multiplyEquals(const T val) {
         for (int c = 0; c < COLUMNS; c++) {
             for (int r = 0; r < ROWS; r++) {
                 data[c][r] *= val;
@@ -184,36 +184,39 @@ struct Matrix {
         return *this;
     }
 
-    Matrix<COLUMNS, ROWS, T>& operator*=(const T& val) const {
+    Matrix<COLUMNS, ROWS, T>& operator*=(const T val) const {
         return multiplyEquals(val);
     }
 
-    bool compare(const Matrix<COLUMNS, ROWS, T>& other) const {
-        if constexpr (std::is_floating_point_v<T>) {
-            T epsilon = std::numeric_limits<T>::epsilon();
-            for (int c = 0; c < COLUMNS; c++) {
-                for (int r = 0; r < ROWS; r++) {
-                    if (std::abs(other.data[c][r] - data[c][r]) > epsilon)
-                        return false;
-                }
+    bool equals(const Matrix<COLUMNS, ROWS, T>& other) const {
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = 0; r < ROWS; r++) {
+                if (!compare(data[c][r], other.data[c][r]))
+                    return false;
             }
-
-            return true;
         }
-        else {
-            for (int c = 0; c < COLUMNS; c++) {
-                for (int r = 0; r < ROWS; r++) {
-                    if (other.data[c][r] == data[c][r])
-                        return false;
-                }
-            }
 
-            return false;
-        }
+        return true;
     }
 
     bool operator==(const Matrix<COLUMNS, ROWS, T>& other) const {
         return compare(other);
+    }
+
+    Vector<COLUMNS, T> multiply(const Vector<COLUMNS, T>& other) {
+        Vector<COLUMNS, T> result;
+
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = 0; r < ROWS; r++) {
+                result[r] += data[c][r] * other[c];
+            }
+        }
+
+        return result;
+    }
+
+    Vector<COLUMNS, T> operator*(const Vector<COLUMNS, T>& other) {
+        return multiply(other);
     }
 
 #pragma endregion
@@ -321,7 +324,7 @@ struct Matrix {
     }
 
     template<IsConvertableTo<T> OTHER_T>
-    Matrix<COLUMNS, ROWS, T> multiply(const OTHER_T& val) const {
+    Matrix<COLUMNS, ROWS, T> multiply(const OTHER_T val) const {
         Matrix<COLUMNS, ROWS, T> result;
 
         for (int c = 0; c < COLUMNS; c++) {
@@ -334,12 +337,12 @@ struct Matrix {
     }
 
     template<IsConvertableTo<T> OTHER_T>
-    Matrix<COLUMNS, ROWS, T> operator*(const OTHER_T& val) const {
+    Matrix<COLUMNS, ROWS, T> operator*(const OTHER_T val) const {
         return multiply(val);
     }
 
     template<IsConvertableTo<T> OTHER_T>
-    Matrix<COLUMNS, ROWS, T>& multiplyEquals(const OTHER_T& val) {
+    Matrix<COLUMNS, ROWS, T>& multiplyEquals(const OTHER_T val) {
         for (int c = 0; c < COLUMNS; c++) {
             for (int r = 0; r < ROWS; r++) {
                 data[c][r] *= val;
@@ -350,38 +353,43 @@ struct Matrix {
     }
 
     template<IsConvertableTo<T> OTHER_T>
-    Matrix<COLUMNS, ROWS, T>& operator*=(const OTHER_T& val) {
+    Matrix<COLUMNS, ROWS, T>& operator*=(const OTHER_T val) {
         return multiplyEquals(val);
     }
 
     template<IsConvertableTo<T> OTHER_T>
-    bool compare(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const {
-        if constexpr (std::is_floating_point_v<T>) {
-            T epsilon = std::numeric_limits<T>::epsilon();
-            for (int c = 0; c < COLUMNS; c++) {
-                for (int r = 0; r < ROWS; r++) {
-                    if (std::abs(static_cast<T>(other.data[c][r]) - data[c][r]) > epsilon)
-                        return false;
-                }
+    bool equals(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const {
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = 0; r < ROWS; r++) {
+                if (!compare(data[c][r], other.data[c][r]))
+                    return false;
             }
-
-            return true;
         }
-        else {
-            for (int c = 0; c < COLUMNS; c++) {
-                for (int r = 0; r < ROWS; r++) {
-                    if (static_cast<T>(other.data[c][r]) == data[c][r])
-                        return false;
-                }
-            }
 
-            return false;
-        }
+        return true;
     }
 
     template<IsConvertableTo<T> OTHER_T>
     bool operator==(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const {
         return compare(other);
+    }
+
+    template<IsConvertableTo<T> OTHER_T>
+    Vector<COLUMNS, T> multiply(const Vector<COLUMNS, OTHER_T>& other) {
+        Vector<COLUMNS, T> result;
+
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = 0; r < ROWS; r++) {
+                result[r] += data[c][r] * other[c];
+            }
+        }
+
+        return result;
+    }
+
+    template<IsConvertableTo<T> OTHER_T>
+    Vector<COLUMNS, T> operator*(const Vector<COLUMNS, OTHER_T>& other) {
+        return multiply(other);
     }
 
 #pragma endregion
@@ -544,10 +552,69 @@ struct Matrix {
         }
     }
 
-#pragma region 4x4 stuffs
-    static Matrix<4, 4, T> ortho(const T left, const T right, const T bottom, const T top, const T near, const T far) {
+#pragma region Transformations
+    static Matrix<COLUMNS, ROWS, T> stretchMatrix(const T x, const T y) requires (isSquare && COLUMNS == 2) {
+        Matrix<COLUMNS, ROWS, T> matrix = identity();
+
+        matrix[0][0] = x;
+        matrix[1][1] = y;
+
+        return matrix;
+    }
+
+    static Matrix<COLUMNS, ROWS, T> squeezeMatrix(const T k) requires (isSquare && COLUMNS == 2) {
+        Matrix<COLUMNS, ROWS, T> matrix = identity();
+
+        matrix[0][0] = k;
+        matrix[1][1] = 1 / k;
+
+        return matrix;
+    }
+
+    static Matrix<COLUMNS, ROWS, T> rotationMatrix(const T rot, RotationType rotationType = RotationType::radians) requires (isSquare && COLUMNS == 2) {
+        T asRad = convert(rotationType, RotationType::radians, rot);
+
+        T sin = std::sin(asRad);
+        T cos = std::cos(asRad);
+
+        Matrix<COLUMNS, ROWS, T> matrix;
+
+        matrix[0][0] = cos;
+        matrix[1][0] = -sin;
+        matrix[0][1] = sin;
+        matrix[1][1] = cos;
+
+        return matrix;
+    }
+
+    static Matrix<COLUMNS, ROWS, T> shearMatrix(const T x, const T y) requires (isSquare && COLUMNS == 2) {
+        Matrix<COLUMNS, ROWS, T> matrix = identity();
+
+        matrix[1][0] = x;
+        matrix[0][1] = y;
+
+        return matrix;
+    }
+
+    static Matrix<COLUMNS, ROWS, T> reflectionMatrix(const Vector<COLUMNS, T>& l) requires (isSquare) {
+        return identity() - 2 * l.outerProduct(l);
+    }
+
+    static Matrix<COLUMNS, ROWS, T> orthogonalProjectionMatrix(const Vector<COLUMNS, T>& u) requires (isSquare && COLUMNS == 2) {
+        Matrix<COLUMNS, ROWS, T> matrix;
+
+        matrix[0][0] = u[0] * u[0];
+        matrix[1][0] = u[0] * u[1];
+        matrix[0][1] = u[0] * u[1];
+        matrix[1][1] = u[1] * u[1];
+
+        return (1 / std::pow(u.magnitude(), 2)) * matrix;
+    }
+#pragma endregion
+
+    static Matrix<COLUMNS, ROWS, T> orthoMatrix(const T left, const T right, const T bottom, const T top, const T near, const T far) requires (isSquare && COLUMNS == 4) {
         // identity
-        Matrix<4, 4, T> transformation = Matrix<4, 4, T>::identity();
+        Matrix<COLUMNS, ROWS, T> transformation = Matrix<COLUMNS, ROWS, T>::identity();
         // transformation
         transformation.data[0][0] = 2 / (right - left);
         transformation.data[1][1] = 2 / (top - bottom);
@@ -557,41 +624,6 @@ struct Matrix {
         transformation.data[3][2] = -(far + near) / (far - near);
         // return
         return transformation;
-    }
-
-#pragma endregion
-    Vector<COLUMNS, T> multiply(const Vector<COLUMNS, T>& other) {
-        Vector<COLUMNS, T> result;
-
-        for (int c = 0; c < COLUMNS; c++) {
-            for (int r = 0; r < ROWS; r++) {
-                result[r] += data[c][r] * other[c];
-            }
-        }
-
-        return result;
-    }
-
-    Vector<COLUMNS, T> operator*(const Vector<COLUMNS, T>& other) {
-        return multiply(other);
-    }
-
-    template<IsConvertableTo<T> OTHER_T>
-    Vector<COLUMNS, T> multiply(const Vector<COLUMNS, OTHER_T>& other) {
-        Vector<COLUMNS, T> result;
-
-        for (int c = 0; c < COLUMNS; c++) {
-            for (int r = 0; r < ROWS; r++) {
-                result[r] += data[c][r] * other[c];
-            }
-        }
-
-        return result;
-    }
-
-    template<IsConvertableTo<T> OTHER_T>
-    Vector<COLUMNS, T> operator*(const Vector<COLUMNS, OTHER_T>& other) {
-        return multiply(other);
     }
 
     std::string toString() const {
@@ -1713,11 +1745,30 @@ Vector<COLUMNS, T> multiply(const Vector<COLUMNS, OTHER_T>& v, const Matrix<COLU
 }
 
 template<int COLUMNS, int ROWS, typename T>
-Matrix<COLUMNS, ROWS, T> divide(const T& lhs, const Matrix<COLUMNS, ROWS, T>& rhs) {
+Matrix<COLUMNS, ROWS, T> divide(const T lhs, const Matrix<COLUMNS, ROWS, T>& rhs) {
     return rhs.inverse() * lhs;
 }
 
 template<int COLUMNS, int ROWS, typename T, typename OTHER_T>
-Matrix<COLUMNS, ROWS, T> divide(const OTHER_T& lhs, const Matrix<COLUMNS, ROWS, T>& rhs) {
+Matrix<COLUMNS, ROWS, T> divide(const OTHER_T lhs, const Matrix<COLUMNS, ROWS, T>& rhs) {
     return rhs.inverse() * lhs;
+}
+
+template<int N, is_scalar_v T>
+inline Matrix<N, N, T> Vector<N, T>::crossProductMatrix() const requires (N == 3) {
+    return {{0, -data[2], data[1]}, {data[2], 0, -data[0]}, {-data[1], data[0], 0}};
+}
+
+template<int N, is_scalar_v T>
+template<int OTHER_N>
+Matrix<OTHER_N, N, T> Vector<N, T>::outerProduct(const Vector<OTHER_N, T>& v) const {
+    Matrix<OTHER_N, N, T> result;
+
+    for (int c = 0; c < result.columns; c++) {
+        for (int r = 0; r < result.rows; r++) {
+            result[c][r] = data[r] * v[c];
+        }
+    }
+
+    return result;
 }

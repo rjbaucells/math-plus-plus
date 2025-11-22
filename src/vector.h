@@ -7,7 +7,10 @@
 template<typename T, typename U>
 concept IsConvertableTo = std::convertible_to<U, T>;
 
-template<int N, typename T = float>
+template <int COLUMNS, int ROWS, is_scalar_v T>
+struct Matrix;
+
+template<int N, is_scalar_v T = float>
 struct Vector {
     const int n = N;
     T data[N] = {};
@@ -451,4 +454,9 @@ struct Vector {
 
         return result;
     }
+
+    Matrix<N, N, T> crossProductMatrix() const requires (N == 3);
+
+    template<int OTHER_N>
+    Matrix<OTHER_N, N, T> outerProduct(const Vector<OTHER_N, T>& v) const;
 };

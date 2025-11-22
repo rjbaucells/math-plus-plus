@@ -951,7 +951,7 @@ TEST(Matrix, should_throw_inverse_3x3_f) {
 
 TEST(Matrix, should_ortho) {
     // arrange
-    Matrix<4, 4> a = Matrix<4, 4>::ortho(1, 2, 3, 4, 5, 6);
+    Matrix<4, 4> a = Matrix<4, 4>::orthoMatrix(1, 2, 3, 4, 5, 6);
     // assert
     ASSERT_FLOAT_EQ(a[0][0], 2);
     ASSERT_FLOAT_EQ(a[1][0], 0);
