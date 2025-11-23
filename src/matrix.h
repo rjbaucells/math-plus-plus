@@ -552,64 +552,177 @@ struct Matrix {
         }
     }
 
-#pragma region Transformations
-    static Matrix<COLUMNS, ROWS, T> stretchMatrix(const T x, const T y) requires (isSquare && COLUMNS == 2) {
-        Matrix<COLUMNS, ROWS, T> matrix = identity();
-
-        matrix[0][0] = x;
-        matrix[1][1] = y;
-
-        return matrix;
-    }
-
-    static Matrix<COLUMNS, ROWS, T> squeezeMatrix(const T k) requires (isSquare && COLUMNS == 2) {
-        Matrix<COLUMNS, ROWS, T> matrix = identity();
-
-        matrix[0][0] = k;
-        matrix[1][1] = 1 / k;
-
-        return matrix;
-    }
-
-    static Matrix<COLUMNS, ROWS, T> rotationMatrix(const T rot, RotationType rotationType = RotationType::radians) requires (isSquare && COLUMNS == 2) {
-        T asRad = convert(rotationType, RotationType::radians, rot);
-
-        T sin = std::sin(asRad);
-        T cos = std::cos(asRad);
-
+#pragma region transformations
+    static Matrix<COLUMNS, ROWS, T> scalingMatrix(const Vector<COLUMNS, T>& factors) requires (isSquare) {
         Matrix<COLUMNS, ROWS, T> matrix;
 
-        matrix[0][0] = cos;
-        matrix[1][0] = -sin;
-        matrix[0][1] = sin;
-        matrix[1][1] = cos;
+        for (int c = 0; c < COLUMNS; c++) {
+            matrix[c][c] = factors[c];
+        }
 
         return matrix;
     }
 
-    static Matrix<COLUMNS, ROWS, T> shearMatrix(const T x, const T y) requires (isSquare && COLUMNS == 2) {
+    static Matrix<COLUMNS, ROWS, T> shearMatrix(const int i, const int j, const T k) requires (isSquare) {
         Matrix<COLUMNS, ROWS, T> matrix = identity();
 
-        matrix[1][0] = x;
-        matrix[0][1] = y;
+        matrix[j][i] = k;
 
         return matrix;
     }
 
-    static Matrix<COLUMNS, ROWS, T> reflectionMatrix(const Vector<COLUMNS, T>& l) requires (isSquare) {
-        return identity() - 2 * l.outerProduct(l);
+    static Matrix<COLUMNS, ROWS, T> squeezeMatrix(const int i, const int j, const T k) requires (isSquare) {
+        Matrix<COLUMNS, ROWS, T> matrix = identity();
+
+        matrix[i][i] = k;
+        matrix[j][j] = 1 / k;
+
+        return matrix;
     }
 
-    static Matrix<COLUMNS, ROWS, T> orthogonalProjectionMatrix(const Vector<COLUMNS, T>& u) requires (isSquare && COLUMNS == 2) {
-        Matrix<COLUMNS, ROWS, T> matrix;
+#pragma region rotations
+    static Matrix<COLUMNS, ROWS, T> rotationMatrixAboutOrigin(const T rot, const RotationType rotationType = RotationType::radians) requires (isSquare && COLUMNS == 2) {
+        T asRadians = convert(rotationType, RotationType::radians, rot);
 
-        matrix[0][0] = u[0] * u[0];
-        matrix[1][0] = u[0] * u[1];
-        matrix[0][1] = u[0] * u[1];
-        matrix[1][1] = u[1] * u[1];
+        T sin = std::sin(asRadians);
+        T cos = std::cos(asRadians);
 
-        return (1 / std::pow(u.magnitude(), 2)) * matrix;
+        Matrix<COLUMNS, ROWS, T> r;
+
+        r[0][0] = cos;
+        r[1][0] = -sin;
+        r[0][1] = sin;
+        r[1][1] = cos;
+
+        return r;
     }
+
+    static Matrix<COLUMNS + 1, ROWS + 1, T> rotationMatrixAboutPoint(const Vector<COLUMNS, T>& p, const T rot, const RotationType rotationType = RotationType::radians) requires (isSquare && COLUMNS == 2) {
+        Matrix<COLUMNS, ROWS, T> rotationMatrix = rotationMatrixAboutOrigin(rot, rotationType);
+        Vector<COLUMNS, T> translationVector = (identity() - rotationMatrix) * p;
+
+        Matrix<COLUMNS + 1, ROWS + 1, T> result = Matrix<COLUMNS + 1, ROWS + 1, T>::identity();
+
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = 0; r < ROWS; r++) {
+                result[c][r] = rotationMatrix[c][r];
+            }
+        }
+
+        for (int r = 0; r < ROWS; r++) {
+            result[COLUMNS][r] = translationVector[r];
+        }
+
+        return result;
+    }
+
+    static Matrix<COLUMNS, ROWS, T> rotationMatrixAroundAxisThroughOrigin(const Vector<COLUMNS, T>& axis, const T rot, const RotationType rotationType = RotationType::radians) requires (isSquare && COLUMNS == 3) {
+        T asRadians = convert(rotationType, RotationType::radians, rot);
+
+        T sin = std::sin(asRadians);
+        T cos = std::cos(asRadians);
+
+        Matrix<COLUMNS, ROWS, T> r = identity() * cos + (1 - cos) * axis.outerProduct(axis) + axis.crossProductMatrix() * sin;
+
+        return r;
+    }
+
+    static Matrix<COLUMNS + 1, ROWS + 1, T> rotationMatrixAroundAxisNotThroughOrigin(const Vector<COLUMNS, T>& axis, const Vector<COLUMNS, T>& point, const T rot, const RotationType rotationType = RotationType::radians) requires (isSquare && COLUMNS == 3) {
+        Vector<COLUMNS, T> u = axis.normalize();
+
+        Matrix<COLUMNS, ROWS, T> rotationMatrix = rotationMatrixAroundAxisThroughOrigin(u, rot, rotationType);
+        Vector<COLUMNS, T> translationVector = (identity() - rotationMatrix) * point;
+
+        Matrix<COLUMNS + 1, ROWS + 1, T> result = Matrix<COLUMNS + 1, ROWS + 1, T>::identity();
+
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = 0; r < ROWS; r++) {
+                result[c][r] = rotationMatrix[c][r];
+            }
+        }
+
+        for (int r = 0; r < ROWS; r++) {
+            result[COLUMNS][r] = translationVector[r];
+        }
+
+        return result;
+    }
+
+    static Matrix<COLUMNS, ROWS, T> rotationMatrixInPlaneThroughOrigin(const Vector<COLUMNS, T>& v1, const Vector<COLUMNS, T>& v2, const T rot, const RotationType rotationType = RotationType::radians) requires (isSquare && COLUMNS >= 3) {
+        T asRadians = convert(rotationType, RotationType::radians, rot);
+
+        T sin = std::sin(asRadians);
+        T cos = std::cos(asRadians);
+
+        auto orthonormalized = Vector<COLUMNS, T>::orthonormalize({v1, v2});
+
+        Vector<COLUMNS, T> u = orthonormalized[0];
+        Vector<COLUMNS, T> v = orthonormalized[1];
+
+        Matrix<COLUMNS, ROWS, T> r = identity() + (cos - 1) * (u.outerProduct(u) + v.outerProduct(v)) + sin * (v.outerProduct(u) - u.outerProduct(v));
+
+        return r;
+    }
+
+    static Matrix<COLUMNS, ROWS, T> rotationMatrixInPLaneNotThroughOrigin(const Vector<COLUMNS, T>& v1, const Vector<COLUMNS, T>& v2, const Vector<COLUMNS, T>& point, const T rot, const RotationType rotationType = RotationType::radians) requires (isSquare && COLUMNS >= 3) {
+        auto orthonormalized = Vector<COLUMNS, T>::orthonormalize({v1, v2});
+
+        Vector<COLUMNS, T> u = orthonormalized[0];
+        Vector<COLUMNS, T> v = orthonormalized[1];
+
+        Matrix<COLUMNS, ROWS, T> rotationMatrix = rotationMatrixInPlaneThroughOrigin(u, v, rot, rotationType);
+
+        Vector<COLUMNS, T> translationVector = (identity() - rotationMatrix) * point;
+
+        Matrix<COLUMNS + 1, ROWS + 1, T> result = Matrix<COLUMNS + 1, ROWS + 1, T>::identity();
+
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = 0; r < ROWS; r++) {
+                result[c][r] = rotationMatrix[c][r];
+            }
+        }
+
+        for (int r = 0; r < ROWS; r++) {
+            result[COLUMNS][r] = translationVector[r];
+        }
+
+        return result;
+    }
+#pragma endregion
+
+    static Matrix<COLUMNS, ROWS, T> reflectionMatrixAlongAxisThroughOrigin(const Vector<COLUMNS, T>& axis) requires (isSquare) {
+        return 2 * axis.outerProduct(axis) - identity();
+    }
+
+    static Matrix<COLUMNS + 1, ROWS + 1, T> reflectionMatrixAlongAxisNotThroughOrigin(const Vector<COLUMNS, T>& axis, const Vector<COLUMNS, T>& point) requires (isSquare) {
+        Matrix<COLUMNS, ROWS, T> reflectionMatrix = reflectionMatrixAlongAxisThroughOrigin(axis);
+        Vector<COLUMNS, T> translationVector = (identity() - 2 * axis.outerProduct(axis)) * point;
+
+        Matrix<COLUMNS + 1, ROWS + 1, T> result = Matrix<COLUMNS + 1, ROWS + 1, T>::identity();
+
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = 0; r < ROWS; r++) {
+                result[c][r] = reflectionMatrix[c][r];
+            }
+        }
+
+        for (int r = 0; r < ROWS; r++) {
+            result[COLUMNS][r] = translationVector[r];
+        }
+
+        return result;
+    }
+
+    static Matrix<COLUMNS + 1, ROWS + 1, T> translationMatrix(const Vector<COLUMNS, T>& translation) requires (isSquare) {
+        Matrix<COLUMNS + 1, ROWS + 1, T> matrix = Matrix<COLUMNS + 1, ROWS + 1, T>::identity();
+
+        for (int r = 0; r < ROWS; r++) {
+            matrix[COLUMNS][r] = translation[r];
+        }
+
+        return matrix;
+    }
+
 #pragma endregion
 
     static Matrix<COLUMNS, ROWS, T> orthoMatrix(const T left, const T right, const T bottom, const T top, const T near, const T far) requires (isSquare && COLUMNS == 4) {
