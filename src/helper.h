@@ -12,6 +12,9 @@ concept is_complex_v = is_complex<T>::value;
 template<typename T>
 concept is_scalar_v = is_complex<T>::value || std::is_arithmetic_v<T>;
 
+template<typename T, typename U>
+concept is_convertable_to = std::convertible_to<U, T>;
+
 template<typename T>
 constexpr T epsilon() {
     // float, double, long double
@@ -40,31 +43,4 @@ bool compare(const T val, const T target) {
 template<typename T, typename OTHER_T>
 bool compare(const T val, const OTHER_T target) {
     return std::abs(val - target) < epsilon<T>();
-}
-
-template<typename T>
-T signum(const T val) {
-    if (val < 0)
-        return -1;
-
-    if (compare(val, 0))
-        return 0;
-
-    if (val > 0)
-        return 1;
-
-    throw std::runtime_error("Value for signum function is bad");
-}
-
-template<int N>
-int leviCivitiaSymbol(const std::array<int, N>& a) {
-    int result = 1;
-
-    for (int i = 0; i < N; i++) {
-        for (int j = 0; j < i; j++) {
-            result *= signum(a[j] - a[i]);
-        }
-    }
-
-    return result;
 }

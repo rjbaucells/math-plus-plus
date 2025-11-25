@@ -11,11 +11,14 @@
 template<int COLUMNS, int ROWS, is_scalar_v T>
 struct Matrix;
 
-template<is_scalar_v T>
-struct IsMatrix : std::false_type {};
+template<typename T>
+struct is_matrix : std::false_type {};
 
 template<int COLUMNS, int ROWS, is_scalar_v T>
-struct IsMatrix<Matrix<COLUMNS, ROWS, T>> : std::true_type {};
+struct is_matrix<Matrix<COLUMNS, ROWS, T>> : std::true_type {};
+
+template<typename T>
+concept is_matrix_v = is_matrix<T>::value;
 
 template<int COLUMNS, int ROWS, is_scalar_v T = float>
 struct Matrix {
@@ -59,7 +62,7 @@ struct Matrix {
     }
 
     // copy constructor with different type
-    template<IsConvertableTo<T> OTHER_T>
+    template<is_convertable_to<T> OTHER_T>
     Matrix(const Matrix<COLUMNS, ROWS, OTHER_T>& other) {
         for (int c = 0; c < COLUMNS; c++) {
             for (int r = 0; r < ROWS; r++) {
@@ -222,7 +225,7 @@ struct Matrix {
 #pragma endregion
 #pragma region Different Type Operators
     // copy assignment operator with different type
-    template<IsConvertableTo<T> OTHER_T>
+    template<is_convertable_to<T> OTHER_T>
     Matrix<COLUMNS, ROWS, T>& operator=(const Matrix<COLUMNS, ROWS, OTHER_T>& other) {
         if (*this != other) {
             for (int c = 0; c < COLUMNS; c++) {
@@ -235,7 +238,7 @@ struct Matrix {
         return *this;
     }
 
-    template<IsConvertableTo<T> OTHER_T>
+    template<is_convertable_to<T> OTHER_T>
     Matrix<COLUMNS, ROWS, T> add(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const {
         Matrix<COLUMNS, ROWS, T> result;
 
@@ -248,12 +251,12 @@ struct Matrix {
         return result;
     }
 
-    template<IsConvertableTo<T> OTHER_T>
+    template<is_convertable_to<T> OTHER_T>
     Matrix<COLUMNS, ROWS, T> operator+(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const {
         return add(other);
     }
 
-    template<IsConvertableTo<T> OTHER_T>
+    template<is_convertable_to<T> OTHER_T>
     Matrix<COLUMNS, ROWS, T>& addEquals(const Matrix<COLUMNS, ROWS, OTHER_T>& other) {
         for (int c = 0; c < COLUMNS; c++) {
             for (int r = 0; r < ROWS; r++) {
@@ -264,12 +267,12 @@ struct Matrix {
         return *this;
     }
 
-    template<IsConvertableTo<T> OTHER_T>
+    template<is_convertable_to<T> OTHER_T>
     Matrix<COLUMNS, ROWS, T>& operator+=(const Matrix<COLUMNS, ROWS, OTHER_T>& other) {
         return addEquals(other);
     }
 
-    template<IsConvertableTo<T> OTHER_T>
+    template<is_convertable_to<T> OTHER_T>
     Matrix<COLUMNS, ROWS, T> subtract(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const {
         Matrix<COLUMNS, ROWS, T> result;
 
@@ -282,12 +285,12 @@ struct Matrix {
         return result;
     }
 
-    template<IsConvertableTo<T> OTHER_T>
+    template<is_convertable_to<T> OTHER_T>
     Matrix<COLUMNS, ROWS, T> operator-(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const {
         return subtract(other);
     }
 
-    template<IsConvertableTo<T> OTHER_T>
+    template<is_convertable_to<T> OTHER_T>
     Matrix<COLUMNS, ROWS, T>& subtractEquals(const Matrix<COLUMNS, ROWS, OTHER_T>& other) {
         for (int c = 0; c < COLUMNS; c++) {
             for (int r = 0; r < ROWS; r++) {
@@ -298,12 +301,12 @@ struct Matrix {
         return *this;
     }
 
-    template<IsConvertableTo<T> OTHER_T>
+    template<is_convertable_to<T> OTHER_T>
     Matrix<COLUMNS, ROWS, T>& operator-=(const Matrix<COLUMNS, ROWS, OTHER_T>& other) {
         return subtractEquals(other);
     }
 
-    template<int OTHER_COLUMNS, IsConvertableTo<T> OTHER_T>
+    template<int OTHER_COLUMNS, is_convertable_to<T> OTHER_T>
     Matrix<OTHER_COLUMNS, ROWS, T> multiply(const Matrix<OTHER_COLUMNS, COLUMNS, OTHER_T>& other) const {
         Matrix<OTHER_COLUMNS, ROWS, T> result;
 
@@ -318,12 +321,12 @@ struct Matrix {
         return result;
     }
 
-    template<int OTHER_COLUMNS, IsConvertableTo<T> OTHER_T>
+    template<int OTHER_COLUMNS, is_convertable_to<T> OTHER_T>
     Matrix<OTHER_COLUMNS, ROWS, T> operator*(const Matrix<OTHER_COLUMNS, COLUMNS, OTHER_T>& other) const {
         return multiply(other);
     }
 
-    template<IsConvertableTo<T> OTHER_T>
+    template<is_convertable_to<T> OTHER_T>
     Matrix<COLUMNS, ROWS, T> multiply(const OTHER_T val) const {
         Matrix<COLUMNS, ROWS, T> result;
 
@@ -336,12 +339,12 @@ struct Matrix {
         return result;
     }
 
-    template<IsConvertableTo<T> OTHER_T>
+    template<is_convertable_to<T> OTHER_T>
     Matrix<COLUMNS, ROWS, T> operator*(const OTHER_T val) const {
         return multiply(val);
     }
 
-    template<IsConvertableTo<T> OTHER_T>
+    template<is_convertable_to<T> OTHER_T>
     Matrix<COLUMNS, ROWS, T>& multiplyEquals(const OTHER_T val) {
         for (int c = 0; c < COLUMNS; c++) {
             for (int r = 0; r < ROWS; r++) {
@@ -352,12 +355,12 @@ struct Matrix {
         return *this;
     }
 
-    template<IsConvertableTo<T> OTHER_T>
+    template<is_convertable_to<T> OTHER_T>
     Matrix<COLUMNS, ROWS, T>& operator*=(const OTHER_T val) {
         return multiplyEquals(val);
     }
 
-    template<IsConvertableTo<T> OTHER_T>
+    template<is_convertable_to<T> OTHER_T>
     bool equals(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const {
         for (int c = 0; c < COLUMNS; c++) {
             for (int r = 0; r < ROWS; r++) {
@@ -369,12 +372,12 @@ struct Matrix {
         return true;
     }
 
-    template<IsConvertableTo<T> OTHER_T>
+    template<is_convertable_to<T> OTHER_T>
     bool operator==(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const {
         return compare(other);
     }
 
-    template<IsConvertableTo<T> OTHER_T>
+    template<is_convertable_to<T> OTHER_T>
     Vector<COLUMNS, T> multiply(const Vector<COLUMNS, OTHER_T>& other) {
         Vector<COLUMNS, T> result;
 
@@ -387,12 +390,50 @@ struct Matrix {
         return result;
     }
 
-    template<IsConvertableTo<T> OTHER_T>
+    template<is_convertable_to<T> OTHER_T>
     Vector<COLUMNS, T> operator*(const Vector<COLUMNS, OTHER_T>& other) {
         return multiply(other);
     }
 
 #pragma endregion
+
+    template<int N>
+    Vector<N, T> applyHomogeneousTransformation(const Vector<N, T>& point) const requires (isSquare) {
+        Vector<COLUMNS, T> resizedPoint;
+
+        for (int i = 0; i < N; i++) {
+            resizedPoint[i] = point[i];
+        }
+
+        Vector<COLUMNS, T> transformedPoint = multiply(resizedPoint);
+
+        Vector<N, T> result;
+
+        for (int i = 0; i < N; i++) {
+            result[i] = transformedPoint[i];
+        }
+
+        return result;
+    }
+
+    template<int N, is_convertable_to<T> OTHER_T>
+    Vector<N, T> applyHomogeneousTransformation(const Vector<N, OTHER_T>& point) const requires (isSquare) {
+        Vector<COLUMNS, T> resizedPoint;
+
+        for (int i = 0; i < N; i++) {
+            resizedPoint[i] = point[i];
+        }
+
+        Vector<COLUMNS, T> transformedPoint = multiply(resizedPoint);
+
+        Vector<N, T> result;
+
+        for (int i = 0; i < N; i++) {
+            result[i] = transformedPoint[i];
+        }
+
+        return result;
+    }
 
     // subscript
     T* operator[](const int index) {
@@ -1868,18 +1909,38 @@ Matrix<COLUMNS, ROWS, T> divide(const OTHER_T lhs, const Matrix<COLUMNS, ROWS, T
 }
 
 template<int N, is_scalar_v T>
-inline Matrix<N, N, T> Vector<N, T>::crossProductMatrix() const requires (N == 3) {
+Matrix<N, N, T> Vector<N, T>::crossProductMatrix() const requires (N == 3) {
     return {{0, -data[2], data[1]}, {data[2], 0, -data[0]}, {-data[1], data[0], 0}};
 }
 
 template<int N, is_scalar_v T>
 template<int OTHER_N>
-Matrix<OTHER_N, N, T> Vector<N, T>::outerProduct(const Vector<OTHER_N, T>& v) const {
+Matrix<OTHER_N, N, T> Vector<N, T>::outerProductMatrix(const Vector<OTHER_N, T>& v) const {
     Matrix<OTHER_N, N, T> result;
 
     for (int c = 0; c < result.columns; c++) {
         for (int r = 0; r < result.rows; r++) {
-            result[c][r] = data[r] * v[c];
+            if (isComplex)
+                result[c][r] = data[r] * std::conj(v[c]);
+            else
+                result[c][r] = data[r] * v[c];
+        }
+    }
+
+    return result;
+}
+
+template<int N, is_scalar_v T>
+template<int OTHER_N, is_convertable_to<T> OTHER_T>
+Matrix<OTHER_N, N, T> Vector<N, T>::outerProductMatrix(const Vector<OTHER_N, OTHER_T>& v) const {
+    Matrix<OTHER_N, N, T> result;
+
+    for (int c = 0; c < result.columns; c++) {
+        for (int r = 0; r < result.rows; r++) {
+            if (isComplex)
+                result[c][r] = data[r] * std::conj(v[c]);
+            else
+                result[c][r] = data[r] * v[c];
         }
     }
 
