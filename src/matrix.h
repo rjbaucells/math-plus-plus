@@ -1,4 +1,5 @@
 #pragma once
+
 #include <cassert>
 #include <complex>
 #include <regex>
@@ -203,7 +204,7 @@ struct Matrix {
     }
 
     bool operator==(const Matrix<COLUMNS, ROWS, T>& other) const {
-        return compare(other);
+        return equals(other);
     }
 
     Vector<COLUMNS, T> multiply(const Vector<COLUMNS, T>& other) {
@@ -374,7 +375,7 @@ struct Matrix {
 
     template<is_convertable_to<T> OTHER_T>
     bool operator==(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const {
-        return compare(other);
+        return equals(other);
     }
 
     template<is_convertable_to<T> OTHER_T>
@@ -457,21 +458,16 @@ struct Matrix {
         return result;
     }
 
-    Matrix<ROWS, COLUMNS, T> conjugateTranspose() const {
-        if constexpr (!isComplex) {
-            return transpose();
-        }
-        else {
-            Matrix<ROWS, COLUMNS, T> result;
+    Matrix<ROWS, COLUMNS, T> conjugateTranspose() const requires (isComplex) {
+        Matrix<ROWS, COLUMNS, T> result;
 
-            for (int c = 0; c < ROWS; c++) {
-                for (int r = 0; r < COLUMNS; r++) {
-                    result[c][r] = std::conj(data[r][c]);
-                }
+        for (int c = 0; c < ROWS; c++) {
+            for (int r = 0; r < COLUMNS; r++) {
+                result[c][r] = std::conj(data[r][c]);
             }
-
-            return result;
         }
+
+        return result;
     }
 
     Matrix<COLUMNS, ROWS, T> inverse() const requires (isSquare) {
@@ -1135,14 +1131,10 @@ struct Matrix {
         return result;
     }
 
-    bool isSymmetrical() const requires (!isComplex && isSquare) {
-        return *this == transpose();
-    }
-
-    bool isSkewSymmetrical() const requires (!isComplex && isSquare) {
+    bool isSymmetrical() const requires (isSquare) {
         for (int c = 0; c < COLUMNS; c++) {
             for (int r = 0; r < ROWS; r++) {
-                if (!compare(data[r][c], -data[c][r]))
+                if (!compare(data[c][r], data[r][c]))
                     return false;
             }
         }
@@ -1150,7 +1142,21 @@ struct Matrix {
         return true;
     }
 
-    bool isHermitian() const requires (isComplex && isSquare) {
+    bool isSkewSymmetrical() const requires (isSquare) {
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = 0; r < ROWS; r++) {
+                if (!compare(data[c][r], -data[r][c]))
+                    return false;
+            }
+        }
+
+        return true;
+    }
+
+    bool isHermitian() const requires (isSquare) {
+        if (!isComplex)
+            return isSymmetrical();
+
         for (int c = 0; c < COLUMNS; c++) {
             for (int r = 0; r < ROWS; r++) {
                 if (!compare(data[c][r], std::conj(data[r][c]))) {
@@ -1162,7 +1168,10 @@ struct Matrix {
         return true;
     }
 
-    bool isSkewHermitian() const requires (isComplex && isSquare) {
+    bool isSkewHermitian() const requires (isSquare) {
+        if (!isComplex)
+            return isSkewSymmetrical();
+
         for (int c = 0; c < COLUMNS; c++) {
             for (int r = 0; r < ROWS; r++) {
                 if (!compare(data[c][r], -std::conj(data[r][c])))
@@ -1271,48 +1280,25 @@ struct Matrix {
         return sum;
     }
 
-    bool isUnitary() const requires (isComplex && isSquare) {
-        auto iden = identity();
-        auto tr = conjugateTranspose();
-
-        if (multiply(tr) != iden)
-            return false;
-
-        if (tr.multiply(*this) != iden)
-            return false;
-
-        return true;
+    bool isUnitary() const requires (isSquare) {
+        return conjugateTranspose() * *this == identity();
     }
 
-    bool isSpecialUnitary() const requires (isComplex && isSquare) {
-        auto iden = identity();
-        auto tr = conjugateTranspose();
-
-        if (multiply(tr) != iden)
-            return false;
-
-        if (tr.multiply(*this) != iden)
-            return false;
-
-        return determinant() == 1;
+    bool isSpecialUnitary() const requires (isSquare) {
+        return conjugateTranspose() * *this == identity() && determinant() == 1;
     }
 
     bool isOrthogonal() const requires (!isComplex && isSquare) {
-        auto iden = identity();
-        auto tr = transpose();
+        return transpose() * *this == identity();
+    }
 
-        if (multiply(tr) != iden)
-            return false;
-
-        if (tr.multiply(*this) != iden)
-            return false;
-
-        return true;
+    bool isSpecialOrthogonal() const requires (!isComplex && isSquare) {
+        return conjugateTranspose() * *this == identity() && determinant() == 1;
     }
 
     bool isUpperTriangleMatrix() const requires (isSquare) {
         for (int c = 0; c < COLUMNS; c++) {
-            for (int r = 0; r < c; r++) {
+            for (int r = c + 1; r < ROWS; r++) {
                 if (!compare(data[c][r], 0))
                     return false;
             }
@@ -1323,10 +1309,7 @@ struct Matrix {
 
     bool isLowerTriangleMatrix() const requires (isSquare) {
         for (int c = 0; c < COLUMNS; c++) {
-            for (int r = c; r < ROWS; r++) {
-                if (c == r)
-                    continue;
-
+            for (int r = 0; r < c; r++) {
                 if (!compare(data[c][r], 0))
                     return false;
             }
@@ -1351,7 +1334,7 @@ struct Matrix {
 
     bool isUpperUnitriangularMatrix() const requires (isSquare) {
         for (int c = 0; c < COLUMNS; c++) {
-            for (int r = 0; r <= c; r++) {
+            for (int r = c; r < ROWS; r++) {
                 if (c == r) {
                     if (!compare(data[c][r], 1)) {
                         return false;
@@ -1368,7 +1351,7 @@ struct Matrix {
 
     bool isLowerUnitriangularMatrix() const requires (isSquare) {
         for (int c = 0; c < COLUMNS; c++) {
-            for (int r = c; r < ROWS; r++) {
+            for (int r = 0; r <= c; r++) {
                 if (c == r) {
                     if (!compare(data[c][r], 1)) {
                         return false;
@@ -1384,7 +1367,7 @@ struct Matrix {
 
     bool isStrictlyUpperTriangularMatrix() const requires (isSquare) {
         for (int c = 0; c < COLUMNS; c++) {
-            for (int r = 0; r <= c; r++) {
+            for (int r = c; r < ROWS; r++) {
                 if (!compare(data[c][r], 0)) {
                     return false;
                 }
@@ -1396,7 +1379,7 @@ struct Matrix {
 
     bool isStrictlyLowerTriangularMatrix() const requires (isSquare) {
         for (int c = 0; c < COLUMNS; c++) {
-            for (int r = c; r < ROWS; r++) {
+            for (int r = 0; r <= c; r++) {
                 if (!compare(data[c][r], 0))
                     return false;
             }
@@ -1673,65 +1656,37 @@ struct Matrix {
 
         for (int c = 0; c < COLUMNS; c++) {
             for (int r = 0; r <= c; r++) {
-                if constexpr (!isComplex) {
-                    if (r == c) {
-                        T value = data[c][c];
+                if (r == c) {
+                    T value = data[c][c];
 
-                        for (int k = 0; k < c; k++) {
+                    for (int k = 0; k < c; k++) {
+                        // TODO: Find a way to replace this if
+                        if constexpr (isComplex) {
+                            value -= l[k][c] * std::conj(l[k][c]);
+                        }
+                        else {
                             value -= std::pow(l[k][c], 2);
                         }
-
-                        if (value < 0) {
-                            throw std::runtime_error("Cannot cholesky decompose non positive definite matrix");
-                        }
-
-                        if (value == 0 && !allowPositiveSemiDefinite) {
-                            throw std::runtime_error("Cannot cholesky decompose non semi-positive definite matrix");
-                        }
-
-                        l[c][c] = std::sqrt(value);
                     }
-                    else if (r > c) {
-                        T value = data[c][r];
 
-                        for (int k = 0; k < c; k++) {
-                            value -= l[k][r] * l[k][c];
-                        }
-
-                        l[c][r] = value / l[c][c];
+                    if (value < 0) {
+                        throw std::runtime_error("Cannot cholesky decompose non positive definite matrix");
                     }
+
+                    if (value == 0 && !allowPositiveSemiDefinite) {
+                        throw std::runtime_error("Cannot cholesky decompose non semi-positive definite matrix");
+                    }
+
+                    l[c][c] = std::sqrt(value);
                 }
-                else {
-                    if (r == c) {
-                        T value = data[c][c];
+                else if (r > c) {
+                    T value = data[c][r];
 
-                        for (int k = 0; k < c; k++) {
-                            T complexConjugate = l[k][c];
-                            complexConjugate.imag *= -1;
-                            value -= l[k][c] * complexConjugate;
-                        }
-
-                        if (value < 0) {
-                            throw std::runtime_error("Cannot cholesky decompose non positive definite matrix");
-                        }
-
-                        if (value == 0 && !allowPositiveSemiDefinite) {
-                            throw std::runtime_error("Cannot cholesky decompose non semi-positive definite matrix");
-                        }
-
-                        l[c][c] = std::sqrt(value);
+                    for (int k = 0; k < c; k++) {
+                        value -= l[k][r] * l[k][c];
                     }
-                    else if (r > c) {
-                        T value = data[c][r];
 
-                        for (int k = 0; k < c; k++) {
-                            T complexConjugate = l[k][c];
-                            complexConjugate.imag *= -1;
-                            value -= l[k][r] * complexConjugate;
-                        }
-
-                        l[c][r] = (1 / l[c][c]) * value;
-                    }
+                    l[c][r] = value / l[c][c];
                 }
             }
         }
@@ -1870,6 +1825,70 @@ struct Matrix {
     Matrix<ROWS, COLUMNS, T> adjoint() const requires (isSquare) {
         return cofactor().transpose();
     }
+
+    bool isTridiagonal() const requires (isSquare) {
+        for (int c = 0; c < COLUMNS; c++) {
+            if (!compare(data[c][c], 0))
+                return false;
+        }
+
+        return true;
+    }
+
+#pragma region eigen stuffs
+    template<typename T_TYPE, typename Q_TYPE>
+    struct LanczosAlgorithm {
+        T_TYPE t;
+        Q_TYPE q;
+    };
+
+    template<int ITER>
+    LanczosAlgorithm<Matrix<ITER, ITER, T>, Matrix<ITER + 1, COLUMNS, T>> lanczosAlgorithm() const requires (isSquare) {
+        if (!isHermitian())
+            throw std::runtime_error("Cannot do Lanczos algorithm on non hermitian matrix");
+
+        std::array<Vector<COLUMNS, T>, ITER + 1> q;
+        std::array<T, ITER> alpha;
+        std::array<T, ITER> beta;
+
+        q[0] = Vector<COLUMNS, T>::random().normalize();
+
+        for (int m = 0; m < ITER; m++) {
+            Vector<COLUMNS, T> v = multiply(q[m]);
+            alpha[m] = q[m] * v;
+
+            if (m == 0) {
+                v = v - alpha[m] * q[m];
+            }
+            else {
+                v = v - beta[m - 1] * q[m - 1] - alpha[m] * q[m];
+            }
+
+            beta[m] = v.euclidianNorm();
+            q[m + 1] = v / beta[m];
+        }
+
+        Matrix<ITER, ITER, T> t;
+        Matrix<ITER + 1, COLUMNS, T> qMatrix;
+
+        for (int i = 0; i < ITER + 1; i++) {
+            if (i < ITER) {
+                t[i][i] = alpha[i];
+
+                if (i != ITER - 1) {
+                    t[i + 1][i] = beta[i];
+                    t[i][i + 1] = beta[i];
+                }
+            }
+
+            for (int j = 0; j < COLUMNS; j++) {
+                qMatrix[i][j] = q[i][j];
+            }
+        }
+
+        return {t, q};
+    }
+#pragma endregion
 };
 
 template<int COLUMNS, int ROWS, typename T>

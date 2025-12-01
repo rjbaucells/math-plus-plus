@@ -1,5 +1,6 @@
 #pragma once
 #include <complex>
+#include <random>
 
 #include "helper.h"
 #include "rotation.h"
@@ -27,6 +28,7 @@ struct Vector {
     static constexpr bool isComplex = is_complex_v<T>;
 
     static constexpr T epsilon = ::epsilon<T>();
+
     T data[N] = {};
 
     Vector() = default;
@@ -55,6 +57,20 @@ struct Vector {
         for (int i = 0; i < N; i++) {
             data[i] = other.data[i];
         }
+    }
+
+    static Vector<N, T> random() {
+        Vector<N, T> v;
+
+        std::random_device dev;
+        std::mt19937 eng(dev());
+        std::uniform_int_distribution<T> dist(0, 1);
+
+        for (int i = 0; i < N; i++) {
+            v[i] = dist(eng);
+        }
+
+        return v;
     }
 
 #pragma region same type operators
@@ -502,6 +518,30 @@ struct Vector {
         return result;
     }
 
+    T taxicabNorm() const {
+        T result = {};
+
+        for (int i = 0; i < N; i++) {
+            result += std::abs(data[i]);
+        }
+
+        return result;
+    }
+
+    T euclidianNorm() const {
+        return magnitude();
+    }
+
+    T maxNorm() const {
+        T greatest = {};
+
+        for (int i = 0; i < N; i++) {
+            if (std::abs(data[i]) > greatest)
+                greatest = std::abs(data[i]);
+        }
+
+        return greatest;
+    }
 
     Matrix<N, N, T> crossProductMatrix() const requires (N == 3);
 
