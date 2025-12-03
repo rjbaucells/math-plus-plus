@@ -64,16 +64,35 @@ struct Vector {
 
         std::random_device dev;
         std::mt19937 eng(dev());
-        std::uniform_int_distribution<T> dist(0, 1);
 
-        for (int i = 0; i < N; i++) {
-            v[i] = dist(eng);
+        if constexpr (std::is_integral_v<T>) {
+            std::uniform_int_distribution<T> dist(0, 1);
+
+            for (int i = 0; i < N; i++) {
+                v[i] = dist(eng);
+            }
+        }
+        else if constexpr (std::is_floating_point_v<T>) {
+            std::uniform_real_distribution<T> dist(0, 1);
+
+            for (int i = 0; i < N; i++) {
+                v[i] = dist(eng);
+            }
+        }
+        else if constexpr (isComplex) {
+            std::uniform_real_distribution<typename T::value_type> realDist(0, 1);
+            std::uniform_real_distribution<typename T::value_type> imagDist(0, 1);
+
+            for (int i = 0; i < N; i++) {
+                v[i] = {realDist(eng), imagDist(eng)};
+            }
         }
 
         return v;
     }
 
 #pragma region same type operators
+    // v = v
     Vector<N, T>& operator=(const Vector<N, T>& other) {
         if (this != &other) {
             for (int i = 0; i < N; i++) {
@@ -84,9 +103,10 @@ struct Vector {
         return *this;
     }
 
-    bool compare(const Vector<N, T>& other) const {
+    // v == v
+    bool equals(const Vector<N, T>& other) const {
         for (int i = 0; i < N; i++) {
-            if (!::compare(data[i], other.data[i]))
+            if (!compare(data[i], other.data[i]))
                 return false;
         }
 
@@ -94,9 +114,10 @@ struct Vector {
     }
 
     bool operator==(const Vector<N, T>& other) const {
-        return compare(other);
+        return equals(other);
     }
 
+    // v + v
     Vector<N, T> add(const Vector<N, T>& other) const {
         Vector<N, T> v;
 
@@ -111,6 +132,7 @@ struct Vector {
         return add(other);
     }
 
+    // v - v
     Vector<N, T> subtract(const Vector<N, T>& other) const {
         Vector<N, T> v;
 
@@ -125,6 +147,7 @@ struct Vector {
         return subtract(other);
     }
 
+    // v * #
     Vector<N, T> multiply(const T scalar) const {
         Vector<N, T> v;
 
@@ -139,6 +162,7 @@ struct Vector {
         return multiply(scalar);
     }
 
+    // v / #
     Vector<N, T> divide(const T scalar) const {
         Vector<N, T> v;
 
@@ -153,6 +177,7 @@ struct Vector {
         return divide(scalar);
     }
 
+    // v * v
     T componentDot(const Vector<N, T>& other) const {
         T result = {};
 
@@ -167,6 +192,7 @@ struct Vector {
         return componentDot(other);
     }
 
+    // v += v
     Vector<N, T>& addEquals(const Vector<N, T>& other) {
         for (int i = 0; i < N; i++) {
             data[i] += other.data[i];
@@ -179,6 +205,7 @@ struct Vector {
         return addEquals(other);
     }
 
+    // v -= v
     Vector<N, T>& subtractEquals(const Vector<N, T>& other) {
         for (int i = 0; i < N; i++) {
             data[i] -= other.data[i];
@@ -191,6 +218,7 @@ struct Vector {
         return subtractEquals(other);
     }
 
+    // v *= #
     Vector<N, T>& multiplyEquals(const T scalar) {
         for (int i = 0; i < N; i++) {
             data[i] *= scalar;
@@ -203,6 +231,7 @@ struct Vector {
         return multiplyEquals(scalar);
     }
 
+    // v /= #
     Vector<N, T>& divideEquals(const T scalar) {
         for (int i = 0; i < N; i++) {
             data[i] /= scalar;
@@ -217,6 +246,7 @@ struct Vector {
 
 #pragma endregion
 #pragma region different type operators
+    // v = v
     template<is_convertable_to<T> OTHER_T>
     Vector<N, T>& operator=(const Vector<N, OTHER_T>& other) {
         if (*this != other) {
@@ -228,10 +258,11 @@ struct Vector {
         return *this;
     }
 
+    // v == v
     template<is_convertable_to<T> OTHER_T>
-    bool compare(const Vector<N, OTHER_T>& other) const {
+    bool equals(const Vector<N, OTHER_T>& other) const {
         for (int i = 0; i < N; i++) {
-            if (!::compare(data[i], other.data[i]))
+            if (!compare(data[i], other.data[i]))
                 return false;
         }
 
@@ -240,9 +271,10 @@ struct Vector {
 
     template<is_convertable_to<T> OTHER_T>
     bool operator==(const Vector<N, OTHER_T>& other) const {
-        return compare(other);
+        return equals(other);
     }
 
+    // v + v
     template<is_convertable_to<T> OTHER_T>
     Vector<N, T> add(const Vector<N, OTHER_T>& other) const {
         Vector<N, T> v;
@@ -259,6 +291,7 @@ struct Vector {
         return add(other);
     }
 
+    // v - v
     template<is_convertable_to<T> OTHER_T>
     Vector<N, T> subtract(const Vector<N, OTHER_T>& other) const {
         Vector<N, T> v;
@@ -275,6 +308,7 @@ struct Vector {
         return subtract(other);
     }
 
+    // v * #
     template<is_convertable_to<T> OTHER_T>
     Vector<N, T> multiply(const OTHER_T scalar) const {
         Vector<N, T> v;
@@ -291,6 +325,7 @@ struct Vector {
         return multiply(scalar);
     }
 
+    // v / #
     template<is_convertable_to<T> OTHER_T>
     Vector<N, T> divide(const OTHER_T scalar) const {
         Vector<N, T> v;
@@ -307,6 +342,7 @@ struct Vector {
         return divide(scalar);
     }
 
+    // v * v
     template<is_convertable_to<T> OTHER_T>
     T componentDot(const Vector<N, OTHER_T>& other) const {
         T result = {};
@@ -323,6 +359,7 @@ struct Vector {
         return componentDot(other);
     }
 
+    // v += v
     template<is_convertable_to<T> OTHER_T>
     Vector<N, T>& addEquals(const Vector<N, OTHER_T>& other) {
         for (int i = 0; i < N; i++) {
@@ -337,6 +374,7 @@ struct Vector {
         return addEquals(other);
     }
 
+    // v -= v
     template<is_convertable_to<T> OTHER_T>
     Vector<N, T>& subtractEquals(const Vector<N, OTHER_T>& other) {
         for (int i = 0; i < N; i++) {
@@ -351,6 +389,7 @@ struct Vector {
         return subtractEquals(other);
     }
 
+    // v *= #
     template<is_convertable_to<T> OTHER_T>
     Vector<N, T>& multiplyEquals(const OTHER_T scalar) {
         for (int i = 0; i < N; i++) {
@@ -365,6 +404,7 @@ struct Vector {
         return multiplyEquals(scalar);
     }
 
+    // v /= #
     template<is_convertable_to<T> OTHER_T>
     Vector<N, T>& divideEquals(const OTHER_T scalar) {
         for (int i = 0; i < N; i++) {
@@ -396,7 +436,12 @@ struct Vector {
         T result = {};
 
         for (int i = 0; i < N; i++) {
-            result += data[i] * data[i];
+            if constexpr (isComplex) {
+                result += data[i] * std::conj(data[i]);
+            }
+            else {
+                result += std::pow(data[i], 2);
+            }
         }
 
         return std::sqrt(result);
@@ -543,6 +588,21 @@ struct Vector {
         return greatest;
     }
 
+    std::string toString() const {
+        std::stringstream ss;
+
+        ss << "[";
+        for (int i = 0; i < N; i++) {
+            ss << data[i];
+
+            if (i < N - 1)
+                ss << ", ";
+        }
+        ss << "]";
+
+        return ss.str();
+    }
+
     Matrix<N, N, T> crossProductMatrix() const requires (N == 3);
 
     template<int OTHER_N>
@@ -550,4 +610,38 @@ struct Vector {
 
     template<int OTHER_N, is_convertable_to<T> OTHER_T>
     Matrix<OTHER_N, N, T> outerProductMatrix(const Vector<OTHER_N, OTHER_T>& v) const;
+
+    template<int ROWS>
+    Vector<N, T> multiply(const Matrix<N, ROWS, T>& m) const;
+
+    template<int ROWS>
+    Vector<N, T> operator*(const Matrix<N, ROWS, T>& m) const;
+
+    template<int ROWS, is_convertable_to<T> OTHER_T>
+    Vector<N, T> multiply(const Matrix<N, ROWS, OTHER_T>& m) const;
+
+    template<int ROWS, is_convertable_to<T> OTHER_T>
+    Vector<N, T> operator*(const Matrix<N, ROWS, OTHER_T>& m) const;
 };
+
+template<int N, is_scalar_v T>
+Vector<N, T> operator*(const T lhs, const Vector<N, T>& rhs) {
+    Vector<N, T> result;
+
+    for (int i = 0; i < N; i++) {
+        result[i] = lhs * rhs.data[i];
+    }
+
+    return result;
+}
+
+template<int N, is_scalar_v T, is_convertable_to<T> OTHER_T>
+Vector<N, T> operator*(const OTHER_T lhs, const Vector<N, T>& rhs) {
+    Vector<N, T> result;
+
+    for (int i = 0; i < N; i++) {
+        result[i] = lhs * rhs.data[i];
+    }
+
+    return result;
+}

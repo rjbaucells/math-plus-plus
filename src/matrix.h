@@ -35,17 +35,9 @@ struct Matrix {
 
     Matrix() = default;
 
-    Matrix(std::initializer_list<std::initializer_list<T>> initializerList) {
-        if (initializerList.size() != ROWS) {
-            throw std::runtime_error("Incorrect number of rows in initializer list");
-        }
-
+    constexpr Matrix(std::initializer_list<std::initializer_list<T>> initializerList) {
         int r = 0;
         for (const auto& row : initializerList) {
-            if (row.size() != COLUMNS) {
-                throw std::runtime_error("Incorrect number of columns in initializer list");
-            }
-
             int c = 0;
 
             for (const auto element : row) {
@@ -73,7 +65,7 @@ struct Matrix {
     }
 
 #pragma region Same Type Operators
-    // copy assignment operator with same type
+    // m = m
     Matrix<COLUMNS, ROWS, T>& operator=(const Matrix<COLUMNS, ROWS, T>& other) {
         if (this != &other) {
             memcpy(data, other.data, sizeof(T) * COLUMNS * ROWS);
@@ -82,6 +74,23 @@ struct Matrix {
         return *this;
     }
 
+    // m == m
+    bool equals(const Matrix<COLUMNS, ROWS, T>& other) const {
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = 0; r < ROWS; r++) {
+                if (!compare(data[c][r], other.data[c][r]))
+                    return false;
+            }
+        }
+
+        return true;
+    }
+
+    bool operator==(const Matrix<COLUMNS, ROWS, T>& other) const {
+        return equals(other);
+    }
+
+    // m + m
     Matrix<COLUMNS, ROWS, T> add(const Matrix<COLUMNS, ROWS, T>& other) const {
         Matrix<COLUMNS, ROWS, T> result;
 
@@ -98,20 +107,7 @@ struct Matrix {
         return add(other);
     }
 
-    Matrix<COLUMNS, ROWS, T>& addEquals(const Matrix<COLUMNS, ROWS, T>& other) {
-        for (int c = 0; c < COLUMNS; c++) {
-            for (int r = 0; r < ROWS; r++) {
-                data[c][r] += other.data[c][r];
-            }
-        }
-
-        return *this;
-    }
-
-    Matrix<COLUMNS, ROWS, T>& operator+=(const Matrix<COLUMNS, ROWS, T>& other) {
-        return addEquals(other);
-    }
-
+    // m - m
     Matrix<COLUMNS, ROWS, T> subtract(const Matrix<COLUMNS, ROWS, T>& other) const {
         Matrix<COLUMNS, ROWS, T> result;
 
@@ -128,20 +124,7 @@ struct Matrix {
         return subtract(other);
     }
 
-    Matrix<COLUMNS, ROWS, T>& subtractEquals(const Matrix<COLUMNS, ROWS, T>& other) {
-        for (int c = 0; c < COLUMNS; c++) {
-            for (int r = 0; r < ROWS; r++) {
-                data[c][r] -= other.data[c][r];
-            }
-        }
-
-        return *this;
-    }
-
-    Matrix<COLUMNS, ROWS, T> operator-=(const Matrix<COLUMNS, ROWS, T>& other) {
-        return subtractEquals(other);
-    }
-
+    // m * m
     template<int OTHER_COLUMNS>
     Matrix<OTHER_COLUMNS, ROWS, T> multiply(const Matrix<OTHER_COLUMNS, COLUMNS, T>& other) const {
         Matrix<OTHER_COLUMNS, ROWS, T> result;
@@ -162,6 +145,24 @@ struct Matrix {
         return multiply(other);
     }
 
+    // m * v
+    Vector<COLUMNS, T> multiply(const Vector<COLUMNS, T>& other) const {
+        Vector<COLUMNS, T> result;
+
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = 0; r < ROWS; r++) {
+                result[r] += data[c][r] * other[c];
+            }
+        }
+
+        return result;
+    }
+
+    Vector<COLUMNS, T> operator*(const Vector<COLUMNS, T>& other) const {
+        return multiply(other);
+    }
+
+    // m * #
     Matrix<COLUMNS, ROWS, T> multiply(const T val) const {
         Matrix<COLUMNS, ROWS, T> result;
 
@@ -178,6 +179,54 @@ struct Matrix {
         return multiply(val);
     }
 
+    // m / #
+    Matrix<COLUMNS, ROWS, T> divide(const T scalar) const {
+        Matrix<COLUMNS, ROWS, T> result;
+
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = 0; r < ROWS; r++) {
+                result[c][r] = data[c][r] / scalar;
+            }
+        }
+
+        return result;
+    }
+
+    Matrix<COLUMNS, ROWS, T> operator/(const T scalar) const {
+        return divide(scalar);
+    }
+
+    // m += m
+    Matrix<COLUMNS, ROWS, T>& addEquals(const Matrix<COLUMNS, ROWS, T>& other) {
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = 0; r < ROWS; r++) {
+                data[c][r] += other.data[c][r];
+            }
+        }
+
+        return *this;
+    }
+
+    Matrix<COLUMNS, ROWS, T>& operator+=(const Matrix<COLUMNS, ROWS, T>& other) {
+        return addEquals(other);
+    }
+
+    // m -= m
+    Matrix<COLUMNS, ROWS, T>& subtractEquals(const Matrix<COLUMNS, ROWS, T>& other) {
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = 0; r < ROWS; r++) {
+                data[c][r] -= other.data[c][r];
+            }
+        }
+
+        return *this;
+    }
+
+    Matrix<COLUMNS, ROWS, T> operator-=(const Matrix<COLUMNS, ROWS, T>& other) {
+        return subtractEquals(other);
+    }
+
+    // m *= #
     Matrix<COLUMNS, ROWS, T>& multiplyEquals(const T val) {
         for (int c = 0; c < COLUMNS; c++) {
             for (int r = 0; r < ROWS; r++) {
@@ -192,43 +241,27 @@ struct Matrix {
         return multiplyEquals(val);
     }
 
-    bool equals(const Matrix<COLUMNS, ROWS, T>& other) const {
+    // m /= #
+    Matrix<COLUMNS, ROWS, T>& divideEquals(const T scalar) {
         for (int c = 0; c < COLUMNS; c++) {
             for (int r = 0; r < ROWS; r++) {
-                if (!compare(data[c][r], other.data[c][r]))
-                    return false;
+                data[c][r] /= scalar;
             }
         }
 
-        return true;
+        return *this;
     }
 
-    bool operator==(const Matrix<COLUMNS, ROWS, T>& other) const {
-        return equals(other);
-    }
-
-    Vector<COLUMNS, T> multiply(const Vector<COLUMNS, T>& other) {
-        Vector<COLUMNS, T> result;
-
-        for (int c = 0; c < COLUMNS; c++) {
-            for (int r = 0; r < ROWS; r++) {
-                result[r] += data[c][r] * other[c];
-            }
-        }
-
-        return result;
-    }
-
-    Vector<COLUMNS, T> operator*(const Vector<COLUMNS, T>& other) {
-        return multiply(other);
+    Matrix<COLUMNS, ROWS, T>& operator/=(const T scalar) {
+        return divideEquals(scalar);
     }
 
 #pragma endregion
 #pragma region Different Type Operators
-    // copy assignment operator with different type
+    // m = m
     template<is_convertable_to<T> OTHER_T>
     Matrix<COLUMNS, ROWS, T>& operator=(const Matrix<COLUMNS, ROWS, OTHER_T>& other) {
-        if (*this != other) {
+        if (static_cast<void*>(this) != static_cast<void*>(&other)) {
             for (int c = 0; c < COLUMNS; c++) {
                 for (int r = 0; r < ROWS; r++) {
                     data[c][r] = other.data[c][r];
@@ -239,6 +272,25 @@ struct Matrix {
         return *this;
     }
 
+    // m == m
+    template<is_convertable_to<T> OTHER_T>
+    bool equals(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const {
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = 0; r < ROWS; r++) {
+                if (!compare(data[c][r], other.data[c][r]))
+                    return false;
+            }
+        }
+
+        return true;
+    }
+
+    template<is_convertable_to<T> OTHER_T>
+    bool operator==(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const {
+        return equals(other);
+    }
+
+    // m + m
     template<is_convertable_to<T> OTHER_T>
     Matrix<COLUMNS, ROWS, T> add(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const {
         Matrix<COLUMNS, ROWS, T> result;
@@ -257,22 +309,7 @@ struct Matrix {
         return add(other);
     }
 
-    template<is_convertable_to<T> OTHER_T>
-    Matrix<COLUMNS, ROWS, T>& addEquals(const Matrix<COLUMNS, ROWS, OTHER_T>& other) {
-        for (int c = 0; c < COLUMNS; c++) {
-            for (int r = 0; r < ROWS; r++) {
-                data[c][r] += other.data[c][r];
-            }
-        }
-
-        return *this;
-    }
-
-    template<is_convertable_to<T> OTHER_T>
-    Matrix<COLUMNS, ROWS, T>& operator+=(const Matrix<COLUMNS, ROWS, OTHER_T>& other) {
-        return addEquals(other);
-    }
-
+    // m - m
     template<is_convertable_to<T> OTHER_T>
     Matrix<COLUMNS, ROWS, T> subtract(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const {
         Matrix<COLUMNS, ROWS, T> result;
@@ -291,22 +328,7 @@ struct Matrix {
         return subtract(other);
     }
 
-    template<is_convertable_to<T> OTHER_T>
-    Matrix<COLUMNS, ROWS, T>& subtractEquals(const Matrix<COLUMNS, ROWS, OTHER_T>& other) {
-        for (int c = 0; c < COLUMNS; c++) {
-            for (int r = 0; r < ROWS; r++) {
-                data[c][r] -= other.data[c][r];
-            }
-        }
-
-        return *this;
-    }
-
-    template<is_convertable_to<T> OTHER_T>
-    Matrix<COLUMNS, ROWS, T>& operator-=(const Matrix<COLUMNS, ROWS, OTHER_T>& other) {
-        return subtractEquals(other);
-    }
-
+    // m * m
     template<int OTHER_COLUMNS, is_convertable_to<T> OTHER_T>
     Matrix<OTHER_COLUMNS, ROWS, T> multiply(const Matrix<OTHER_COLUMNS, COLUMNS, OTHER_T>& other) const {
         Matrix<OTHER_COLUMNS, ROWS, T> result;
@@ -327,6 +349,26 @@ struct Matrix {
         return multiply(other);
     }
 
+    // m * v
+    template<is_convertable_to<T> OTHER_T>
+    Vector<COLUMNS, T> multiply(const Vector<COLUMNS, OTHER_T>& other) const {
+        Vector<COLUMNS, T> result;
+
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = 0; r < ROWS; r++) {
+                result[r] += data[c][r] * other[c];
+            }
+        }
+
+        return result;
+    }
+
+    template<is_convertable_to<T> OTHER_T>
+    Vector<COLUMNS, T> operator*(const Vector<COLUMNS, OTHER_T>& other) const {
+        return multiply(other);
+    }
+
+    // m * #
     template<is_convertable_to<T> OTHER_T>
     Matrix<COLUMNS, ROWS, T> multiply(const OTHER_T val) const {
         Matrix<COLUMNS, ROWS, T> result;
@@ -345,6 +387,60 @@ struct Matrix {
         return multiply(val);
     }
 
+    // m / #
+    template<is_convertable_to<T> OTHER_T>
+    Matrix<COLUMNS, ROWS, T> divide(const OTHER_T scalar) const {
+        Matrix<COLUMNS, ROWS, T> result;
+
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = 0; r < ROWS; r++) {
+                result[c][r] = data[c][r] / scalar;
+            }
+        }
+
+        return result;
+    }
+
+    template<is_convertable_to<T> OTHER_T>
+    Matrix<COLUMNS, ROWS, T> operator/(const OTHER_T scalar) const {
+        return divide(scalar);
+    }
+
+    // m += m
+    template<is_convertable_to<T> OTHER_T>
+    Matrix<COLUMNS, ROWS, T>& addEquals(const Matrix<COLUMNS, ROWS, OTHER_T>& other) {
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = 0; r < ROWS; r++) {
+                data[c][r] += other.data[c][r];
+            }
+        }
+
+        return *this;
+    }
+
+    template<is_convertable_to<T> OTHER_T>
+    Matrix<COLUMNS, ROWS, T>& operator+=(const Matrix<COLUMNS, ROWS, OTHER_T>& other) {
+        return addEquals(other);
+    }
+
+    // m -= m
+    template<is_convertable_to<T> OTHER_T>
+    Matrix<COLUMNS, ROWS, T>& subtractEquals(const Matrix<COLUMNS, ROWS, OTHER_T>& other) {
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = 0; r < ROWS; r++) {
+                data[c][r] -= other.data[c][r];
+            }
+        }
+
+        return *this;
+    }
+
+    template<is_convertable_to<T> OTHER_T>
+    Matrix<COLUMNS, ROWS, T> operator-=(const Matrix<COLUMNS, ROWS, OTHER_T>& other) {
+        return subtractEquals(other);
+    }
+
+    // m *= #
     template<is_convertable_to<T> OTHER_T>
     Matrix<COLUMNS, ROWS, T>& multiplyEquals(const OTHER_T val) {
         for (int c = 0; c < COLUMNS; c++) {
@@ -357,45 +453,26 @@ struct Matrix {
     }
 
     template<is_convertable_to<T> OTHER_T>
-    Matrix<COLUMNS, ROWS, T>& operator*=(const OTHER_T val) {
+    Matrix<COLUMNS, ROWS, T>& operator*=(const OTHER_T val) const {
         return multiplyEquals(val);
     }
 
+    // m /= #
     template<is_convertable_to<T> OTHER_T>
-    bool equals(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const {
+    Matrix<COLUMNS, ROWS, T>& divideEquals(const OTHER_T scalar) {
         for (int c = 0; c < COLUMNS; c++) {
             for (int r = 0; r < ROWS; r++) {
-                if (!compare(data[c][r], other.data[c][r]))
-                    return false;
+                data[c][r] /= scalar;
             }
         }
 
-        return true;
+        return *this;
     }
 
     template<is_convertable_to<T> OTHER_T>
-    bool operator==(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const {
-        return equals(other);
+    Matrix<COLUMNS, ROWS, T>& operator/=(const OTHER_T scalar) {
+        return divideEquals(scalar);
     }
-
-    template<is_convertable_to<T> OTHER_T>
-    Vector<COLUMNS, T> multiply(const Vector<COLUMNS, OTHER_T>& other) {
-        Vector<COLUMNS, T> result;
-
-        for (int c = 0; c < COLUMNS; c++) {
-            for (int r = 0; r < ROWS; r++) {
-                result[r] += data[c][r] * other[c];
-            }
-        }
-
-        return result;
-    }
-
-    template<is_convertable_to<T> OTHER_T>
-    Vector<COLUMNS, T> operator*(const Vector<COLUMNS, OTHER_T>& other) {
-        return multiply(other);
-    }
-
 #pragma endregion
 
     template<int N>
@@ -458,7 +535,11 @@ struct Matrix {
         return result;
     }
 
-    Matrix<ROWS, COLUMNS, T> conjugateTranspose() const requires (isComplex) {
+    Matrix<ROWS, COLUMNS, T> conjugateTranspose() const {
+        if constexpr (!isComplex) {
+            return transpose();
+        }
+
         Matrix<ROWS, COLUMNS, T> result;
 
         for (int c = 0; c < ROWS; c++) {
@@ -471,8 +552,7 @@ struct Matrix {
     }
 
     Matrix<COLUMNS, ROWS, T> inverse() const requires (isSquare) {
-        // its a one by one, we can just return 1 / value
-        if constexpr (ROWS == 1) {
+        if constexpr (ROWS == 1) { // its a one by one, we can just return 1 / value
             if (compare(data[0][0], 0)) {
                 throw std::runtime_error("Cannot find inverse of singular matrix");
             }
@@ -482,9 +562,7 @@ struct Matrix {
             result[0][0] = 1 / data[0][0];
             return result;
         }
-
-        // its a two by two, we can do the special fast thing
-        if constexpr (ROWS == 2) {
+        else if constexpr (ROWS == 2) { // its a two by two, we can do the special fast thing
             T det = determinant();
 
             if (compare(det, 0)) {
@@ -500,95 +578,115 @@ struct Matrix {
 
             return result;
         }
+        else {
+            Matrix<COLUMNS, ROWS, T> left = *this;
+            Matrix<COLUMNS, ROWS, T> right = identity();
 
-        const Matrix<COLUMNS, ROWS, T> identity = Matrix<COLUMNS, ROWS, T>::identity();
-        Matrix<COLUMNS * 2, ROWS, T> augmented;
-
-        for (int c = 0; c < COLUMNS; c++) {
-            for (int r = 0; r < ROWS; r++) {
-                augmented[c][r] = data[c][r];
-            }
-        }
-
-        for (int c = 0; c < COLUMNS; c++) {
-            for (int r = 0; r < ROWS; r++) {
-                augmented[c + COLUMNS][r] = identity[c][r];
-            }
-        }
-
-        for (int c = 0; c < COLUMNS; c++) {
-            // if the pivot is zero
-            if (augmented[c][c] == 0) {
+            for (int c = 0; c < COLUMNS; c++) {
+                // handle row swaps for performance
                 int rowIndex = -1;
-                for (int r = c + 1; r < ROWS; r++) {
-                    if (augmented[c][r] != 0 && (rowIndex == -1 || std::abs(augmented[c][r]) > std::abs(augmented[c][rowIndex]))) {
-                        rowIndex = r;
+                T value = left[c][c];
+
+                // only check for rows to swap with below main diagonal
+                for (int i = c; i < ROWS; i++) {
+                    T norm = std::norm(left[c][i]);
+
+                    if (norm > value) {
+                        value = norm;
+                        rowIndex = i;
                     }
                 }
 
-                if (rowIndex == -1) {
+                // if we didnt swap, but needed to have
+                if (rowIndex == -1 && compare(value, 0))
                     throw std::runtime_error("Cannot find inverse of singular matrix");
+
+                // swap if we can
+                if (rowIndex != -1) {
+                    left = left.swapRows(c, rowIndex);
+                    right = right.swapRows(c, rowIndex);
                 }
 
-                // since c (column) = r (row), the dest row is at temp[row (aka, c}] the src row is the memory address of the start of the biggest row so &temp[c][biggestRow]
-                augmented = augmented.swapRows(c, rowIndex);
+                {
+                    // normalize pivot row
+                    T pivot = left[c][c];
+                    for (int cc = c; cc < COLUMNS; cc++) {
+                        left[cc][c] /= pivot;
+                        right[cc][c] /= pivot;
+                    }
+                }
+
+                for (int r = 0; r < ROWS; r++) {
+                    if (c == r)
+                        continue;
+
+                    T multiplierToPivotRow = left[c][r];
+                    for (int i = c; i < COLUMNS; i++) {
+                        left[i][r] += -multiplierToPivotRow * left[i][c];
+                        right[i][r] += -multiplierToPivotRow * left[i][c];
+                    }
+                }
             }
 
-            // normalize pivot row to 1
-            T value = augmented[c][c];
-            for (int cc = c + 1; cc < augmented.columns; cc++) {
-                augmented[cc][c] /= value;
-            }
-            augmented[c][c] = 1;
+            return right;
+        }
+    }
 
-            for (int r = 0; r < ROWS; r++) {
-                // the current value is on the main diagonal. (expected to be a 1). Should be good
-                if (r == c) {
-                    // we dont want to affect the pivot
-                    continue;
-                }
-                // it isnt on the main diagonal, (expected to be a 0)
-                T k = augmented[c][r];
-                for (int cc = c + 1; cc < augmented.columns; cc++) {
-                    augmented[cc][r] += -k * augmented[cc][c];
-                }
-                augmented[c][r] = 0;
-            }
+    enum DeterminantAlgorithm {
+        laplace,
+        triangular,
+        hessenberg
+    };
+
+    T determinant(const DeterminantAlgorithm algorithm = laplace) const requires (isSquare) {
+        if constexpr (COLUMNS == 1) {
+            return data[0][0];
+        }
+        else if constexpr (COLUMNS == 2) {
+            // ad - bc
+            return data[0][0] * data[1][1] - data[0][1] * data[1][0];
+        }
+        else if constexpr (COLUMNS == 3) {
+            // aei + bfg + cdh - ceg - bdi - afh
+            return (data[0][0] * data[1][1] * data[2][2]) + (data[1][0] * data[2][1] * data[0][2]) + (data[2][0] * data[0][1] * data[1][2]) - (data[2][0] * data[1][1] * data[0][2]) - (data[1][0] * data[0][1] * data[2][2]) - (data[0][0] * data[2][1] * data[1][2]);
         }
 
-        Matrix<COLUMNS, ROWS, T> result;
+        switch (algorithm) {
+            case triangular:
+                return triangularDeterminant();
+            case hessenberg:
+                return 0;
+            default:
+                return laplaceDeterminant();
+        }
+    }
 
-        for (int c = 0; c < COLUMNS; ++c) {
-            for (int r = 0; r < ROWS; r++) {
-                result[c][r] = augmented[c + COLUMNS][r];
-            }
+private:
+    T laplaceDeterminant() const requires (isSquare) {
+        T result = {};
+        int sign = 1;
+
+        for (int c = 0; c < COLUMNS; c++) {
+            Matrix<COLUMNS - 1, ROWS - 1, T> insideMatrix = removeColumnsAndRows({c}, {0});
+
+            result += sign * data[c][0] * insideMatrix.determinant();
+            sign *= -1;
         }
 
         return result;
     }
 
-    T determinant() const requires (isSquare) {
-        if constexpr (ROWS == 1) {
-            return data[0][0];
-        }
-        else if constexpr (ROWS == 2) {
-            return data[0][0] * data[1][1] - data[0][1] * data[1][0];
-        }
-        else {
-            T result = 0;
-            int sign = 1;
+    T triangularDeterminant() const requires (isSquare) {
+        T result = {};
 
-            for (int c = 0; c < COLUMNS; c++) {
-                Matrix<COLUMNS - 1, ROWS - 1, T> insideMatrix = getSubMatrix(0, c);
-
-                result += sign * data[c][0] * insideMatrix.determinant();
-                sign *= -1;
-            }
-
-            return result;
+        for (int i = 0; i < COLUMNS; i++) {
+            result *= data[i][i];
         }
+
+        return result;
     }
 
+public:
 #pragma region transformations
     static Matrix<COLUMNS, ROWS, T> scalingMatrix(const Vector<COLUMNS, T>& factors) requires (isSquare) {
         Matrix<COLUMNS, ROWS, T> matrix;
@@ -823,49 +921,55 @@ struct Matrix {
         return ss.str();
     }
 
-    Matrix<COLUMNS - 1, ROWS - 1, T> getSubMatrix(const int rowToRemove, const int columnToRemove) const {
-        Matrix<COLUMNS - 1, ROWS - 1, T> subMatrix;
-        int subMatrixR = 0;
-        for (int r = 0; r < ROWS; r++) {
-            if (r == rowToRemove)
-                continue;
+    template<int NUM_COLUMNS_TO_REMOVE>
+    Matrix<COLUMNS - NUM_COLUMNS_TO_REMOVE, ROWS, T> removeColumns(const std::array<int, NUM_COLUMNS_TO_REMOVE>& columnsToRemove) const {
+        Matrix<COLUMNS - NUM_COLUMNS_TO_REMOVE, ROWS, T> m;
 
-            int subMatrixC = 0;
-            for (int c = 0; c < COLUMNS; c++) {
-                if (c == columnToRemove)
-                    continue;
-
-                subMatrix.data[subMatrixC][subMatrixR] = data[c][r];
-                subMatrixC++;
-            }
-            subMatrixR++;
-        }
-
-        return subMatrix;
-    }
-
-    template<int NUM_COLUMNS_TO_REMOVE, int NUM_ROWS_TO_REMOVE>
-    Matrix<COLUMNS - NUM_COLUMNS_TO_REMOVE, ROWS - NUM_ROWS_TO_REMOVE, T> getSubMatrix(const std::array<int, NUM_COLUMNS_TO_REMOVE>& columnsToRemove, const std::array<int, NUM_ROWS_TO_REMOVE>& rowsToRemove) const {
-        Matrix<COLUMNS - NUM_COLUMNS_TO_REMOVE, ROWS - NUM_ROWS_TO_REMOVE, T> subMatrix;
-
-        int subMatrixC = 0;
         for (int c = 0; c < COLUMNS; c++) {
             if (std::find(columnsToRemove.begin(), columnsToRemove.end(), c))
                 continue;
 
-            int subMatrixR = 0;
+            for (int r = 0; r < ROWS; r++) {
+                m[c][r] = data[c][r];
+            }
+        }
+
+        return m;
+    }
+
+    template<int NUM_ROWS_TO_REMOVE>
+    Matrix<COLUMNS, ROWS - NUM_ROWS_TO_REMOVE, T> removeRows(const std::array<int, NUM_ROWS_TO_REMOVE>& rowsToRemove) const {
+        Matrix<COLUMNS, ROWS - NUM_ROWS_TO_REMOVE, T> m;
+
+        for (int c = 0; c < COLUMNS; c++) {
             for (int r = 0; r < ROWS; r++) {
                 if (std::find(rowsToRemove.begin(), rowsToRemove.end(), r))
                     continue;
 
-                subMatrix[subMatrixC][subMatrixR] = data[c][r];
-                subMatrixR++;
+                m[c][r] = data[c][r];
             }
-
-            subMatrixC++;
         }
 
-        return subMatrix;
+        return m;
+    }
+
+    template<int NUM_COLUMNS_TO_REMOVE, int NUM_ROWS_TO_REMOVE>
+    Matrix<COLUMNS - NUM_COLUMNS_TO_REMOVE, ROWS - NUM_ROWS_TO_REMOVE, T> removeColumnsAndRows(const std::array<int, NUM_COLUMNS_TO_REMOVE>& columnsToRemove, const std::array<int, NUM_ROWS_TO_REMOVE>& rowsToRemove) const {
+        Matrix<COLUMNS, ROWS - NUM_ROWS_TO_REMOVE, T> m;
+
+        for (int c = 0; c < COLUMNS; c++) {
+            if (std::find(columnsToRemove.begin(), columnsToRemove.end(), c))
+                continue;
+
+            for (int r = 0; r < ROWS; r++) {
+                if (std::find(rowsToRemove.begin(), rowsToRemove.end(), r))
+                    continue;
+
+                m[c][r] = data[c][r];
+            }
+        }
+
+        return m;
     }
 
     Matrix<COLUMNS, ROWS, T> swapRows(const int rowA, const int rowB) {
@@ -980,7 +1084,7 @@ struct Matrix {
                 }
 
                 // we found nothing so we skip this column
-                if (rowIndex == -1 && pivot == 0) {
+                if (rowIndex == -1 && compare(pivot, 0)) {
                     continue;
                 }
 
@@ -1068,7 +1172,7 @@ struct Matrix {
                 }
 
                 // we found nothing so we skip this column
-                if (rowIndex == -1 && pivot == 0) {
+                if (rowIndex == -1 && compare(pivot, 0)) {
                     continue;
                 }
 
@@ -1154,7 +1258,7 @@ struct Matrix {
     }
 
     bool isHermitian() const requires (isSquare) {
-        if (!isComplex)
+        if constexpr (!isComplex)
             return isSymmetrical();
 
         for (int c = 0; c < COLUMNS; c++) {
@@ -1169,7 +1273,7 @@ struct Matrix {
     }
 
     bool isSkewHermitian() const requires (isSquare) {
-        if (!isComplex)
+        if constexpr (!isComplex)
             return isSkewSymmetrical();
 
         for (int c = 0; c < COLUMNS; c++) {
@@ -1183,67 +1287,29 @@ struct Matrix {
     }
 
     bool isPositiveDefinite() const requires (isSquare) {
-        for (int c = 0; c < COLUMNS; c++) {
-            Vector<ROWS> x;
-
-            for (int r = 0; r < ROWS; r++) {
-                x[r] = data[c][r];
-            }
-
-            if (x.componentDot(x) <= 0) {
-                return false;
-            }
-        }
-
-        return true;
+        // TODO:
     }
 
     bool isPositiveSemiDefinite() const requires (isSquare) {
-        for (int c = 0; c < COLUMNS; c++) {
-            Vector<ROWS> x;
-
-            for (int r = 0; r < ROWS; r++) {
-                x[r] = data[c][r];
-            }
-
-            if (x.componentDot(x) < 0) {
-                return false;
-            }
-        }
-
-        return true;
+        // TODO:
     }
 
     bool isNegativeDefinite() const requires (isSquare) {
-        for (int c = 0; c < COLUMNS; c++) {
-            Vector<ROWS> x;
-
-            for (int r = 0; r < ROWS; r++) {
-                x[r] = data[c][r];
-            }
-
-            if (x.componentDot(x) >= 0) {
-                return false;
-            }
-        }
-
-        return true;
+        // TODO:
     }
 
     bool isNegativeSemiDefinite() const requires (isSquare) {
-        for (int c = 0; c < COLUMNS; c++) {
-            Vector<ROWS> x;
+        // TODO:
+    }
 
-            for (int r = 0; r < ROWS; r++) {
-                x[r] = data[c][r];
-            }
+    Vector<ROWS, T> getColumnVector(const int i) const {
+        Vector<ROWS, T> v;
 
-            if (x.componentDot(x) > 0) {
-                return false;
-            }
+        for (int j = 0; j < ROWS; j++) {
+            v[j] = data[i][j];
         }
 
-        return true;
+        return v;
     }
 
     std::array<Vector<ROWS>, COLUMNS> getColumnVectors() const {
@@ -1258,6 +1324,16 @@ struct Matrix {
         return vecs;
     }
 
+    Vector<COLUMNS, T> getRowVector(const int i) const {
+        Vector<COLUMNS, T> v;
+
+        for (int j = 0; j < COLUMNS; j++) {
+            v[j] = data[j][i];
+        }
+
+        return v;
+    }
+
     std::array<Vector<COLUMNS>, ROWS> getRowVectors() const {
         std::array<Vector<COLUMNS>, ROWS> vecs;
 
@@ -1268,6 +1344,34 @@ struct Matrix {
         }
 
         return vecs;
+    }
+
+    void setColumnVectors(const std::array<Vector<ROWS, T>, COLUMNS>& columnVectors) {
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = 0; r < ROWS; r++) {
+                data[c][r] = columnVectors[c][r];
+            }
+        }
+    }
+
+    void setColumnVector(const int i, const Vector<ROWS, T>& v) {
+        for (int j = 0; j < ROWS; j++) {
+            data[i][j] = v[j];
+        }
+    }
+
+    void setRowVectors(const std::array<Vector<COLUMNS, T>, ROWS> rowVectors) {
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = 0; r < ROWS; r++) {
+                data[c][r] = rowVectors[r][c];
+            }
+        }
+    }
+
+    void setRowVector(const int i, const Vector<COLUMNS, T>& v) {
+        for (int j = 0; j < COLUMNS; j++) {
+            data[j][i] = v[j];
+        }
     }
 
     T trace() const requires (isSquare) {
@@ -1281,23 +1385,24 @@ struct Matrix {
     }
 
     bool isUnitary() const requires (isSquare) {
-        return conjugateTranspose() * *this == identity();
+        // TODO:
     }
 
     bool isSpecialUnitary() const requires (isSquare) {
-        return conjugateTranspose() * *this == identity() && determinant() == 1;
+        // TODO:
     }
 
     bool isOrthogonal() const requires (!isComplex && isSquare) {
-        return transpose() * *this == identity();
+        // TODO:
     }
 
     bool isSpecialOrthogonal() const requires (!isComplex && isSquare) {
-        return conjugateTranspose() * *this == identity() && determinant() == 1;
+        // TODO:
     }
 
     bool isUpperTriangleMatrix() const requires (isSquare) {
         for (int c = 0; c < COLUMNS; c++) {
+            // dont worry about out of bounds, loop wont even run if c + 1 is too big
             for (int r = c + 1; r < ROWS; r++) {
                 if (!compare(data[c][r], 0))
                     return false;
@@ -1445,7 +1550,7 @@ struct Matrix {
                 }
 
                 // we found nothing but we needed to find something
-                if (rowIndex == -1 && pivot == 0) {
+                if (rowIndex == -1 && compare(pivot, 0)) {
                     throw std::runtime_error("Cannot LUP decompose singular matrix");
                 }
 
@@ -1520,7 +1625,7 @@ struct Matrix {
                     }
                 }
 
-                if (rowIndex == -1 && columnIndex == -1 && pivot == 0) {
+                if (rowIndex == -1 && columnIndex == -1 && compare(pivot, 0)) {
                     throw std::runtime_error("Cannot LUPQ decompose singular matrix");
                 }
 
@@ -1575,7 +1680,7 @@ struct Matrix {
         for (int c = 0; c < std::min(ROWS, COLUMNS); c++) {
             T pivot = u[c][c];
 
-            if (pivot == 0)
+            if (compare(pivot, 0))
                 throw std::runtime_error("Cannot LU decompose matrix due to zero pivot, try LUP or LUPQ");
 
             // iterate through things beneath that pivot in the matrix
@@ -1612,7 +1717,7 @@ struct Matrix {
         for (int c = 0; c < std::min(ROWS, COLUMNS); c++) {
             T pivot = u[c][c];
 
-            if (pivot == 0)
+            if (compare(pivot, 0))
                 throw std::runtime_error("Cannot LDU decompose matrix due to zero pivot");
 
             // iterate through things beneath that pivot in the matrix
@@ -1648,7 +1753,7 @@ struct Matrix {
     };
 
     CholeskyDecomposition<Matrix<COLUMNS, ROWS, T>, Matrix<ROWS, COLUMNS, T>> choleskyDecomposition(const bool allowPositiveSemiDefinite = false) const requires (isSquare) {
-        if ((isComplex && !isHermitian()) || (!isComplex && !isSymmetrical())) {
+        if (!isHermitian()) {
             throw std::runtime_error("Cannot find Cholesky Decomposition of non hermitian/symmetric matrix");
         }
 
@@ -1673,7 +1778,7 @@ struct Matrix {
                         throw std::runtime_error("Cannot cholesky decompose non positive definite matrix");
                     }
 
-                    if (value == 0 && !allowPositiveSemiDefinite) {
+                    if (compare(value, 0) && !allowPositiveSemiDefinite) {
                         throw std::runtime_error("Cannot cholesky decompose non semi-positive definite matrix");
                     }
 
@@ -1790,32 +1895,32 @@ struct Matrix {
 
 #pragma endregion
 
-    T minor(const int c, const int r) const requires (isSquare) {
-        return getSubMatrix(c, r).determinant();
+    T minorOfElement(const int c, const int r) const requires (isSquare) {
+        return removeColumnsAndRows({c}, {r}).determinant();
     }
 
-    Matrix<COLUMNS, ROWS, T> minor() const requires (isSquare) {
+    Matrix<COLUMNS, ROWS, T> minorMatrix() const requires (isSquare) {
         Matrix<COLUMNS, ROWS, T> result;
 
         for (int c = 0; c < COLUMNS; c++) {
             for (int r = 0; r < ROWS; r++) {
-                result[c][r] = minor(c, r);
+                result[c][r] = minorOfElement(c, r);
             }
         }
 
         return result;
     }
 
-    T cofactor(const int c, const int r) const requires (isSquare) {
-        return minor(c, r) * std::pow(-1, c + r);
+    T cofactorOfElement(const int c, const int r) const requires (isSquare) {
+        return minorOfElement(c, r) * std::pow(-1, c + r);
     }
 
-    Matrix<COLUMNS, ROWS, T> cofactor() const requires (isSquare) {
+    Matrix<COLUMNS, ROWS, T> cofactorMatrix() const requires (isSquare) {
         Matrix<COLUMNS, ROWS, T> result;
 
         for (int c = 0; c < COLUMNS; c++) {
             for (int r = 0; r < ROWS; r++) {
-                result[c][r] = cofactor(c, r);
+                result[c][r] = cofactorOfElement(c, r);
             }
         }
 
@@ -1823,13 +1928,81 @@ struct Matrix {
     }
 
     Matrix<ROWS, COLUMNS, T> adjoint() const requires (isSquare) {
-        return cofactor().transpose();
+        return cofactorMatrix().transpose();
+    }
+
+    bool isUpperHessenberg() const requires (isSquare) {
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = c + 2; r < ROWS; r++) {
+                if (!compare(data[c][r], 0))
+                    return false;
+            }
+        }
+
+        return true;
+    }
+
+    bool isUnreducedUpperHessenberg() const requires (isSquare) {
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = c + 1; r < ROWS; r++) {
+                // subdiagonal
+                if (r == c + 1) {
+                    if (compare(data[c][r], 0)) {
+                        return false;
+                    }
+                }
+                else {
+                    if (!compare(data[c][r], 0)) {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        return true;
+    }
+
+    bool isLowerHessenberg() const requires (isSquare) {
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = c - 2; r >= 0; r--) {
+                if (!compare(data[c][r], 0))
+                    return false;
+            }
+        }
+
+        return true;
+    }
+
+    bool isUnreducedLowerHessenberg() const requires (isSquare) {
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = c - 1; r >= 0; r--) {
+                // supra-diagonal
+                if (r == c - 1) {
+                    if (compare(data[c][r], 0)) {
+                        return false;
+                    }
+                }
+                else {
+                    if (!compare(data[c][r], 0)) {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        return true;
     }
 
     bool isTridiagonal() const requires (isSquare) {
         for (int c = 0; c < COLUMNS; c++) {
-            if (!compare(data[c][c], 0))
-                return false;
+            for (int r = 0; r < ROWS; r++) {
+                // diagonal, subdiagonal, supradiagonal
+                if (c == r || c == r + 1 || c == r - 1)
+                    continue;
+
+                if (!compare(data[c][r], 0))
+                    return false;
+            }
         }
 
         return true;
@@ -1848,83 +2021,90 @@ struct Matrix {
             throw std::runtime_error("Cannot do Lanczos algorithm on non hermitian matrix");
 
         std::array<Vector<COLUMNS, T>, ITER + 1> q;
-        std::array<T, ITER> alpha;
-        std::array<T, ITER> beta;
-
-        q[0] = Vector<COLUMNS, T>::random().normalize();
-
-        for (int m = 0; m < ITER; m++) {
-            Vector<COLUMNS, T> v = multiply(q[m]);
-            alpha[m] = q[m] * v;
-
-            if (m == 0) {
-                v = v - alpha[m] * q[m];
-            }
-            else {
-                v = v - beta[m - 1] * q[m - 1] - alpha[m] * q[m];
-            }
-
-            beta[m] = v.euclidianNorm();
-            q[m + 1] = v / beta[m];
-        }
 
         Matrix<ITER, ITER, T> t;
         Matrix<ITER + 1, COLUMNS, T> qMatrix;
 
-        for (int i = 0; i < ITER + 1; i++) {
-            if (i < ITER) {
-                t[i][i] = alpha[i];
+        qMatrix.setColumnVector(0, Vector<COLUMNS, T>::random().normalize());
 
-                if (i != ITER - 1) {
-                    t[i + 1][i] = beta[i];
-                    t[i][i + 1] = beta[i];
-                }
+        for (int m = 0; m < ITER; m++) {
+            Vector<COLUMNS, T> v = multiply(q[m]);
+            t[m][m] = q[m] * v;
+
+            if (m == 0) {
+                v -= t[m][m] * q[m];
+            }
+            else {
+                v -= t[m][m - 1] * q[m - 1] - t[m][m] * q[m];
             }
 
-            for (int j = 0; j < COLUMNS; j++) {
-                qMatrix[i][j] = q[i][j];
+            T vNorm = v.euclidianNorm();
+
+            if (m != ITER - 1) {
+                t[m][m + 1] = t[m + 1][m] = vNorm;
             }
+
+            q[m + 1] = v / vNorm;
+
+            qMatrix.setColumnVector(m + 1, q[m + 1]);
         }
 
-        return {t, q};
+        return {t, qMatrix};
+    }
+
+    /**
+     * Used to get an eigen-value approximation from an eigen-vector approximation
+     * @param vec eigen-vector approximation
+     * @return corresponding eigen-value approximation for given vector @a vec
+     */
+    T rayleighQuotient(const Vector<COLUMNS, T>& vec) const {
+        return (vec * *this * vec) / (vec * vec);
+    }
+
+    template<typename EIGENVECTOR_TYPE, typename EIGENVALUE_TYPE>
+    struct PowerIteration {
+        EIGENVECTOR_TYPE vector;
+        EIGENVALUE_TYPE value;
+    };
+
+    PowerIteration<Vector<COLUMNS, T>, T> powerIteration(const int maxIterations, const T tolerance = epsilon) const {
+        Vector<COLUMNS, T> vec = Vector<COLUMNS, T>::random();
+        T val = {};
+
+        for (int i = 0; i < maxIterations; i++) {
+            vec = multiply(vec).normalize();
+            T nextVal = rayleighQuotient(vec);
+
+            if (std::abs(val - nextVal) < tolerance) {
+                return {vec, nextVal};
+            }
+
+            val = nextVal;
+        }
+
+        return {vec, val};
     }
 #pragma endregion
 };
 
-template<int COLUMNS, int ROWS, typename T>
-Vector<COLUMNS, T> multiply(const Vector<COLUMNS, T>& v, const Matrix<COLUMNS, ROWS, T>& m) {
-    Vector<COLUMNS, T> result;
-
-    for (int c = 0; c < COLUMNS; c++) {
-        for (int r = 0; r < ROWS; r++) {
-            result[r] += v[c] * m.data[c][r];
-        }
-    }
-
-    return result;
+template<int COLUMNS, int ROWS, is_scalar_v T>
+Matrix<COLUMNS, ROWS, T> multiply(const T lhs, const Matrix<COLUMNS, ROWS, T>& rhs) {
+    return rhs.multiply(lhs);
 }
 
-template<int COLUMNS, int ROWS, typename T, typename OTHER_T>
-Vector<COLUMNS, T> multiply(const Vector<COLUMNS, OTHER_T>& v, const Matrix<COLUMNS, ROWS, T>& m) {
-    Vector<COLUMNS, T> result;
-
-    for (int c = 0; c < COLUMNS; c++) {
-        for (int r = 0; r < ROWS; r++) {
-            result[r] += v[c] * m.data[c][r];
-        }
-    }
-
-    return result;
+template<int COLUMNS, int ROWS, is_scalar_v T>
+Matrix<COLUMNS, ROWS, T> operator*(const T lhs, const Matrix<COLUMNS, ROWS, T>& rhs) {
+    return multiply(lhs, rhs);
 }
 
-template<int COLUMNS, int ROWS, typename T>
-Matrix<COLUMNS, ROWS, T> divide(const T lhs, const Matrix<COLUMNS, ROWS, T>& rhs) {
-    return rhs.inverse() * lhs;
+template<int COLUMNS, int ROWS, is_scalar_v T, is_convertable_to<T> OTHER_T>
+Matrix<COLUMNS, ROWS, T> multiply(const OTHER_T lhs, const Matrix<COLUMNS, ROWS, T>& rhs) {
+    return rhs.multiply(lhs);
 }
 
-template<int COLUMNS, int ROWS, typename T, typename OTHER_T>
-Matrix<COLUMNS, ROWS, T> divide(const OTHER_T lhs, const Matrix<COLUMNS, ROWS, T>& rhs) {
-    return rhs.inverse() * lhs;
+template<int COLUMNS, int ROWS, is_scalar_v T, is_convertable_to<T> OTHER_T>
+Matrix<COLUMNS, ROWS, T> operator*(const OTHER_T lhs, const Matrix<COLUMNS, ROWS, T>& rhs) {
+    return multiply(lhs, rhs);
 }
 
 template<int N, is_scalar_v T>
@@ -1939,7 +2119,7 @@ Matrix<OTHER_N, N, T> Vector<N, T>::outerProductMatrix(const Vector<OTHER_N, T>&
 
     for (int c = 0; c < result.columns; c++) {
         for (int r = 0; r < result.rows; r++) {
-            if (isComplex)
+            if constexpr (isComplex)
                 result[c][r] = data[r] * std::conj(v[c]);
             else
                 result[c][r] = data[r] * v[c];
@@ -1965,3 +2145,56 @@ Matrix<OTHER_N, N, T> Vector<N, T>::outerProductMatrix(const Vector<OTHER_N, OTH
 
     return result;
 }
+
+template<int N, is_scalar_v T>
+template<int ROWS>
+Vector<N, T> Vector<N, T>::multiply(const Matrix<N, ROWS, T>& m) const {
+    Vector<N, T> result;
+
+    for (int c = 0; c < N; c++) {
+        for (int r = 0; r < ROWS; r++) {
+            result[r] += data[c] * m.data[c][r];
+        }
+    }
+
+    return result;
+}
+
+template<int N, is_scalar_v T>
+template<int ROWS>
+Vector<N, T> Vector<N, T>::operator*(const Matrix<N, ROWS, T>& m) const {
+    return multiply(m);
+}
+
+template<int N, is_scalar_v T>
+template<int ROWS, is_convertable_to<T> OTHER_T>
+Vector<N, T> Vector<N, T>::multiply(const Matrix<N, ROWS, OTHER_T>& m) const {
+    Vector<N, T> result;
+
+    for (int c = 0; c < N; c++) {
+        for (int r = 0; r < ROWS; r++) {
+            result[r] += data[c] * m.data[c][r];
+        }
+    }
+
+    return result;
+}
+
+template<int N, is_scalar_v T>
+template<int ROWS, is_convertable_to<T> OTHER_T>
+Vector<N, T> Vector<N, T>::operator*(const Matrix<N, ROWS, OTHER_T>& m) const {
+    return multiply(m);
+}
+
+template<int COLUMNS, int ROWS, int B_COLUMNS, int B_ROWS, is_scalar_v B_T>
+struct Matrix<COLUMNS, ROWS, Matrix<B_COLUMNS, B_ROWS, B_T>> {
+    static constexpr int columns = COLUMNS;
+    static constexpr int rows = ROWS;
+    static constexpr int bColumns = B_COLUMNS;
+    static constexpr int bRows = B_ROWS;
+
+    static constexpr bool isSquare = ROWS == COLUMNS;
+    static constexpr bool bIsSquare = B_ROWS == B_COLUMNS;
+
+    Matrix<B_COLUMNS, B_ROWS, B_T> data[COLUMNS][ROWS] = {};
+};
