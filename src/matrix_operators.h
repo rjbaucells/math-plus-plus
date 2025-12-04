@@ -1,0 +1,415 @@
+#pragma once
+#include "matrix.h"
+
+
+#pragma region Same Type Operators
+    // m = m
+    Matrix<COLUMNS, ROWS, T>& Matrix<COLUMNS, ROWS, T>::operator=(const Matrix<COLUMNS, ROWS, T>& other) {
+        if (this != &other) {
+            memcpy(data, other.data, sizeof(T) * COLUMNS * ROWS);
+        }
+
+        return *this;
+    }
+
+    // m == m
+    bool Matrix<COLUMNS, ROWS, T>::equals(const Matrix<COLUMNS, ROWS, T>& other) const {
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = 0; r < ROWS; r++) {
+                if (!compare(data[c][r], other.data[c][r]))
+                    return false;
+            }
+        }
+
+        return true;
+    }
+
+    bool Matrix<COLUMNS, ROWS, T>::operator==(const Matrix<COLUMNS, ROWS, T>& other) const {
+        return equals(other);
+    }
+
+    // m + m
+    Matrix<COLUMNS, ROWS, T> Matrix<COLUMNS, ROWS, T>::add(const Matrix<COLUMNS, ROWS, T>& other) const {
+        Matrix<COLUMNS, ROWS, T> result;
+
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = 0; r < ROWS; r++) {
+                result[c][r] = data[c][r] + other.data[c][r];
+            }
+        }
+
+        return result;
+    }
+
+    Matrix<COLUMNS, ROWS, T> Matrix<COLUMNS, ROWS, T>::operator+(const Matrix<COLUMNS, ROWS, T>& other) const {
+        return add(other);
+    }
+
+    // m - m
+    Matrix<COLUMNS, ROWS, T> Matrix<COLUMNS, ROWS, T>::subtract(const Matrix<COLUMNS, ROWS, T>& other) const {
+        Matrix<COLUMNS, ROWS, T> result;
+
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = 0; r < ROWS; r++) {
+                result[c][r] = data[c][r] - other.data[c][r];
+            }
+        }
+
+        return result;
+    }
+
+    Matrix<COLUMNS, ROWS, T> Matrix<COLUMNS, ROWS, T>::operator-(const Matrix<COLUMNS, ROWS, T>& other) const {
+        return subtract(other);
+    }
+
+    // m * m
+    template<int OTHER_COLUMNS>
+    Matrix<OTHER_COLUMNS, ROWS, T> Matrix<COLUMNS, ROWS, T>::multiply(const Matrix<OTHER_COLUMNS, COLUMNS, T>& other) const {
+        Matrix<OTHER_COLUMNS, ROWS, T> result;
+
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = 0; r < ROWS; r++) {
+                for (int x = 0; x < COLUMNS; x++) {
+                    result[c][r] += data[x][r] * other.data[c][x];
+                }
+            }
+        }
+
+        return result;
+    }
+
+    template<int OTHER_COLUMNS>
+    Matrix<OTHER_COLUMNS, ROWS, T> Matrix<COLUMNS, ROWS, T>::operator*(const Matrix<OTHER_COLUMNS, COLUMNS, T>& other) const {
+        return multiply(other);
+    }
+
+    // m * v
+    Vector<COLUMNS, T> Matrix<COLUMNS, ROWS, T>::multiply(const Vector<COLUMNS, T>& other) const {
+        Vector<COLUMNS, T> result;
+
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = 0; r < ROWS; r++) {
+                result[r] += data[c][r] * other[c];
+            }
+        }
+
+        return result;
+    }
+
+    Vector<COLUMNS, T> Matrix<COLUMNS, ROWS, T>::operator*(const Vector<COLUMNS, T>& other) const {
+        return multiply(other);
+    }
+
+    // m * #
+    Matrix<COLUMNS, ROWS, T> Matrix<COLUMNS, ROWS, T>::multiply(const T val) const {
+        Matrix<COLUMNS, ROWS, T> result;
+
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = 0; r < ROWS; r++) {
+                result[c][r] = data[c][r] * val;
+            }
+        }
+
+        return result;
+    }
+
+    Matrix<COLUMNS, ROWS, T> Matrix<COLUMNS, ROWS, T>::operator*(const T val) const {
+        return multiply(val);
+    }
+
+    // m / #
+    Matrix<COLUMNS, ROWS, T> Matrix<COLUMNS, ROWS, T>::divide(const T scalar) const {
+        Matrix<COLUMNS, ROWS, T> result;
+
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = 0; r < ROWS; r++) {
+                result[c][r] = data[c][r] / scalar;
+            }
+        }
+
+        return result;
+    }
+
+    Matrix<COLUMNS, ROWS, T> Matrix<COLUMNS, ROWS, T>::operator/(const T scalar) const {
+        return divide(scalar);
+    }
+
+    // m += m
+    Matrix<COLUMNS, ROWS, T>& Matrix<COLUMNS, ROWS, T>::addEquals(const Matrix<COLUMNS, ROWS, T>& other) {
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = 0; r < ROWS; r++) {
+                data[c][r] += other.data[c][r];
+            }
+        }
+
+        return *this;
+    }
+
+    Matrix<COLUMNS, ROWS, T>& Matrix<COLUMNS, ROWS, T>::operator+=(const Matrix<COLUMNS, ROWS, T>& other) {
+        return addEquals(other);
+    }
+
+    // m -= m
+    Matrix<COLUMNS, ROWS, T>& Matrix<COLUMNS, ROWS, T>::subtractEquals(const Matrix<COLUMNS, ROWS, T>& other) {
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = 0; r < ROWS; r++) {
+                data[c][r] -= other.data[c][r];
+            }
+        }
+
+        return *this;
+    }
+
+    Matrix<COLUMNS, ROWS, T> Matrix<COLUMNS, ROWS, T>::operator-=(const Matrix<COLUMNS, ROWS, T>& other) {
+        return subtractEquals(other);
+    }
+
+    // m *= #
+    Matrix<COLUMNS, ROWS, T>& Matrix<COLUMNS, ROWS, T>::multiplyEquals(const T val) {
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = 0; r < ROWS; r++) {
+                data[c][r] *= val;
+            }
+        }
+
+        return *this;
+    }
+
+    Matrix<COLUMNS, ROWS, T>& Matrix<COLUMNS, ROWS, T>::operator*=(const T val) const {
+        return multiplyEquals(val);
+    }
+
+    // m /= #
+    Matrix<COLUMNS, ROWS, T>& Matrix<COLUMNS, ROWS, T>::divideEquals(const T scalar) {
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = 0; r < ROWS; r++) {
+                data[c][r] /= scalar;
+            }
+        }
+
+        return *this;
+    }
+
+    Matrix<COLUMNS, ROWS, T>& Matrix<COLUMNS, ROWS, T>::operator/=(const T scalar) {
+        return divideEquals(scalar);
+    }
+
+#pragma endregion
+#pragma region Different Type Operators
+    // m = m
+    template<is_convertable_to<T> OTHER_T>
+    Matrix<COLUMNS, ROWS, T>& Matrix<COLUMNS, ROWS, T>::operator=(const Matrix<COLUMNS, ROWS, OTHER_T>& other) {
+        if (static_cast<void*>(this) != static_cast<void*>(&other)) {
+            for (int c = 0; c < COLUMNS; c++) {
+                for (int r = 0; r < ROWS; r++) {
+                    data[c][r] = other.data[c][r];
+                }
+            }
+        }
+
+        return *this;
+    }
+
+    // m == m
+    template<is_convertable_to<T> OTHER_T>
+    bool Matrix<COLUMNS, ROWS, T>::equals(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const {
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = 0; r < ROWS; r++) {
+                if (!compare(data[c][r], other.data[c][r]))
+                    return false;
+            }
+        }
+
+        return true;
+    }
+
+    template<is_convertable_to<T> OTHER_T>
+    bool Matrix<COLUMNS, ROWS, T>::operator==(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const {
+        return equals(other);
+    }
+
+    // m + m
+    template<is_convertable_to<T> OTHER_T>
+    Matrix<COLUMNS, ROWS, T> Matrix<COLUMNS, ROWS, T>::add(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const {
+        Matrix<COLUMNS, ROWS, T> result;
+
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = 0; r < ROWS; r++) {
+                result[c][r] = data[c][r] + other.data[c][r];
+            }
+        }
+
+        return result;
+    }
+
+    template<is_convertable_to<T> OTHER_T>
+    Matrix<COLUMNS, ROWS, T> Matrix<COLUMNS, ROWS, T>::operator+(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const {
+        return add(other);
+    }
+
+    // m - m
+    template<is_convertable_to<T> OTHER_T>
+    Matrix<COLUMNS, ROWS, T> Matrix<COLUMNS, ROWS, T>::subtract(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const {
+        Matrix<COLUMNS, ROWS, T> result;
+
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = 0; r < ROWS; r++) {
+                result[c][r] = data[c][r] - other.data[c][r];
+            }
+        }
+
+        return result;
+    }
+
+    template<is_convertable_to<T> OTHER_T>
+    Matrix<COLUMNS, ROWS, T> Matrix<COLUMNS, ROWS, T>::operator-(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const {
+        return subtract(other);
+    }
+
+    // m * m
+    template<int OTHER_COLUMNS, is_convertable_to<T> OTHER_T>
+    Matrix<OTHER_COLUMNS, ROWS, T> Matrix<COLUMNS, ROWS, T>::multiply(const Matrix<OTHER_COLUMNS, COLUMNS, OTHER_T>& other) const {
+        Matrix<OTHER_COLUMNS, ROWS, T> result;
+
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = 0; r < ROWS; r++) {
+                for (int x = 0; x < COLUMNS; x++) {
+                    result[c][r] += data[x][r] * other.data[c][x];
+                }
+            }
+        }
+
+        return result;
+    }
+
+    template<int OTHER_COLUMNS, is_convertable_to<T> OTHER_T>
+    Matrix<OTHER_COLUMNS, ROWS, T> Matrix<COLUMNS, ROWS, T>::operator*(const Matrix<OTHER_COLUMNS, COLUMNS, OTHER_T>& other) const {
+        return multiply(other);
+    }
+
+    // m * v
+    template<is_convertable_to<T> OTHER_T>
+    Vector<COLUMNS, T> Matrix<COLUMNS, ROWS, T>::multiply(const Vector<COLUMNS, OTHER_T>& other) const {
+        Vector<COLUMNS, T> result;
+
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = 0; r < ROWS; r++) {
+                result[r] += data[c][r] * other[c];
+            }
+        }
+
+        return result;
+    }
+
+    template<is_convertable_to<T> OTHER_T>
+    Vector<COLUMNS, T> Matrix<COLUMNS, ROWS, T>::operator*(const Vector<COLUMNS, OTHER_T>& other) const {
+        return multiply(other);
+    }
+
+    // m * #
+    template<is_convertable_to<T> OTHER_T>
+    Matrix<COLUMNS, ROWS, T> Matrix<COLUMNS, ROWS, T>::multiply(const OTHER_T val) const {
+        Matrix<COLUMNS, ROWS, T> result;
+
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = 0; r < ROWS; r++) {
+                result[c][r] = data[c][r] * val;
+            }
+        }
+
+        return result;
+    }
+
+    template<is_convertable_to<T> OTHER_T>
+    Matrix<COLUMNS, ROWS, T> Matrix<COLUMNS, ROWS, T>::operator*(const OTHER_T val) const {
+        return multiply(val);
+    }
+
+    // m / #
+    template<is_convertable_to<T> OTHER_T>
+    Matrix<COLUMNS, ROWS, T> Matrix<COLUMNS, ROWS, T>::divide(const OTHER_T scalar) const {
+        Matrix<COLUMNS, ROWS, T> result;
+
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = 0; r < ROWS; r++) {
+                result[c][r] = data[c][r] / scalar;
+            }
+        }
+
+        return result;
+    }
+
+    template<is_convertable_to<T> OTHER_T>
+    Matrix<COLUMNS, ROWS, T> Matrix<COLUMNS, ROWS, T>::operator/(const OTHER_T scalar) const {
+        return divide(scalar);
+    }
+
+    // m += m
+    template<is_convertable_to<T> OTHER_T>
+    Matrix<COLUMNS, ROWS, T>& Matrix<COLUMNS, ROWS, T>::addEquals(const Matrix<COLUMNS, ROWS, OTHER_T>& other) {
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = 0; r < ROWS; r++) {
+                data[c][r] += other.data[c][r];
+            }
+        }
+
+        return *this;
+    }
+
+    template<is_convertable_to<T> OTHER_T>
+    Matrix<COLUMNS, ROWS, T>& Matrix<COLUMNS, ROWS, T>::operator+=(const Matrix<COLUMNS, ROWS, OTHER_T>& other) {
+        return addEquals(other);
+    }
+
+    // m -= m
+    template<is_convertable_to<T> OTHER_T>
+    Matrix<COLUMNS, ROWS, T>& Matrix<COLUMNS, ROWS, T>::subtractEquals(const Matrix<COLUMNS, ROWS, OTHER_T>& other) {
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = 0; r < ROWS; r++) {
+                data[c][r] -= other.data[c][r];
+            }
+        }
+
+        return *this;
+    }
+
+    template<is_convertable_to<T> OTHER_T>
+    Matrix<COLUMNS, ROWS, T> Matrix<COLUMNS, ROWS, T>::operator-=(const Matrix<COLUMNS, ROWS, OTHER_T>& other) {
+        return subtractEquals(other);
+    }
+
+    // m *= #
+    template<is_convertable_to<T> OTHER_T>
+    Matrix<COLUMNS, ROWS, T>& Matrix<COLUMNS, ROWS, T>::multiplyEquals(const OTHER_T val) {
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = 0; r < ROWS; r++) {
+                data[c][r] *= val;
+            }
+        }
+
+        return *this;
+    }
+
+    template<is_convertable_to<T> OTHER_T>
+    Matrix<COLUMNS, ROWS, T>& Matrix<COLUMNS, ROWS, T>::operator*=(const OTHER_T val) const {
+        return multiplyEquals(val);
+    }
+
+    // m /= #
+    template<is_convertable_to<T> OTHER_T>
+    Matrix<COLUMNS, ROWS, T>& Matrix<COLUMNS, ROWS, T>::divideEquals(const OTHER_T scalar) {
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = 0; r < ROWS; r++) {
+                data[c][r] /= scalar;
+            }
+        }
+
+        return *this;
+    }
+
+    template<is_convertable_to<T> OTHER_T>
+    Matrix<COLUMNS, ROWS, T>& Matrix<COLUMNS, ROWS, T>::operator/=(const OTHER_T scalar) {
+        return divideEquals(scalar);
+    }
+#pragma endregion
+
