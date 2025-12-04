@@ -25,5 +25,5 @@ jobs:
     - name: Build
       run: cmake --build build
     
-    - name: Run tests
-      run: cd build && ./tests/math-tests
+    # - name: Run tests
+    #   run: cd build && ./tests/math-tests

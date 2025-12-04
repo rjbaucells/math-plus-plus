@@ -77,9 +77,7 @@ struct Matrix {
 
     // m - m
     Matrix<COLUMNS, ROWS, T> subtract(const Matrix<COLUMNS, ROWS, T>& other) const;
-    Matrix<COLUMNS, ROWS, T> operator-(const Matrix<COLUMNS, ROWS, T>& other) const {
-        return subtract(other);
-    }
+    Matrix<COLUMNS, ROWS, T> operator-(const Matrix<COLUMNS, ROWS, T>& other) const;
 
     // m * m
     template<int OTHER_COLUMNS>
@@ -141,9 +139,7 @@ struct Matrix {
     template<int OTHER_COLUMNS, is_convertable_to<T> OTHER_T>
     Matrix<OTHER_COLUMNS, ROWS, T> multiply(const Matrix<OTHER_COLUMNS, COLUMNS, OTHER_T>& other) const;
     template<int OTHER_COLUMNS, is_convertable_to<T> OTHER_T>
-    Matrix<OTHER_COLUMNS, ROWS, T> operator*(const Matrix<OTHER_COLUMNS, COLUMNS, OTHER_T>& other) const {
-        return multiply(other);
-    }
+    Matrix<OTHER_COLUMNS, ROWS, T> operator*(const Matrix<OTHER_COLUMNS, COLUMNS, OTHER_T>& other) const;
 
     // m * v
     template<is_convertable_to<T> OTHER_T>
