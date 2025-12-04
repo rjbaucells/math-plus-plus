@@ -48,16 +48,17 @@ Matrix<ROWS, COLUMNS, T> Matrix<COLUMNS, ROWS, T>::conjugateTranspose() const {
     if constexpr (!isComplex) {
         return transpose();
     }
+    else {
+        Matrix<ROWS, COLUMNS, T> result;
 
-    Matrix<ROWS, COLUMNS, T> result;
-
-    for (int c = 0; c < ROWS; c++) {
-        for (int r = 0; r < COLUMNS; r++) {
-            result[c][r] = std::conj(data[r][c]);
+        for (int c = 0; c < ROWS; c++) {
+            for (int r = 0; r < COLUMNS; r++) {
+                result[c][r] = std::conj(data[r][c]);
+            }
         }
-    }
 
-    return result;
+        return result;
+    }
 }
 
 template<int COLUMNS, int ROWS, is_scalar_v T>
@@ -161,14 +162,15 @@ T Matrix<COLUMNS, ROWS, T>::determinant(const DeterminantAlgorithm algorithm) co
         // aei + bfg + cdh - ceg - bdi - afh
         return (data[0][0] * data[1][1] * data[2][2]) + (data[1][0] * data[2][1] * data[0][2]) + (data[2][0] * data[0][1] * data[1][2]) - (data[2][0] * data[1][1] * data[0][2]) - (data[1][0] * data[0][1] * data[2][2]) - (data[0][0] * data[2][1] * data[1][2]);
     }
-
-    switch (algorithm) {
-        case triangular:
-            return triangularDeterminant();
-        case hessenberg:
-            return 0;
-        default:
-            return laplaceDeterminant();
+    else {
+        switch (algorithm) {
+            case triangular:
+                return triangularDeterminant();
+            case hessenberg:
+                return 0;
+            default:
+                return laplaceDeterminant();
+        }
     }
 }
 
@@ -178,7 +180,7 @@ T Matrix<COLUMNS, ROWS, T>::laplaceDeterminant() const requires (isSquare) {
     int sign = 1;
 
     for (int c = 0; c < COLUMNS; c++) {
-        Matrix<COLUMNS - 1, ROWS - 1, T> insideMatrix = removeColumnsAndRows({c}, {0});
+        Matrix<COLUMNS - 1, ROWS - 1, T> insideMatrix = removeColumnAndRow(c, 0);
 
         result += sign * data[c][0] * insideMatrix.determinant();
         sign *= -1;
@@ -284,7 +286,7 @@ Matrix<COLUMNS, ROWS - NUM_ROWS_TO_REMOVE, T> Matrix<COLUMNS, ROWS, T>::removeRo
 template<int COLUMNS, int ROWS, is_scalar_v T>
 template<int NUM_COLUMNS_TO_REMOVE, int NUM_ROWS_TO_REMOVE>
 Matrix<COLUMNS - NUM_COLUMNS_TO_REMOVE, ROWS - NUM_ROWS_TO_REMOVE, T> Matrix<COLUMNS, ROWS, T>::removeColumnsAndRows(const std::array<int, NUM_COLUMNS_TO_REMOVE>& columnsToRemove, const std::array<int, NUM_ROWS_TO_REMOVE>& rowsToRemove) const {
-    Matrix<COLUMNS, ROWS - NUM_ROWS_TO_REMOVE, T> m;
+    Matrix<COLUMNS - NUM_COLUMNS_TO_REMOVE, ROWS - NUM_ROWS_TO_REMOVE, T> m;
 
     for (int c = 0; c < COLUMNS; c++) {
         if (std::find(columnsToRemove.begin(), columnsToRemove.end(), c))
@@ -292,6 +294,57 @@ Matrix<COLUMNS - NUM_COLUMNS_TO_REMOVE, ROWS - NUM_ROWS_TO_REMOVE, T> Matrix<COL
 
         for (int r = 0; r < ROWS; r++) {
             if (std::find(rowsToRemove.begin(), rowsToRemove.end(), r))
+                continue;
+
+            m[c][r] = data[c][r];
+        }
+    }
+
+    return m;
+}
+
+template<int COLUMNS, int ROWS, is_scalar_v T>
+Matrix<COLUMNS - 1, ROWS, T> Matrix<COLUMNS, ROWS, T>::removeColumn(const int columnToRemove) const {
+    Matrix<COLUMNS - 1, ROWS, T> m;
+
+    for (int c = 0; c < COLUMNS; c++) {
+        if (c == columnToRemove)
+            continue;
+
+        for (int r = 0; r < ROWS; r++) {
+            m[c][r] = data[c][r];
+        }
+    }
+
+    return m;
+}
+
+template<int COLUMNS, int ROWS, is_scalar_v T>
+Matrix<COLUMNS, ROWS - 1, T> Matrix<COLUMNS, ROWS, T>::removeRow(const int rowToRemove) const {
+    Matrix<COLUMNS, ROWS - 1, T> m;
+
+    for (int c = 0; c < COLUMNS; c++) {
+        for (int r = 0; r < ROWS; r++) {
+            if (r == rowToRemove)
+                continue;
+
+            m[c][r] = data[c][r];
+        }
+    }
+
+    return m;
+}
+
+template<int COLUMNS, int ROWS, is_scalar_v T>
+Matrix<COLUMNS - 1, ROWS - 1, T> Matrix<COLUMNS, ROWS, T>::removeColumnAndRow(const int columnToRemove, const int rowToRemove) const {
+    Matrix<COLUMNS - 1, ROWS - 1, T> m;
+
+    for (int c = 0; c < COLUMNS; c++) {
+        if (c == columnToRemove)
+            continue;
+
+        for (int r = 0; r < ROWS; r++) {
+            if (r == rowToRemove)
                 continue;
 
             m[c][r] = data[c][r];
@@ -344,7 +397,7 @@ Matrix<COLUMNS, ROWS, T> Matrix<COLUMNS, ROWS, T>::swapColumns(const int columnA
 }
 
 template<int COLUMNS, int ROWS, is_scalar_v T>
-static Matrix<COLUMNS, ROWS, T> Matrix<COLUMNS, ROWS, T>::identity() requires (isSquare) {
+Matrix<COLUMNS, ROWS, T> Matrix<COLUMNS, ROWS, T>::identity() requires (isSquare) {
     Matrix<COLUMNS, ROWS, T> result;
 
     for (int i = 0; i < COLUMNS; i++) {
@@ -352,4 +405,272 @@ static Matrix<COLUMNS, ROWS, T> Matrix<COLUMNS, ROWS, T>::identity() requires (i
     }
 
     return result;
+}
+
+template<int COLUMNS, int ROWS, is_scalar_v T>
+Matrix<COLUMNS, ROWS, T> Matrix<COLUMNS, ROWS, T>::toRowEchelon() const {
+    Matrix<COLUMNS, ROWS, T> m = *this;
+
+    for (int c = 0; c < std::min(ROWS, COLUMNS); c++) {
+        // handle row swaps
+        {
+            int rowIndex = -1;
+            const T pivot = m[c][c];
+            T rowValue = std::abs(pivot);
+
+            // iterate through rows of this column. Looking for the biggest boi
+            for (int r = c + 1; r < ROWS; r++) {
+                T curValue = std::abs(m[c][r]);
+
+                if (curValue > rowValue) {
+                    rowIndex = r;
+                    rowValue = curValue;
+                }
+            }
+
+            // we found nothing so we skip this column
+            if (rowIndex == -1 && compare(pivot, 0)) {
+                continue;
+            }
+
+            if (rowIndex != -1 && rowIndex != c) {
+                // swap u and p rows like normal
+                m.swapRows(c, rowIndex);
+            }
+        }
+
+        const T pivot = m[c][c];
+
+        // iterate through things beneath that pivot in the matrix
+        for (int r = c + 1; r < ROWS; r++) {
+            T val = m[c][r];
+
+            T multiplierToPivotRow = val / pivot;
+
+            // do this row minus other row times multiplier
+            for (int i = c; i < COLUMNS; i++) {
+                m[i][r] += -multiplierToPivotRow * m[i][c];
+            }
+        }
+    }
+
+    return m;
+}
+
+template<int COLUMNS, int ROWS, is_scalar_v T>
+Matrix<COLUMNS, ROWS, T> Matrix<COLUMNS, ROWS, T>::toReducedRowEchelon() const {
+    Matrix<COLUMNS, ROWS, T> m = *this;
+
+    for (int c = 0; c < std::min(ROWS, COLUMNS); c++) {
+        // handle row swaps
+        {
+            int rowIndex = -1;
+            const T pivot = m[c][c];
+            T rowValue = std::abs(pivot);
+
+            // iterate through rows of this column. Looking for the biggest boi
+            for (int r = c + 1; r < ROWS; r++) {
+                T curValue = std::abs(m[c][r]);
+
+                if (curValue > rowValue) {
+                    rowIndex = r;
+                    rowValue = curValue;
+                }
+            }
+
+            // we found nothing so we skip this column
+            if (rowIndex == -1 && compare(pivot, 0)) {
+                continue;
+            }
+
+            if (rowIndex != -1 && rowIndex != c) {
+                // swap u and p rows like normal
+                m.swapRows(c, rowIndex);
+            }
+        }
+
+        {
+            // normalize pivot row to 1
+            T value = m[c][c];
+            for (int cc = c + 1; cc < COLUMNS; cc++) {
+                m[cc][c] /= value;
+            }
+            m[c][c] = 1;
+        }
+
+        const T pivot = m[c][c];
+
+        // iterate through things beneath that pivot in the matrix
+        for (int r = c + 1; r < ROWS; r++) {
+            T val = m[c][r];
+
+            T multiplierToPivotRow = val / pivot;
+
+            // do this row minus other row times multiplier
+            for (int i = c; i < COLUMNS; i++) {
+                m[i][r] += -multiplierToPivotRow * m[i][c];
+            }
+        }
+    }
+
+    return m;
+}
+
+template<int COLUMNS, int ROWS, is_scalar_v T>
+int Matrix<COLUMNS, ROWS, T>::rank() const {
+    Matrix<COLUMNS, ROWS, T> ref = toRowEchelon();
+    int result = 0;
+
+    for (int r = 0; r < ROWS; r++) {
+        if (!compare(ref[0][r], 0)) {
+            result++;
+        }
+        else {
+            bool nonZero = false;
+
+            for (int c = 0; c < COLUMNS; c++) {
+                if (!compare(ref[c][r], 0)) {
+                    nonZero = true;
+                    break;
+                }
+            }
+
+            if (nonZero)
+                result++;
+        }
+    }
+
+    return result;
+}
+
+template<int COLUMNS, int ROWS, is_scalar_v T>
+Vector<ROWS, T> Matrix<COLUMNS, ROWS, T>::getColumnVector(const int i) const {
+    Vector<ROWS, T> v;
+
+    for (int j = 0; j < ROWS; j++) {
+        v[j] = data[i][j];
+    }
+
+    return v;
+}
+
+template<int COLUMNS, int ROWS, is_scalar_v T>
+std::array<Vector<ROWS>, COLUMNS> Matrix<COLUMNS, ROWS, T>::getColumnVectors() const {
+    std::array<Vector<ROWS>, COLUMNS> vecs;
+
+    for (int c = 0; c < COLUMNS; c++) {
+        for (int r = 0; r < ROWS; r++) {
+            vecs[c][r] = data[c][r];
+        }
+    }
+
+    return vecs;
+}
+
+template<int COLUMNS, int ROWS, is_scalar_v T>
+Vector<COLUMNS, T> Matrix<COLUMNS, ROWS, T>::getRowVector(const int i) const {
+    Vector<COLUMNS, T> v;
+
+    for (int j = 0; j < COLUMNS; j++) {
+        v[j] = data[j][i];
+    }
+
+    return v;
+}
+
+template<int COLUMNS, int ROWS, is_scalar_v T>
+std::array<Vector<COLUMNS>, ROWS> Matrix<COLUMNS, ROWS, T>::getRowVectors() const {
+    std::array<Vector<COLUMNS>, ROWS> vecs;
+
+    for (int r = 0; r < ROWS; r++) {
+        for (int c = 0; c < COLUMNS; c++) {
+            vecs[r][c] = data[c][r];
+        }
+    }
+
+    return vecs;
+}
+
+template<int COLUMNS, int ROWS, is_scalar_v T>
+void Matrix<COLUMNS, ROWS, T>::setColumnVectors(const std::array<Vector<ROWS, T>, COLUMNS>& columnVectors) {
+    for (int c = 0; c < COLUMNS; c++) {
+        for (int r = 0; r < ROWS; r++) {
+            data[c][r] = columnVectors[c][r];
+        }
+    }
+}
+
+template<int COLUMNS, int ROWS, is_scalar_v T>
+void Matrix<COLUMNS, ROWS, T>::setColumnVector(const int i, const Vector<ROWS, T>& v) {
+    for (int j = 0; j < ROWS; j++) {
+        data[i][j] = v[j];
+    }
+}
+
+template<int COLUMNS, int ROWS, is_scalar_v T>
+void Matrix<COLUMNS, ROWS, T>::setRowVectors(const std::array<Vector<COLUMNS, T>, ROWS> rowVectors) {
+    for (int c = 0; c < COLUMNS; c++) {
+        for (int r = 0; r < ROWS; r++) {
+            data[c][r] = rowVectors[r][c];
+        }
+    }
+}
+
+template<int COLUMNS, int ROWS, is_scalar_v T>
+void Matrix<COLUMNS, ROWS, T>::setRowVector(const int i, const Vector<COLUMNS, T>& v) {
+    for (int j = 0; j < COLUMNS; j++) {
+        data[j][i] = v[j];
+    }
+}
+
+template<int COLUMNS, int ROWS, is_scalar_v T>
+T Matrix<COLUMNS, ROWS, T>::trace() const requires (isSquare) {
+    T sum = {};
+
+    for (int c = 0; c < COLUMNS; c++) {
+        sum += data[c][c];
+    }
+
+    return sum;
+}
+
+template<int COLUMNS, int ROWS, is_scalar_v T>
+T Matrix<COLUMNS, ROWS, T>::minorOfElement(const int c, const int r) const requires (isSquare) {
+    return removeColumnAndRow(c, r).determinant();
+}
+
+template<int COLUMNS, int ROWS, is_scalar_v T>
+Matrix<COLUMNS, ROWS, T> Matrix<COLUMNS, ROWS, T>::minorMatrix() const requires (isSquare) {
+    Matrix<COLUMNS, ROWS, T> result;
+
+    for (int c = 0; c < COLUMNS; c++) {
+        for (int r = 0; r < ROWS; r++) {
+            result[c][r] = minorOfElement(c, r);
+        }
+    }
+
+    return result;
+}
+
+template<int COLUMNS, int ROWS, is_scalar_v T>
+T Matrix<COLUMNS, ROWS, T>::cofactorOfElement(const int c, const int r) const requires (isSquare) {
+    return minorOfElement(c, r) * std::pow(-1, c + r);
+}
+
+template<int COLUMNS, int ROWS, is_scalar_v T>
+Matrix<COLUMNS, ROWS, T> Matrix<COLUMNS, ROWS, T>::cofactorMatrix() const requires (isSquare) {
+    Matrix<COLUMNS, ROWS, T> result;
+
+    for (int c = 0; c < COLUMNS; c++) {
+        for (int r = 0; r < ROWS; r++) {
+            result[c][r] = cofactorOfElement(c, r);
+        }
+    }
+
+    return result;
+}
+
+template<int COLUMNS, int ROWS, is_scalar_v T>
+Matrix<ROWS, COLUMNS, T> Matrix<COLUMNS, ROWS, T>::adjoint() const requires (isSquare) {
+    return cofactorMatrix().transpose();
 }
