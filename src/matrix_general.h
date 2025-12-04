@@ -21,7 +21,8 @@ Matrix<COLUMNS, ROWS, T>::Matrix(const Matrix<COLUMNS, ROWS, T>& other) {
 }
 
 template<int COLUMNS, int ROWS, is_scalar_v T>
-template<is_convertable_to<T> OTHER_T>
+template<typename OTHER_T>
+requires std::convertible_to<OTHER_T, T>
 Matrix<COLUMNS, ROWS, T>::Matrix(const Matrix<COLUMNS, ROWS, OTHER_T>& other) {
     for (int c = 0; c < COLUMNS; c++) {
         for (int r = 0; r < ROWS; r++) {
