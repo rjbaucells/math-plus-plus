@@ -463,6 +463,19 @@ const T* Matrix<COLUMNS, ROWS, T>::operator[](const int index) const {
 }
 
 template<int COLUMNS, int ROWS, is_scalar_v T>
+Matrix<COLUMNS, ROWS, T> Matrix<COLUMNS, ROWS, T>::operator-() const {
+    Matrix<COLUMNS, ROWS, T> result;
+
+    for (int c = 0; c < COLUMNS; c++) {
+        for (int r = 0; r < ROWS; r++) {
+            result[c][r] = -data[c][r];
+        }
+    }
+
+    return result;
+}
+
+template<int COLUMNS, int ROWS, is_scalar_v T>
 Matrix<COLUMNS, ROWS, T>::operator T*() {
     return &data[0][0];
 }

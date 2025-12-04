@@ -31,6 +31,22 @@ struct Vector {
 
     static constexpr T epsilon = ::epsilon<T>();
 
+    typedef T value_type;
+
+private:
+    template <typename U>
+    struct DotProductType {
+        using type = U;
+    };
+
+    template <typename U>
+    struct DotProductType<std::complex<U>> {
+        using type = U;
+    };
+public:
+
+    using DotProductReturnType = DotProductType<T>::type;
+
     T data[N] = {};
 
     Vector() = default;
@@ -179,17 +195,22 @@ struct Vector {
     }
 
     // v * v
-    T componentDot(const Vector<N, T>& other) const {
-        T result = {};
+    DotProductReturnType componentDot(const Vector<N, T>& other) const {
+        DotProductReturnType result = {};
 
         for (int i = 0; i < N; i++) {
-            result += data[i] * other[i];
+            if constexpr (isComplex) {
+                result += data[i] * std::conj(other[i]);
+            }
+            else {
+                result += data[i] * other[i];
+            }
         }
 
         return result;
     }
 
-    T operator*(const Vector<N, T>& other) const {
+    DotProductReturnType operator*(const Vector<N, T>& other) const {
         return componentDot(other);
     }
 
@@ -343,18 +364,23 @@ struct Vector {
 
     // v * v
     template<is_convertable_to<T> OTHER_T>
-    T componentDot(const Vector<N, OTHER_T>& other) const {
-        T result = {};
+    DotProductReturnType componentDot(const Vector<N, OTHER_T>& other) const {
+        DotProductReturnType result = {};
 
         for (int i = 0; i < N; i++) {
-            result += data[i] * other[i];
+            if constexpr (isComplex) {
+                result += data[i] * std::conj(other[i]);
+            }
+            else {
+                result += data[i] * other[i];
+            }
         }
 
         return result;
     }
 
     template<is_convertable_to<T> OTHER_T>
-    T operator*(const Vector<N, OTHER_T>& other) const {
+    DotProductReturnType operator*(const Vector<N, OTHER_T>& other) const {
         return componentDot(other);
     }
 

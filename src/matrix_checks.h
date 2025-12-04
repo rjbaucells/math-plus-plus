@@ -103,71 +103,115 @@ template<int COLUMNS, int ROWS, is_scalar_v T>
 bool Matrix<COLUMNS, ROWS, T>::isHermitian() const requires (isSquare) {
     if constexpr (!isComplex)
         return isSymmetrical();
-
-    for (int c = 0; c < COLUMNS; c++) {
-        for (int r = 0; r < ROWS; r++) {
-            if (!compare(data[c][r], std::conj(data[r][c]))) {
-                return false;
+    else {
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = 0; r < ROWS; r++) {
+                if (!compare(data[c][r], std::conj(data[r][c]))) {
+                    return false;
+                }
             }
         }
-    }
 
-    return true;
+        return true;
+    }
 }
 
 template<int COLUMNS, int ROWS, is_scalar_v T>
 bool Matrix<COLUMNS, ROWS, T>::isSkewHermitian() const requires (isSquare) {
     if constexpr (!isComplex)
         return isSkewSymmetrical();
-
-    for (int c = 0; c < COLUMNS; c++) {
-        for (int r = 0; r < ROWS; r++) {
-            if (!compare(data[c][r], -std::conj(data[r][c])))
-                return false;
+    else {
+        for (int c = 0; c < COLUMNS; c++) {
+            for (int r = 0; r < ROWS; r++) {
+                if (!compare(data[c][r], -std::conj(data[r][c])))
+                    return false;
+            }
         }
+
+        return true;
+    }
+}
+
+template<int COLUMNS, int ROWS, is_scalar_v T>
+bool Matrix<COLUMNS, ROWS, T>::isPositiveDefinite() const {
+    Matrix<COLUMNS, ROWS, T> ref = toRowEchelon();
+
+    // pivots of ref are signs of eigenvalues
+    for (int c = 0; c < COLUMNS; c++) {
+        if (ref[c][c] <= 0)
+            return false;
     }
 
     return true;
 }
 
 template<int COLUMNS, int ROWS, is_scalar_v T>
-bool Matrix<COLUMNS, ROWS, T>::isPositiveDefinite() const requires (isSquare) {
-    // TODO:
+bool Matrix<COLUMNS, ROWS, T>::isPositiveSemiDefinite() const {
+    Matrix<COLUMNS, ROWS, T> ref = toRowEchelon();
+
+    // pivots of ref are signs of eigenvalues
+    for (int c = 0; c < COLUMNS; c++) {
+        if (ref[c][c] < 0)
+            return false;
+    }
+
+    return true;
 }
 
 template<int COLUMNS, int ROWS, is_scalar_v T>
-bool Matrix<COLUMNS, ROWS, T>::isPositiveSemiDefinite() const requires (isSquare) {
-    // TODO:
+bool Matrix<COLUMNS, ROWS, T>::isNegativeDefinite() const {
+    Matrix<COLUMNS, ROWS, T> ref = toRowEchelon();
+
+    // pivots of ref are signs of eigenvalues
+    for (int c = 0; c < COLUMNS; c++) {
+        if (ref[c][c] >= 0)
+            return false;
+    }
+
+    return true;
 }
 
 template<int COLUMNS, int ROWS, is_scalar_v T>
-bool Matrix<COLUMNS, ROWS, T>::isNegativeDefinite() const requires (isSquare) {
-    // TODO:
-}
+bool Matrix<COLUMNS, ROWS, T>::isNegativeSemiDefinite() const {
+    Matrix<COLUMNS, ROWS, T> ref = toRowEchelon();
 
-template<int COLUMNS, int ROWS, is_scalar_v T>
-bool Matrix<COLUMNS, ROWS, T>::isNegativeSemiDefinite() const requires (isSquare) {
-    // TODO:
+    // pivots of ref are signs of eigenvalues
+    for (int c = 0; c < COLUMNS; c++) {
+        if (ref[c][c] > 0)
+            return false;
+    }
+
+    return true;
 }
 
 template<int COLUMNS, int ROWS, is_scalar_v T>
 bool Matrix<COLUMNS, ROWS, T>::isUnitary() const requires (isSquare) {
-    // TODO:
+    return conjugateTranspose() * *this == identity();
 }
 
 template<int COLUMNS, int ROWS, is_scalar_v T>
 bool Matrix<COLUMNS, ROWS, T>::isSpecialUnitary() const requires (isSquare) {
-    // TODO:
+    return conjugateTranspose() * *this == identity() && compare(determinant(), 1);
 }
 
 template<int COLUMNS, int ROWS, is_scalar_v T>
 bool Matrix<COLUMNS, ROWS, T>::isOrthogonal() const requires (!isComplex && isSquare) {
-    // TODO:
+    return transpose() * *this == identity();
 }
 
 template<int COLUMNS, int ROWS, is_scalar_v T>
 bool Matrix<COLUMNS, ROWS, T>::isSpecialOrthogonal() const requires (!isComplex && isSquare) {
-    // TODO:
+    return transpose() * *this == identity() && compare(determinant(), 1);
+}
+
+template<int COLUMNS, int ROWS, is_scalar_v T>
+bool Matrix<COLUMNS, ROWS, T>::isSemiOrthogonal() const requires (!isComplex && !isSquare) {
+    if constexpr (COLUMNS > ROWS) { // wide
+        return multiply(transpose()) == identity();
+    }
+    else { // tall
+        return transpose() * *this == identity();
+    }
 }
 
 template<int COLUMNS, int ROWS, is_scalar_v T>

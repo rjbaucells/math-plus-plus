@@ -168,6 +168,8 @@ struct Matrix {
     T* operator[](int index);
     const T* operator[](int index) const;
 
+    Matrix<COLUMNS, ROWS, T> operator-() const;
+
     Matrix<ROWS, COLUMNS, T> transpose() const;
     Matrix<ROWS, COLUMNS, T> conjugateTranspose() const;
 
@@ -187,22 +189,22 @@ private:
 
 public:
     static Matrix<COLUMNS, ROWS, T> scalingMatrix(const Vector<COLUMNS, T>& factors) requires (isSquare);
-    static Matrix<COLUMNS, ROWS, T> shearMatrix(const int i, const int j, const T k) requires (isSquare);
-    static Matrix<COLUMNS, ROWS, T> squeezeMatrix(const int i, const int j, const T k) requires (isSquare);
+    static Matrix<COLUMNS, ROWS, T> shearMatrix(int i, int j, T k) requires (isSquare);
+    static Matrix<COLUMNS, ROWS, T> squeezeMatrix(int i, int j, T k) requires (isSquare);
 
-    static Matrix<COLUMNS, ROWS, T> rotationMatrixAboutOrigin(const T rot, const RotationType rotationType = RotationType::radians) requires (isSquare && COLUMNS == 2);
-    static Matrix<COLUMNS + 1, ROWS + 1, T> rotationMatrixAboutPoint(const Vector<COLUMNS, T>& p, const T rot, const RotationType rotationType = RotationType::radians) requires (isSquare && COLUMNS == 2);
-    static Matrix<COLUMNS, ROWS, T> rotationMatrixAroundAxisThroughOrigin(const Vector<COLUMNS, T>& axis, const T rot, const RotationType rotationType = RotationType::radians) requires (isSquare && COLUMNS == 3);
-    static Matrix<COLUMNS + 1, ROWS + 1, T> rotationMatrixAroundAxisNotThroughOrigin(const Vector<COLUMNS, T>& axis, const Vector<COLUMNS, T>& point, const T rot, const RotationType rotationType = RotationType::radians) requires (isSquare && COLUMNS == 3);
-    static Matrix<COLUMNS, ROWS, T> rotationMatrixInPlaneThroughOrigin(const Vector<COLUMNS, T>& v1, const Vector<COLUMNS, T>& v2, const T rot, const RotationType rotationType = RotationType::radians) requires (isSquare && COLUMNS >= 3);
-    static Matrix<COLUMNS, ROWS, T> rotationMatrixInPLaneNotThroughOrigin(const Vector<COLUMNS, T>& v1, const Vector<COLUMNS, T>& v2, const Vector<COLUMNS, T>& point, const T rot, const RotationType rotationType = RotationType::radians) requires (isSquare && COLUMNS >= 3);
+    static Matrix<COLUMNS, ROWS, T> rotationMatrixAboutOrigin(T rot, RotationType rotationType = RotationType::radians) requires (isSquare && COLUMNS == 2);
+    static Matrix<COLUMNS + 1, ROWS + 1, T> rotationMatrixAboutPoint(const Vector<COLUMNS, T>& p, T rot, RotationType rotationType = RotationType::radians) requires (isSquare && COLUMNS == 2);
+    static Matrix<COLUMNS, ROWS, T> rotationMatrixAroundAxisThroughOrigin(const Vector<COLUMNS, T>& axis, T rot, RotationType rotationType = RotationType::radians) requires (isSquare && COLUMNS == 3);
+    static Matrix<COLUMNS + 1, ROWS + 1, T> rotationMatrixAroundAxisNotThroughOrigin(const Vector<COLUMNS, T>& axis, const Vector<COLUMNS, T>& point, T rot, RotationType rotationType = RotationType::radians) requires (isSquare && COLUMNS == 3);
+    static Matrix<COLUMNS, ROWS, T> rotationMatrixInPlaneThroughOrigin(const Vector<COLUMNS, T>& v1, const Vector<COLUMNS, T>& v2, T rot, RotationType rotationType = RotationType::radians) requires (isSquare && COLUMNS >= 3);
+    static Matrix<COLUMNS, ROWS, T> rotationMatrixInPLaneNotThroughOrigin(const Vector<COLUMNS, T>& v1, const Vector<COLUMNS, T>& v2, const Vector<COLUMNS, T>& point, T rot, RotationType rotationType = RotationType::radians) requires (isSquare && COLUMNS >= 3);
 
     static Matrix<COLUMNS, ROWS, T> reflectionMatrixAlongAxisThroughOrigin(const Vector<COLUMNS, T>& axis) requires (isSquare);
     static Matrix<COLUMNS + 1, ROWS + 1, T> reflectionMatrixAlongAxisNotThroughOrigin(const Vector<COLUMNS, T>& axis, const Vector<COLUMNS, T>& point) requires (isSquare);
 
     static Matrix<COLUMNS + 1, ROWS + 1, T> translationMatrix(const Vector<COLUMNS, T>& translation) requires (isSquare);
 
-    static Matrix<COLUMNS, ROWS, T> orthoMatrix(const T left, const T right, const T bottom, const T top, const T near, const T far) requires (isSquare && COLUMNS == 4);
+    static Matrix<COLUMNS, ROWS, T> orthoMatrix(T left, T right, T bottom, T top, T near, T far) requires (isSquare && COLUMNS == 4);
 
     std::string toString() const;
     std::string toLaTex() const;
@@ -214,8 +216,12 @@ public:
     template<int NUM_COLUMNS_TO_REMOVE, int NUM_ROWS_TO_REMOVE>
     Matrix<COLUMNS - NUM_COLUMNS_TO_REMOVE, ROWS - NUM_ROWS_TO_REMOVE, T> removeColumnsAndRows(const std::array<int, NUM_COLUMNS_TO_REMOVE>& columnsToRemove, const std::array<int, NUM_ROWS_TO_REMOVE>& rowsToRemove) const;
 
-    Matrix<COLUMNS, ROWS, T> swapRows(const int rowA, const int rowB);
-    Matrix<COLUMNS, ROWS, T> swapColumns(const int columnA, const int columnB);
+    Matrix<COLUMNS - 1, ROWS, T> removeColumn(int columnToRemove) const;
+    Matrix<COLUMNS, ROWS - 1, T> removeRow(int rowToRemove) const;
+    Matrix<COLUMNS - 1, ROWS - 1, T> removeColumnAndRow(int columnToRemove, int rowToRemove) const;
+
+    Matrix<COLUMNS, ROWS, T> swapRows(int rowA, int rowB);
+    Matrix<COLUMNS, ROWS, T> swapColumns(int columnA, int columnB);
 
     explicit operator const T*() const;
 
@@ -237,20 +243,20 @@ public:
     bool isHermitian() const requires (isSquare);
     bool isSkewHermitian() const requires (isSquare);
 
-    bool isPositiveDefinite() const requires (isSquare);
-    bool isPositiveSemiDefinite() const requires (isSquare);
-    bool isNegativeDefinite() const requires (isSquare);
-    bool isNegativeSemiDefinite() const requires (isSquare);
+    bool isPositiveDefinite() const;
+    bool isPositiveSemiDefinite() const;
+    bool isNegativeDefinite() const;
+    bool isNegativeSemiDefinite() const;
 
-    Vector<ROWS, T> getColumnVector(const int i) const;
+    Vector<ROWS, T> getColumnVector(int i) const;
     std::array<Vector<ROWS>, COLUMNS> getColumnVectors() const;
-    Vector<COLUMNS, T> getRowVector(const int i) const;
+    Vector<COLUMNS, T> getRowVector(int i) const;
     std::array<Vector<COLUMNS>, ROWS> getRowVectors() const;
 
     void setColumnVectors(const std::array<Vector<ROWS, T>, COLUMNS>& columnVectors);
-    void setColumnVector(const int i, const Vector<ROWS, T>& v);
-    void setRowVectors(const std::array<Vector<COLUMNS, T>, ROWS> rowVectors);
-    void setRowVector(const int i, const Vector<COLUMNS, T>& v);
+    void setColumnVector(int i, const Vector<ROWS, T>& v);
+    void setRowVectors(std::array<Vector<COLUMNS, T>, ROWS> rowVectors);
+    void setRowVector(int i, const Vector<COLUMNS, T>& v);
 
     T trace() const requires (isSquare);
 
@@ -259,6 +265,8 @@ public:
 
     bool isOrthogonal() const requires (!isComplex && isSquare);
     bool isSpecialOrthogonal() const requires (!isComplex && isSquare);
+
+    bool isSemiOrthogonal() const requires (!isComplex && !isSquare);
 
     bool isUpperTriangleMatrix() const requires (isSquare);
     bool isLowerTriangleMatrix() const requires (isSquare);
@@ -315,7 +323,7 @@ public:
         L_TRANSPOSE_TYPE lTranspose;
     };
 
-    CholeskyDecomposition<Matrix<COLUMNS, ROWS, T>, Matrix<ROWS, COLUMNS, T>> choleskyDecomposition(const bool allowPositiveSemiDefinite = false) const requires (isSquare);
+    CholeskyDecomposition<Matrix<COLUMNS, ROWS, T>, Matrix<ROWS, COLUMNS, T>> choleskyDecomposition(bool allowPositiveSemiDefinite = false) const requires (isSquare);
 
     template<typename L_TYPE, typename D_TYPE, typename L_TRANSPOSE_TYPE>
     struct LDLDecomposition {
@@ -334,11 +342,11 @@ public:
 
     QRDecomposition<Matrix<ROWS, ROWS, T>, Matrix<COLUMNS, ROWS, T>> qrDecomposition() const requires (isSquare);
 
-    T minorOfElement(const int c, const int r) const requires (isSquare);
+    T minorOfElement(int c, int r) const requires (isSquare);
 
     Matrix<COLUMNS, ROWS, T> minorMatrix() const requires (isSquare);
 
-    T cofactorOfElement(const int c, const int r) const requires (isSquare);
+    T cofactorOfElement(int c, int r) const requires (isSquare);
 
     Matrix<COLUMNS, ROWS, T> cofactorMatrix() const requires (isSquare);
 
@@ -426,7 +434,7 @@ Matrix<OTHER_N, N, T> Vector<N, T>::outerProductMatrix(const Vector<OTHER_N, OTH
 
     for (int c = 0; c < result.columns; c++) {
         for (int r = 0; r < result.rows; r++) {
-            if (isComplex)
+            if constexpr (isComplex)
                 result[c][r] = data[r] * std::conj(v[c]);
             else
                 result[c][r] = data[r] * v[c];

@@ -218,7 +218,6 @@ Matrix<COLUMNS, ROWS, T>::template CholeskyDecomposition<Matrix<COLUMNS, ROWS, T
                 T value = data[c][c];
 
                 for (int k = 0; k < c; k++) {
-                    // TODO: Find a way to replace this if
                     if constexpr (isComplex) {
                         value -= l[k][c] * std::conj(l[k][c]);
                     }
@@ -259,46 +258,24 @@ Matrix<COLUMNS, ROWS, T>::template LDLDecomposition<Matrix<COLUMNS, ROWS, T>, Ma
 
     for (int c = 0; c < COLUMNS; c++) {
         for (int r = 0; r <= c; r++) {
-            if constexpr (!isComplex) {
-                if (r == c) {
-                    T value = data[c][c];
+            if (r == c) {
+                T value = data[c][c];
 
-                    for (int k = 0; k < c; k++) {
-                        value -= std::pow(l[k][c], 2) * d[k][k];
-                    }
-
-                    d[c][c] = value;
+                for (int k = 0; k < c; k++) {
+                    value -= std::norm(l[k][c]) * d[k][k];
                 }
-                else if (r > c) {
-                    T value = data[c][r];
 
-                    for (int k = 0; k < c; k++) {
+                d[c][c] = value;
+            }
+            else if (r > c) {
+                T value = data[c][r];
+
+                for (int k = 0; k < c; k++) {
+                    if constexpr (!isComplex) {
                         value -= l[k][r] * l[k][c] * d[k][k];
                     }
-
-                    l[c][r] = (1 / d[c][c]) * value;
-                }
-            }
-            else {
-                if (r == c) {
-                    T value = data[c][c];
-
-                    for (int k = 0; k < c; k++) {
-                        T complexConjugate = l[k][c];
-                        complexConjugate.imag *= -1;
-                        value -= l[k][c] * complexConjugate * d[k][k];
-                    }
-
-                    d[c][c] = value;
-                }
-                else if (r > c) {
-                    T value = data[c][r];
-
-                    for (int k = 0; k < c; k++) {
-                        T complexConjugate = l[k][c];
-                        complexConjugate.imag *= -1;
-
-                        value -= l[k][r] * complexConjugate * d[k][k];
+                    else {
+                        value -= l[k][r] * std::conj(l[k][c]) * d[k][k];
                     }
 
                     l[c][r] = (1 / d[c][c]) * value;
@@ -307,7 +284,8 @@ Matrix<COLUMNS, ROWS, T>::template LDLDecomposition<Matrix<COLUMNS, ROWS, T>, Ma
         }
     }
 
-    return {l, d, l.conjugateTranspose()};
+    return
+        {l, d, l.conjugateTranspose()};
 }
 
 template<int COLUMNS, int ROWS, is_scalar_v T>
