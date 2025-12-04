@@ -6,3 +6,4 @@
 #include "../../src/vertex.h"
 #include "../../src/vector.h"
 #include "../../src/helper.h"
+#include "../../src/matrix_operators.h"

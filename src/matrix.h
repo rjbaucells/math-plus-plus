@@ -92,12 +92,12 @@ struct Matrix {
     Vector<COLUMNS, T> operator*(const Vector<COLUMNS, T>& other) const;
 
     // m * #
-    Matrix<COLUMNS, ROWS, T> multiply(const T val) const;
-    Matrix<COLUMNS, ROWS, T> operator*(const T val) const;
+    Matrix<COLUMNS, ROWS, T> multiply(T val) const;
+    Matrix<COLUMNS, ROWS, T> operator*(T val) const;
 
     // m / #
-    Matrix<COLUMNS, ROWS, T> divide(const T scalar) const;
-    Matrix<COLUMNS, ROWS, T> operator/(const T scalar) const;
+    Matrix<COLUMNS, ROWS, T> divide(T scalar) const;
+    Matrix<COLUMNS, ROWS, T> operator/(T scalar) const;
 
     // m += m
     Matrix<COLUMNS, ROWS, T>& addEquals(const Matrix<COLUMNS, ROWS, T>& other);
@@ -108,12 +108,12 @@ struct Matrix {
     Matrix<COLUMNS, ROWS, T> operator-=(const Matrix<COLUMNS, ROWS, T>& other);
 
     // m *= #
-    Matrix<COLUMNS, ROWS, T>& multiplyEquals(const T val);
-    Matrix<COLUMNS, ROWS, T>& operator*=(const T val) const;
+    Matrix<COLUMNS, ROWS, T>& multiplyEquals(T val);
+    Matrix<COLUMNS, ROWS, T>& operator*=(T val) const;
 
     // m /= #
-    Matrix<COLUMNS, ROWS, T>& divideEquals(const T scalar);
-    Matrix<COLUMNS, ROWS, T>& operator/=(const T scalar);
+    Matrix<COLUMNS, ROWS, T>& divideEquals(T scalar);
+    Matrix<COLUMNS, ROWS, T>& operator/=(T scalar);
 
     // m = m
     template<is_convertable_to<T> OTHER_T>
@@ -153,15 +153,15 @@ struct Matrix {
 
     // m * #
     template<is_convertable_to<T> OTHER_T>
-    Matrix<COLUMNS, ROWS, T> multiply(const OTHER_T val) const;
+    Matrix<COLUMNS, ROWS, T> multiply(OTHER_T val) const;
     template<is_convertable_to<T> OTHER_T>
-    Matrix<COLUMNS, ROWS, T> operator*(const OTHER_T val) const;
+    Matrix<COLUMNS, ROWS, T> operator*(OTHER_T val) const;
 
     // m / #
     template<is_convertable_to<T> OTHER_T>
-    Matrix<COLUMNS, ROWS, T> divide(const OTHER_T scalar) const;
+    Matrix<COLUMNS, ROWS, T> divide(OTHER_T scalar) const;
     template<is_convertable_to<T> OTHER_T>
-    Matrix<COLUMNS, ROWS, T> operator/(const OTHER_T scalar) const;
+    Matrix<COLUMNS, ROWS, T> operator/(OTHER_T scalar) const;
 
     // m += m
     template<is_convertable_to<T> OTHER_T>
@@ -177,15 +177,15 @@ struct Matrix {
 
     // m *= #
     template<is_convertable_to<T> OTHER_T>
-    Matrix<COLUMNS, ROWS, T>& multiplyEquals(const OTHER_T val);
+    Matrix<COLUMNS, ROWS, T>& multiplyEquals(OTHER_T val);
     template<is_convertable_to<T> OTHER_T>
-    Matrix<COLUMNS, ROWS, T>& operator*=(const OTHER_T val) const;
+    Matrix<COLUMNS, ROWS, T>& operator*=(OTHER_T val) const;
 
     // m /= #
     template<is_convertable_to<T> OTHER_T>
-    Matrix<COLUMNS, ROWS, T>& divideEquals(const OTHER_T scalar);
+    Matrix<COLUMNS, ROWS, T>& divideEquals(OTHER_T scalar);
     template<is_convertable_to<T> OTHER_T>
-    Matrix<COLUMNS, ROWS, T>& operator/=(const OTHER_T scalar);
+    Matrix<COLUMNS, ROWS, T>& operator/=(OTHER_T scalar);
 
     template<int N>
     Vector<N, T> applyHomogeneousTransformation(const Vector<N, T>& point) const requires (isSquare) {
@@ -225,15 +225,8 @@ struct Matrix {
         return result;
     }
 
-    // subscript
-    T* operator[](const int index) {
-        return &data[index][0];
-    }
-
-    // const subscript
-    const T* operator[](const int index) const {
-        return &data[index][0];
-    }
+    T* operator[](int index);
+    const T* operator[](int index) const;
 
     Matrix<ROWS, COLUMNS, T> transpose() const {
         Matrix<ROWS, COLUMNS, T> result;
@@ -724,13 +717,9 @@ public:
         return m;
     }
 
-    explicit operator const T*() const {
-        return &data[0][0];
-    }
+    explicit operator const T*() const;
 
-    explicit operator T*() {
-        return &data[0][0];
-    }
+    explicit operator T*();
 
     static Matrix<COLUMNS, ROWS, T> identity() requires (isSquare) {
         Matrix<COLUMNS, ROWS, T> result;
