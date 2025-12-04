@@ -25,23 +25,20 @@ constexpr T epsilon() {
     else if constexpr (std::is_integral_v<T>) {
         return 1;
     }
-    // complex number of some type
-    else if constexpr (is_complex_v<T>) {
-        return epsilon<typename T::value_type>();
-    }
     // fallback
     else {
         return static_cast<T>(1e-12);
     }
 }
 
+template<is_complex_v T>
+constexpr T::value_type epsilon() {
+    return epsilon<typename T::value_type>();
+}
+
 template<typename T>
 bool compare(const T val, const T target) {
-    if constexpr (std::is_same_v<T, std::complex<float>> || std::is_same_v<T, std::complex<double>>) {
-        return std::abs(val - target) < epsilon<typename T::value_type>();
-    } else {
-        return std::abs(val - target) < epsilon<T>();
-    }
+    return std::abs(val - target) < epsilon<T>();
 }
 
 template<typename T, typename OTHER_T>
