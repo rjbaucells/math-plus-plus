@@ -35,34 +35,12 @@ struct Matrix {
 
     Matrix() = default;
 
-    constexpr Matrix(std::initializer_list<std::initializer_list<T>> initializerList) {
-        int r = 0;
-        for (const auto& row : initializerList) {
-            int c = 0;
+    constexpr Matrix(std::initializer_list<std::initializer_list<T>> initializerList);
 
-            for (const auto element : row) {
-                data[c][r] = element;
-                c++;
-            }
+    Matrix(const Matrix<COLUMNS, ROWS, T>& other);
 
-            r++;
-        }
-    }
-
-    // copy constructor with same type
-    Matrix(const Matrix<COLUMNS, ROWS, T>& other) {
-        memcpy(data, other.data, sizeof(T) * ROWS * COLUMNS);
-    }
-
-    // copy constructor with different type
     template<is_convertable_to<T> OTHER_T>
-    Matrix(const Matrix<COLUMNS, ROWS, OTHER_T>& other) {
-        for (int c = 0; c < COLUMNS; c++) {
-            for (int r = 0; r < ROWS; r++) {
-                data[c][r] = other.data[c][r];
-            }
-        }
-    }
+    Matrix(const Matrix<COLUMNS, ROWS, OTHER_T>& other);
 
     // m = m
     Matrix<COLUMNS, ROWS, T>& operator=(const Matrix<COLUMNS, ROWS, T>& other);
@@ -77,9 +55,7 @@ struct Matrix {
 
     // m - m
     Matrix<COLUMNS, ROWS, T> subtract(const Matrix<COLUMNS, ROWS, T>& other) const;
-    Matrix<COLUMNS, ROWS, T> operator-(const Matrix<COLUMNS, ROWS, T>& other) const {
-        return subtract(other);
-    }
+    Matrix<COLUMNS, ROWS, T> operator-(const Matrix<COLUMNS, ROWS, T>& other) const;
 
     // m * m
     template<int OTHER_COLUMNS>
@@ -141,9 +117,7 @@ struct Matrix {
     template<int OTHER_COLUMNS, is_convertable_to<T> OTHER_T>
     Matrix<OTHER_COLUMNS, ROWS, T> multiply(const Matrix<OTHER_COLUMNS, COLUMNS, OTHER_T>& other) const;
     template<int OTHER_COLUMNS, is_convertable_to<T> OTHER_T>
-    Matrix<OTHER_COLUMNS, ROWS, T> operator*(const Matrix<OTHER_COLUMNS, COLUMNS, OTHER_T>& other) const {
-        return multiply(other);
-    }
+    Matrix<OTHER_COLUMNS, ROWS, T> operator*(const Matrix<OTHER_COLUMNS, COLUMNS, OTHER_T>& other) const;
 
     // m * v
     template<is_convertable_to<T> OTHER_T>
@@ -188,154 +162,19 @@ struct Matrix {
     Matrix<COLUMNS, ROWS, T>& operator/=(OTHER_T scalar);
 
     template<int N>
-    Vector<N, T> applyHomogeneousTransformation(const Vector<N, T>& point) const requires (isSquare) {
-        Vector<COLUMNS, T> resizedPoint;
-
-        for (int i = 0; i < N; i++) {
-            resizedPoint[i] = point[i];
-        }
-
-        Vector<COLUMNS, T> transformedPoint = multiply(resizedPoint);
-
-        Vector<N, T> result;
-
-        for (int i = 0; i < N; i++) {
-            result[i] = transformedPoint[i];
-        }
-
-        return result;
-    }
+    Vector<N, T> applyHomogeneousTransformation(const Vector<N, T>& point) const requires (isSquare);
 
     template<int N, is_convertable_to<T> OTHER_T>
-    Vector<N, T> applyHomogeneousTransformation(const Vector<N, OTHER_T>& point) const requires (isSquare) {
-        Vector<COLUMNS, T> resizedPoint;
-
-        for (int i = 0; i < N; i++) {
-            resizedPoint[i] = point[i];
-        }
-
-        Vector<COLUMNS, T> transformedPoint = multiply(resizedPoint);
-
-        Vector<N, T> result;
-
-        for (int i = 0; i < N; i++) {
-            result[i] = transformedPoint[i];
-        }
-
-        return result;
-    }
+    Vector<N, T> applyHomogeneousTransformation(const Vector<N, OTHER_T>& point) const requires (isSquare);
 
     T* operator[](int index);
     const T* operator[](int index) const;
 
-    Matrix<ROWS, COLUMNS, T> transpose() const {
-        Matrix<ROWS, COLUMNS, T> result;
+    Matrix<ROWS, COLUMNS, T> transpose() const;
 
-        for (int c = 0; c < ROWS; c++) {
-            for (int r = 0; r < COLUMNS; r++) {
-                result[c][r] = data[r][c];
-            }
-        }
+    Matrix<ROWS, COLUMNS, T> conjugateTranspose() const;
 
-        return result;
-    }
-
-    Matrix<ROWS, COLUMNS, T> conjugateTranspose() const {
-        if constexpr (!isComplex) {
-            return transpose();
-        }
-
-        Matrix<ROWS, COLUMNS, T> result;
-
-        for (int c = 0; c < ROWS; c++) {
-            for (int r = 0; r < COLUMNS; r++) {
-                result[c][r] = std::conj(data[r][c]);
-            }
-        }
-
-        return result;
-    }
-
-    Matrix<COLUMNS, ROWS, T> inverse() const requires (isSquare) {
-        if constexpr (ROWS == 1) { // its a one by one, we can just return 1 / value
-            if (compare(data[0][0], 0)) {
-                throw std::runtime_error("Cannot find inverse of singular matrix");
-            }
-
-            Matrix<1, 1, T> result;
-
-            result[0][0] = 1 / data[0][0];
-            return result;
-        }
-        else if constexpr (ROWS == 2) { // its a two by two, we can do the special fast thing
-            T det = determinant();
-
-            if (compare(det, 0)) {
-                throw std::runtime_error("Cannot find inverse of singular matrix");
-            }
-
-            Matrix<2, 2, T> result;
-
-            result[0][0] = data[1][1] / det;
-            result[0][1] = -data[0][1] / det;
-            result[1][0] = -data[1][0] / det;
-            result[1][1] = data[0][0] / det;
-
-            return result;
-        }
-        else {
-            Matrix<COLUMNS, ROWS, T> left = *this;
-            Matrix<COLUMNS, ROWS, T> right = identity();
-
-            for (int c = 0; c < COLUMNS; c++) {
-                // handle row swaps for performance
-                int rowIndex = -1;
-                T value = left[c][c];
-
-                // only check for rows to swap with below main diagonal
-                for (int i = c; i < ROWS; i++) {
-                    T norm = std::norm(left[c][i]);
-
-                    if (norm > value) {
-                        value = norm;
-                        rowIndex = i;
-                    }
-                }
-
-                // if we didnt swap, but needed to have
-                if (rowIndex == -1 && compare(value, 0))
-                    throw std::runtime_error("Cannot find inverse of singular matrix");
-
-                // swap if we can
-                if (rowIndex != -1) {
-                    left = left.swapRows(c, rowIndex);
-                    right = right.swapRows(c, rowIndex);
-                }
-
-                {
-                    // normalize pivot row
-                    T pivot = left[c][c];
-                    for (int cc = c; cc < COLUMNS; cc++) {
-                        left[cc][c] /= pivot;
-                        right[cc][c] /= pivot;
-                    }
-                }
-
-                for (int r = 0; r < ROWS; r++) {
-                    if (c == r)
-                        continue;
-
-                    T multiplierToPivotRow = left[c][r];
-                    for (int i = c; i < COLUMNS; i++) {
-                        left[i][r] += -multiplierToPivotRow * left[i][c];
-                        right[i][r] += -multiplierToPivotRow * left[i][c];
-                    }
-                }
-            }
-
-            return right;
-        }
-    }
+    Matrix<COLUMNS, ROWS, T> inverse() const requires (isSquare);
 
     enum DeterminantAlgorithm {
         laplace,
@@ -343,393 +182,61 @@ struct Matrix {
         hessenberg
     };
 
-    T determinant(const DeterminantAlgorithm algorithm = laplace) const requires (isSquare) {
-        if constexpr (COLUMNS == 1) {
-            return data[0][0];
-        }
-        else if constexpr (COLUMNS == 2) {
-            // ad - bc
-            return data[0][0] * data[1][1] - data[0][1] * data[1][0];
-        }
-        else if constexpr (COLUMNS == 3) {
-            // aei + bfg + cdh - ceg - bdi - afh
-            return (data[0][0] * data[1][1] * data[2][2]) + (data[1][0] * data[2][1] * data[0][2]) + (data[2][0] * data[0][1] * data[1][2]) - (data[2][0] * data[1][1] * data[0][2]) - (data[1][0] * data[0][1] * data[2][2]) - (data[0][0] * data[2][1] * data[1][2]);
-        }
-
-        switch (algorithm) {
-            case triangular:
-                return triangularDeterminant();
-            case hessenberg:
-                return 0;
-            default:
-                return laplaceDeterminant();
-        }
-    }
+    T determinant(const DeterminantAlgorithm algorithm = laplace) const requires (isSquare);
 
 private:
-    T laplaceDeterminant() const requires (isSquare) {
-        T result = {};
-        int sign = 1;
+    T laplaceDeterminant() const requires (isSquare);
 
-        for (int c = 0; c < COLUMNS; c++) {
-            Matrix<COLUMNS - 1, ROWS - 1, T> insideMatrix = removeColumnsAndRows({c}, {0});
-
-            result += sign * data[c][0] * insideMatrix.determinant();
-            sign *= -1;
-        }
-
-        return result;
-    }
-
-    T triangularDeterminant() const requires (isSquare) {
-        T result = {};
-
-        for (int i = 0; i < COLUMNS; i++) {
-            result *= data[i][i];
-        }
-
-        return result;
-    }
+    T triangularDeterminant() const requires (isSquare);
 
 public:
-#pragma region transformations
-    static Matrix<COLUMNS, ROWS, T> scalingMatrix(const Vector<COLUMNS, T>& factors) requires (isSquare) {
-        Matrix<COLUMNS, ROWS, T> matrix;
+    static Matrix<COLUMNS, ROWS, T> scalingMatrix(const Vector<COLUMNS, T>& factors) requires (isSquare);
 
-        for (int c = 0; c < COLUMNS; c++) {
-            matrix[c][c] = factors[c];
-        }
+    static Matrix<COLUMNS, ROWS, T> shearMatrix(const int i, const int j, const T k) requires (isSquare);
 
-        return matrix;
-    }
+    static Matrix<COLUMNS, ROWS, T> squeezeMatrix(const int i, const int j, const T k) requires (isSquare);
 
-    static Matrix<COLUMNS, ROWS, T> shearMatrix(const int i, const int j, const T k) requires (isSquare) {
-        Matrix<COLUMNS, ROWS, T> matrix = identity();
+    static Matrix<COLUMNS, ROWS, T> rotationMatrixAboutOrigin(const T rot, const RotationType rotationType = RotationType::radians) requires (isSquare && COLUMNS == 2);
 
-        matrix[j][i] = k;
+    static Matrix<COLUMNS + 1, ROWS + 1, T> rotationMatrixAboutPoint(const Vector<COLUMNS, T>& p, const T rot, const RotationType rotationType = RotationType::radians) requires (isSquare && COLUMNS == 2);
 
-        return matrix;
-    }
+    static Matrix<COLUMNS, ROWS, T> rotationMatrixAroundAxisThroughOrigin(const Vector<COLUMNS, T>& axis, const T rot, const RotationType rotationType = RotationType::radians) requires (isSquare && COLUMNS == 3);
 
-    static Matrix<COLUMNS, ROWS, T> squeezeMatrix(const int i, const int j, const T k) requires (isSquare) {
-        Matrix<COLUMNS, ROWS, T> matrix = identity();
+    static Matrix<COLUMNS + 1, ROWS + 1, T> rotationMatrixAroundAxisNotThroughOrigin(const Vector<COLUMNS, T>& axis, const Vector<COLUMNS, T>& point, const T rot, const RotationType rotationType = RotationType::radians) requires (isSquare && COLUMNS == 3);
 
-        matrix[i][i] = k;
-        matrix[j][j] = 1 / k;
+    static Matrix<COLUMNS, ROWS, T> rotationMatrixInPlaneThroughOrigin(const Vector<COLUMNS, T>& v1, const Vector<COLUMNS, T>& v2, const T rot, const RotationType rotationType = RotationType::radians) requires (isSquare && COLUMNS >= 3);
 
-        return matrix;
-    }
+    static Matrix<COLUMNS, ROWS, T> rotationMatrixInPLaneNotThroughOrigin(const Vector<COLUMNS, T>& v1, const Vector<COLUMNS, T>& v2, const Vector<COLUMNS, T>& point, const T rot, const RotationType rotationType = RotationType::radians) requires (isSquare && COLUMNS >= 3);
 
-#pragma region rotations
-    static Matrix<COLUMNS, ROWS, T> rotationMatrixAboutOrigin(const T rot, const RotationType rotationType = RotationType::radians) requires (isSquare && COLUMNS == 2) {
-        T asRadians = convert(rotationType, RotationType::radians, rot);
+    static Matrix<COLUMNS, ROWS, T> reflectionMatrixAlongAxisThroughOrigin(const Vector<COLUMNS, T>& axis) requires (isSquare);
 
-        T sin = std::sin(asRadians);
-        T cos = std::cos(asRadians);
+    static Matrix<COLUMNS + 1, ROWS + 1, T> reflectionMatrixAlongAxisNotThroughOrigin(const Vector<COLUMNS, T>& axis, const Vector<COLUMNS, T>& point) requires (isSquare);
 
-        Matrix<COLUMNS, ROWS, T> r;
+    static Matrix<COLUMNS + 1, ROWS + 1, T> translationMatrix(const Vector<COLUMNS, T>& translation) requires (isSquare);
 
-        r[0][0] = cos;
-        r[1][0] = -sin;
-        r[0][1] = sin;
-        r[1][1] = cos;
+    static Matrix<COLUMNS, ROWS, T> orthoMatrix(const T left, const T right, const T bottom, const T top, const T near, const T far) requires (isSquare && COLUMNS == 4);
 
-        return r;
-    }
-
-    static Matrix<COLUMNS + 1, ROWS + 1, T> rotationMatrixAboutPoint(const Vector<COLUMNS, T>& p, const T rot, const RotationType rotationType = RotationType::radians) requires (isSquare && COLUMNS == 2) {
-        Matrix<COLUMNS, ROWS, T> rotationMatrix = rotationMatrixAboutOrigin(rot, rotationType);
-        Vector<COLUMNS, T> translationVector = (identity() - rotationMatrix) * p;
-
-        Matrix<COLUMNS + 1, ROWS + 1, T> result = Matrix<COLUMNS + 1, ROWS + 1, T>::identity();
-
-        for (int c = 0; c < COLUMNS; c++) {
-            for (int r = 0; r < ROWS; r++) {
-                result[c][r] = rotationMatrix[c][r];
-            }
-        }
-
-        for (int r = 0; r < ROWS; r++) {
-            result[COLUMNS][r] = translationVector[r];
-        }
-
-        return result;
-    }
-
-    static Matrix<COLUMNS, ROWS, T> rotationMatrixAroundAxisThroughOrigin(const Vector<COLUMNS, T>& axis, const T rot, const RotationType rotationType = RotationType::radians) requires (isSquare && COLUMNS == 3) {
-        T asRadians = convert(rotationType, RotationType::radians, rot);
-
-        T sin = std::sin(asRadians);
-        T cos = std::cos(asRadians);
-
-        Matrix<COLUMNS, ROWS, T> r = identity() * cos + (1 - cos) * axis.outerProduct(axis) + axis.crossProductMatrix() * sin;
-
-        return r;
-    }
-
-    static Matrix<COLUMNS + 1, ROWS + 1, T> rotationMatrixAroundAxisNotThroughOrigin(const Vector<COLUMNS, T>& axis, const Vector<COLUMNS, T>& point, const T rot, const RotationType rotationType = RotationType::radians) requires (isSquare && COLUMNS == 3) {
-        Vector<COLUMNS, T> u = axis.normalize();
-
-        Matrix<COLUMNS, ROWS, T> rotationMatrix = rotationMatrixAroundAxisThroughOrigin(u, rot, rotationType);
-        Vector<COLUMNS, T> translationVector = (identity() - rotationMatrix) * point;
-
-        Matrix<COLUMNS + 1, ROWS + 1, T> result = Matrix<COLUMNS + 1, ROWS + 1, T>::identity();
-
-        for (int c = 0; c < COLUMNS; c++) {
-            for (int r = 0; r < ROWS; r++) {
-                result[c][r] = rotationMatrix[c][r];
-            }
-        }
-
-        for (int r = 0; r < ROWS; r++) {
-            result[COLUMNS][r] = translationVector[r];
-        }
-
-        return result;
-    }
-
-    static Matrix<COLUMNS, ROWS, T> rotationMatrixInPlaneThroughOrigin(const Vector<COLUMNS, T>& v1, const Vector<COLUMNS, T>& v2, const T rot, const RotationType rotationType = RotationType::radians) requires (isSquare && COLUMNS >= 3) {
-        T asRadians = convert(rotationType, RotationType::radians, rot);
-
-        T sin = std::sin(asRadians);
-        T cos = std::cos(asRadians);
-
-        auto orthonormalized = Vector<COLUMNS, T>::orthonormalize({v1, v2});
-
-        Vector<COLUMNS, T> u = orthonormalized[0];
-        Vector<COLUMNS, T> v = orthonormalized[1];
-
-        Matrix<COLUMNS, ROWS, T> r = identity() + (cos - 1) * (u.outerProduct(u) + v.outerProduct(v)) + sin * (v.outerProduct(u) - u.outerProduct(v));
-
-        return r;
-    }
-
-    static Matrix<COLUMNS, ROWS, T> rotationMatrixInPLaneNotThroughOrigin(const Vector<COLUMNS, T>& v1, const Vector<COLUMNS, T>& v2, const Vector<COLUMNS, T>& point, const T rot, const RotationType rotationType = RotationType::radians) requires (isSquare && COLUMNS >= 3) {
-        auto orthonormalized = Vector<COLUMNS, T>::orthonormalize({v1, v2});
-
-        Vector<COLUMNS, T> u = orthonormalized[0];
-        Vector<COLUMNS, T> v = orthonormalized[1];
-
-        Matrix<COLUMNS, ROWS, T> rotationMatrix = rotationMatrixInPlaneThroughOrigin(u, v, rot, rotationType);
-
-        Vector<COLUMNS, T> translationVector = (identity() - rotationMatrix) * point;
-
-        Matrix<COLUMNS + 1, ROWS + 1, T> result = Matrix<COLUMNS + 1, ROWS + 1, T>::identity();
-
-        for (int c = 0; c < COLUMNS; c++) {
-            for (int r = 0; r < ROWS; r++) {
-                result[c][r] = rotationMatrix[c][r];
-            }
-        }
-
-        for (int r = 0; r < ROWS; r++) {
-            result[COLUMNS][r] = translationVector[r];
-        }
-
-        return result;
-    }
-#pragma endregion
-
-    static Matrix<COLUMNS, ROWS, T> reflectionMatrixAlongAxisThroughOrigin(const Vector<COLUMNS, T>& axis) requires (isSquare) {
-        return 2 * axis.outerProduct(axis) - identity();
-    }
-
-    static Matrix<COLUMNS + 1, ROWS + 1, T> reflectionMatrixAlongAxisNotThroughOrigin(const Vector<COLUMNS, T>& axis, const Vector<COLUMNS, T>& point) requires (isSquare) {
-        Matrix<COLUMNS, ROWS, T> reflectionMatrix = reflectionMatrixAlongAxisThroughOrigin(axis);
-        Vector<COLUMNS, T> translationVector = (identity() - 2 * axis.outerProduct(axis)) * point;
-
-        Matrix<COLUMNS + 1, ROWS + 1, T> result = Matrix<COLUMNS + 1, ROWS + 1, T>::identity();
-
-        for (int c = 0; c < COLUMNS; c++) {
-            for (int r = 0; r < ROWS; r++) {
-                result[c][r] = reflectionMatrix[c][r];
-            }
-        }
-
-        for (int r = 0; r < ROWS; r++) {
-            result[COLUMNS][r] = translationVector[r];
-        }
-
-        return result;
-    }
-
-    static Matrix<COLUMNS + 1, ROWS + 1, T> translationMatrix(const Vector<COLUMNS, T>& translation) requires (isSquare) {
-        Matrix<COLUMNS + 1, ROWS + 1, T> matrix = Matrix<COLUMNS + 1, ROWS + 1, T>::identity();
-
-        for (int r = 0; r < ROWS; r++) {
-            matrix[COLUMNS][r] = translation[r];
-        }
-
-        return matrix;
-    }
-
-#pragma endregion
-
-    static Matrix<COLUMNS, ROWS, T> orthoMatrix(const T left, const T right, const T bottom, const T top, const T near, const T far) requires (isSquare && COLUMNS == 4) {
-        // identity
-        Matrix<COLUMNS, ROWS, T> transformation = Matrix<COLUMNS, ROWS, T>::identity();
-        // transformation
-        transformation.data[0][0] = 2 / (right - left);
-        transformation.data[1][1] = 2 / (top - bottom);
-        transformation.data[2][2] = -2 / (far - near);
-        transformation.data[3][0] = -(right + left) / (right - left);
-        transformation.data[3][1] = -(top + bottom) / (top - bottom);
-        transformation.data[3][2] = -(far + near) / (far - near);
-        // return
-        return transformation;
-    }
-
-    std::string toString() const {
-        std::stringstream ss;
-        ss.precision(2);
-
-        ss << "[";
-
-        for (int r = 0; r < ROWS; r++) {
-            ss << "[";
-            for (int c = 0; c < COLUMNS; c++) {
-                ss << data[c][r];
-
-                if (c < COLUMNS - 1)
-                    ss << ", ";
-            }
-
-            ss << "]";
-
-            if (r < ROWS - 1)
-                ss << ", ";
-        }
-
-        ss << "]";
-        return ss.str();
-    }
-
-    std::string toLaTex() const {
-        std::stringstream ss;
-        ss.precision(2);
-
-        ss << "\\begin{bmatrix}";
-
-        for (int r = 0; r < ROWS; r++) {
-            for (int c = 0; c < COLUMNS; c++) {
-                ss << data[c][r];
-
-                if (c < COLUMNS - 1)
-                    ss << " & ";
-            }
-
-            if (r < ROWS - 1)
-                ss << "\\\\";
-        }
-
-        ss << "\\end{bmatrix}";
-        return ss.str();
-    }
+    std::string toString() const;
+    std::string toLaTex() const;
 
     template<int NUM_COLUMNS_TO_REMOVE>
-    Matrix<COLUMNS - NUM_COLUMNS_TO_REMOVE, ROWS, T> removeColumns(const std::array<int, NUM_COLUMNS_TO_REMOVE>& columnsToRemove) const {
-        Matrix<COLUMNS - NUM_COLUMNS_TO_REMOVE, ROWS, T> m;
-
-        for (int c = 0; c < COLUMNS; c++) {
-            if (std::find(columnsToRemove.begin(), columnsToRemove.end(), c))
-                continue;
-
-            for (int r = 0; r < ROWS; r++) {
-                m[c][r] = data[c][r];
-            }
-        }
-
-        return m;
-    }
+    Matrix<COLUMNS - NUM_COLUMNS_TO_REMOVE, ROWS, T> removeColumns(const std::array<int, NUM_COLUMNS_TO_REMOVE>& columnsToRemove) const;
 
     template<int NUM_ROWS_TO_REMOVE>
-    Matrix<COLUMNS, ROWS - NUM_ROWS_TO_REMOVE, T> removeRows(const std::array<int, NUM_ROWS_TO_REMOVE>& rowsToRemove) const {
-        Matrix<COLUMNS, ROWS - NUM_ROWS_TO_REMOVE, T> m;
-
-        for (int c = 0; c < COLUMNS; c++) {
-            for (int r = 0; r < ROWS; r++) {
-                if (std::find(rowsToRemove.begin(), rowsToRemove.end(), r))
-                    continue;
-
-                m[c][r] = data[c][r];
-            }
-        }
-
-        return m;
-    }
+    Matrix<COLUMNS, ROWS - NUM_ROWS_TO_REMOVE, T> removeRows(const std::array<int, NUM_ROWS_TO_REMOVE>& rowsToRemove) const;
 
     template<int NUM_COLUMNS_TO_REMOVE, int NUM_ROWS_TO_REMOVE>
-    Matrix<COLUMNS - NUM_COLUMNS_TO_REMOVE, ROWS - NUM_ROWS_TO_REMOVE, T> removeColumnsAndRows(const std::array<int, NUM_COLUMNS_TO_REMOVE>& columnsToRemove, const std::array<int, NUM_ROWS_TO_REMOVE>& rowsToRemove) const {
-        Matrix<COLUMNS, ROWS - NUM_ROWS_TO_REMOVE, T> m;
+    Matrix<COLUMNS - NUM_COLUMNS_TO_REMOVE, ROWS - NUM_ROWS_TO_REMOVE, T> removeColumnsAndRows(const std::array<int, NUM_COLUMNS_TO_REMOVE>& columnsToRemove, const std::array<int, NUM_ROWS_TO_REMOVE>& rowsToRemove) const;
 
-        for (int c = 0; c < COLUMNS; c++) {
-            if (std::find(columnsToRemove.begin(), columnsToRemove.end(), c))
-                continue;
+    Matrix<COLUMNS, ROWS, T> swapRows(const int rowA, const int rowB);
 
-            for (int r = 0; r < ROWS; r++) {
-                if (std::find(rowsToRemove.begin(), rowsToRemove.end(), r))
-                    continue;
-
-                m[c][r] = data[c][r];
-            }
-        }
-
-        return m;
-    }
-
-    Matrix<COLUMNS, ROWS, T> swapRows(const int rowA, const int rowB) {
-        Matrix<COLUMNS, ROWS, T> m = *this;
-
-        T temp[COLUMNS] = {};
-
-        for (int c = 0; c < COLUMNS; c++) {
-            temp[c] = m[c][rowA];
-        }
-
-        for (int c = 0; c < COLUMNS; c++) {
-            m[c][rowA] = m[c][rowB];
-        }
-
-        for (int c = 0; c < COLUMNS; c++) {
-            m[c][rowB] = temp[c];
-        }
-
-        return m;
-    }
-
-    Matrix<COLUMNS, ROWS, T> swapColumns(const int columnA, const int columnB) {
-        Matrix<COLUMNS, ROWS, T> m = *this;
-
-        T temp[ROWS] = {};
-
-        for (int r = 0; r < ROWS; r++) {
-            temp[r] = m[columnA][r];
-        }
-
-        for (int r = 0; r < COLUMNS; r++) {
-            m[columnA][r] = m[columnB][r];
-        }
-
-        for (int r = 0; r < COLUMNS; r++) {
-            m[columnB][r] = temp[r];
-        }
-
-        return m;
-    }
+    Matrix<COLUMNS, ROWS, T> swapColumns(const int columnA, const int columnB);
 
     explicit operator const T*() const;
 
     explicit operator T*();
 
-    static Matrix<COLUMNS, ROWS, T> identity() requires (isSquare) {
-        Matrix<COLUMNS, ROWS, T> result;
-
-        for (int i = 0; i < COLUMNS; i++) {
-            result[i][i] = 1;
-        }
-
-        return result;
-    }
+    static Matrix<COLUMNS, ROWS, T> identity() requires (isSquare);
 
     bool isRowEchelon(bool pivotMustBeOne = false) const {
         int lastPivotColumn = -1;

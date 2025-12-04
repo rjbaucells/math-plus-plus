@@ -465,11 +465,11 @@ const T* Matrix<COLUMNS, ROWS, T>::operator[](const int index) const {
 }
 
 template<int COLUMNS, int ROWS, is_scalar_v T>
-explicit Matrix<COLUMNS, ROWS, T>::operator T*() {
+Matrix<COLUMNS, ROWS, T>::operator T*() {
     return &data[0][0];
 }
 
 template<int COLUMNS, int ROWS, is_scalar_v T>
-explicit Matrix<COLUMNS, ROWS, T>::operator const T*() const {
+Matrix<COLUMNS, ROWS, T>::operator const T*() const {
     return &data[0][0];
 }
