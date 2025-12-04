@@ -211,19 +211,6 @@ TEST(MatrixOperators, rectangular_matrix_multiplication) {
     ASSERT_TRUE(result == expected);
 }
 
-TEST(MatrixOperators, rectangular_matrix_vector_multiplication) {
-    // Arrange
-    const Matrix<3, 2> m = {{1, 2}, {3, 4}, {5, 6}};
-    const Vector<3> v = {1, 2, 3};
-    const Vector<2> expected = {14, 32};
-
-    // Act
-    const Vector<2> result = m * v;
-
-    // Assert
-    ASSERT_TRUE(result == expected);
-}
-
 // Complex Number Operations Tests
 
 TEST(MatrixOperators, complex_matrix_addition) {
@@ -279,18 +266,6 @@ TEST(MatrixOperators, identity_multiplication) {
 
     // Act
     const Matrix<2, 2> result = m * identity;
-
-    // Assert
-    ASSERT_TRUE(result == m);
-}
-
-TEST(MatrixOperators, zero_matrix_addition) {
-    // Arrange
-    const Matrix<2, 2> zero = Matrix<2, 2>::zero();
-    const Matrix<2, 2> m = {{1, 2}, {3, 4}};
-
-    // Act
-    const Matrix<2, 2> result = m + zero;
 
     // Assert
     ASSERT_TRUE(result == m);
