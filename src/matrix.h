@@ -85,7 +85,7 @@ struct Matrix {
 
     // m *= #
     Matrix<COLUMNS, ROWS, T>& multiplyEquals(T val);
-    Matrix<COLUMNS, ROWS, T>& operator*=(T val) const;
+    Matrix<COLUMNS, ROWS, T>& operator*=(T val);
 
     // m /= #
     Matrix<COLUMNS, ROWS, T>& divideEquals(T scalar);
@@ -153,7 +153,7 @@ struct Matrix {
     template<is_convertable_to<T> OTHER_T>
     Matrix<COLUMNS, ROWS, T>& multiplyEquals(OTHER_T val);
     template<is_convertable_to<T> OTHER_T>
-    Matrix<COLUMNS, ROWS, T>& operator*=(OTHER_T val) const;
+    Matrix<COLUMNS, ROWS, T>& operator*=(OTHER_T val);
 
     // m /= #
     template<is_convertable_to<T> OTHER_T>
