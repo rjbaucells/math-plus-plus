@@ -3,7 +3,6 @@
 #include <cassert>
 #include <complex>
 #include <regex>
-#include <sstream>
 #include <stdexcept>
 #include <string>
 #include "helper.h"
@@ -182,7 +181,7 @@ struct Matrix {
         hessenberg
     };
 
-    T determinant(const DeterminantAlgorithm algorithm = laplace) const requires (isSquare);
+    T determinant(DeterminantAlgorithm algorithm = laplace) const requires (isSquare);
 
 private:
     T laplaceDeterminant() const requires (isSquare);
