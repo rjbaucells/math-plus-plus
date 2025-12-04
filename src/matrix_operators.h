@@ -73,7 +73,7 @@ template<int OTHER_COLUMNS>
 Matrix<OTHER_COLUMNS, ROWS, T> Matrix<COLUMNS, ROWS, T>::multiply(const Matrix<OTHER_COLUMNS, COLUMNS, T>& other) const {
     Matrix<OTHER_COLUMNS, ROWS, T> result;
 
-    for (int c = 0; c < COLUMNS; c++) {
+    for (int c = 0; c < OTHER_COLUMNS; c++) {
         for (int r = 0; r < ROWS; r++) {
             for (int x = 0; x < COLUMNS; x++) {
                 result[c][r] += data[x][r] * other.data[c][x];
@@ -194,7 +194,7 @@ Matrix<COLUMNS, ROWS, T>& Matrix<COLUMNS, ROWS, T>::multiplyEquals(const T val) 
 }
 
 template<int COLUMNS, int ROWS, is_scalar_v T>
-Matrix<COLUMNS, ROWS, T>& Matrix<COLUMNS, ROWS, T>::operator*=(const T val) const {
+Matrix<COLUMNS, ROWS, T>& Matrix<COLUMNS, ROWS, T>::operator*=(const T val) {
     return multiplyEquals(val);
 }
 
@@ -219,11 +219,9 @@ Matrix<COLUMNS, ROWS, T>& Matrix<COLUMNS, ROWS, T>::operator/=(const T scalar) {
 template<int COLUMNS, int ROWS, is_scalar_v T>
 template<is_convertable_to<T> OTHER_T>
 Matrix<COLUMNS, ROWS, T>& Matrix<COLUMNS, ROWS, T>::operator=(const Matrix<COLUMNS, ROWS, OTHER_T>& other) {
-    if (static_cast<void*>(this) != static_cast<void*>(&other)) {
-        for (int c = 0; c < COLUMNS; c++) {
-            for (int r = 0; r < ROWS; r++) {
-                data[c][r] = other.data[c][r];
-            }
+    for (int c = 0; c < COLUMNS; c++) {
+        for (int r = 0; r < ROWS; r++) {
+            data[c][r] = other.data[c][r];
         }
     }
 
@@ -298,7 +296,7 @@ template<int OTHER_COLUMNS, is_convertable_to<T> OTHER_T>
 Matrix<OTHER_COLUMNS, ROWS, T> Matrix<COLUMNS, ROWS, T>::multiply(const Matrix<OTHER_COLUMNS, COLUMNS, OTHER_T>& other) const {
     Matrix<OTHER_COLUMNS, ROWS, T> result;
 
-    for (int c = 0; c < COLUMNS; c++) {
+    for (int c = 0; c < OTHER_COLUMNS; c++) {
         for (int r = 0; r < ROWS; r++) {
             for (int x = 0; x < COLUMNS; x++) {
                 result[c][r] += data[x][r] * other.data[c][x];
@@ -431,7 +429,7 @@ Matrix<COLUMNS, ROWS, T>& Matrix<COLUMNS, ROWS, T>::multiplyEquals(const OTHER_T
 
 template<int COLUMNS, int ROWS, is_scalar_v T>
 template<is_convertable_to<T> OTHER_T>
-Matrix<COLUMNS, ROWS, T>& Matrix<COLUMNS, ROWS, T>::operator*=(const OTHER_T val) const {
+Matrix<COLUMNS, ROWS, T>& Matrix<COLUMNS, ROWS, T>::operator*=(const OTHER_T val) {
     return multiplyEquals(val);
 }
 

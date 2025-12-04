@@ -23,6 +23,7 @@ FetchContent_MakeAvailable(googletest)
 add_executable(math-tests
         main.cpp
         matrix.test.cpp
+        matrix.operators.test.cpp
         vector.test.cpp
         rotation.test.cpp
 )
