@@ -28,7 +28,8 @@ struct Matrix {
     static constexpr bool isSquare = ROWS == COLUMNS;
     static constexpr bool isComplex = is_complex_v<T>;
 
-    typedef T value_type;
+    using ValueType = T;
+    using UnderlyingType = underlying_type<T>::value_type;
 
     T data[COLUMNS][ROWS] = {};
 
@@ -95,46 +96,46 @@ struct Matrix {
     Matrix<COLUMNS, ROWS, T>& operator=(const Matrix<COLUMNS, ROWS, OTHER_T>& other);
 
     // m == m
-    template<typename OTHER_T> requires std::convertible_to<OTHER_T, T>
+    template<typename OTHER_T> requires equality_comparable<OTHER_T, T>
     bool equals(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const;
-    template<typename OTHER_T> requires std::convertible_to<OTHER_T, T>
+    template<typename OTHER_T> requires equality_comparable<OTHER_T, T>
     bool operator==(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const;
 
     // m + m
-    template<typename OTHER_T> requires std::convertible_to<OTHER_T, T>
-    Matrix<COLUMNS, ROWS, T> add(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const;
-    template<typename OTHER_T> requires std::convertible_to<OTHER_T, T>
-    Matrix<COLUMNS, ROWS, T> operator+(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const;
+    template<typename OTHER_T> requires has_common_type<OTHER_T, T>
+    Matrix<COLUMNS, ROWS, std::common_type_t<T, OTHER_T>> add(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const;
+    template<typename OTHER_T> requires has_common_type<OTHER_T, T>
+    Matrix<COLUMNS, ROWS, std::common_type_t<T, OTHER_T>> operator+(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const;
 
     // m - m
-    template<typename OTHER_T> requires std::convertible_to<OTHER_T, T>
-    Matrix<COLUMNS, ROWS, T> subtract(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const;
-    template<typename OTHER_T> requires std::convertible_to<OTHER_T, T>
-    Matrix<COLUMNS, ROWS, T> operator-(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const;
+    template<typename OTHER_T> requires has_common_type<OTHER_T, T>
+    Matrix<COLUMNS, ROWS, std::common_type_t<T, OTHER_T>> subtract(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const;
+    template<typename OTHER_T> requires has_common_type<OTHER_T, T>
+    Matrix<COLUMNS, ROWS, std::common_type_t<T, OTHER_T>> operator-(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const;
 
     // m * m
-    template<int OTHER_COLUMNS, typename OTHER_T> requires std::convertible_to<OTHER_T, T>
-    Matrix<OTHER_COLUMNS, ROWS, T> multiply(const Matrix<OTHER_COLUMNS, COLUMNS, OTHER_T>& other) const;
-    template<int OTHER_COLUMNS, typename OTHER_T> requires std::convertible_to<OTHER_T, T>
-    Matrix<OTHER_COLUMNS, ROWS, T> operator*(const Matrix<OTHER_COLUMNS, COLUMNS, OTHER_T>& other) const;
+    template<int OTHER_COLUMNS, typename OTHER_T> requires has_common_type<OTHER_T, T>
+    Matrix<OTHER_COLUMNS, ROWS, std::common_type_t<T, OTHER_T>> multiply(const Matrix<OTHER_COLUMNS, COLUMNS, OTHER_T>& other) const;
+    template<int OTHER_COLUMNS, typename OTHER_T> requires has_common_type<OTHER_T, T>
+    Matrix<OTHER_COLUMNS, ROWS, std::common_type_t<T, OTHER_T>> operator*(const Matrix<OTHER_COLUMNS, COLUMNS, OTHER_T>& other) const;
 
     // m * v
-    template<typename OTHER_T> requires std::convertible_to<OTHER_T, T>
-    Vector<COLUMNS, T> multiply(const Vector<COLUMNS, OTHER_T>& other) const;
-    template<typename OTHER_T> requires std::convertible_to<OTHER_T, T>
-    Vector<COLUMNS, T> operator*(const Vector<COLUMNS, OTHER_T>& other) const;
+    template<typename OTHER_T> requires has_common_type<OTHER_T, T>
+    Vector<COLUMNS, std::common_type_t<T, OTHER_T>> multiply(const Vector<COLUMNS, OTHER_T>& other) const;
+    template<typename OTHER_T> requires has_common_type<OTHER_T, T>
+    Vector<COLUMNS, std::common_type_t<T, OTHER_T>> operator*(const Vector<COLUMNS, OTHER_T>& other) const;
 
     // m * #
-    template<typename OTHER_T> requires std::convertible_to<OTHER_T, T>
-    Matrix<COLUMNS, ROWS, T> multiply(OTHER_T val) const;
-    template<typename OTHER_T> requires std::convertible_to<OTHER_T, T>
-    Matrix<COLUMNS, ROWS, T> operator*(OTHER_T val) const;
+    template<typename OTHER_T> requires has_common_type<OTHER_T, T>
+    Matrix<COLUMNS, ROWS, std::common_type_t<T, OTHER_T>> multiply(OTHER_T val) const;
+    template<typename OTHER_T> requires has_common_type<OTHER_T, T>
+    Matrix<COLUMNS, ROWS, std::common_type_t<T, OTHER_T>> operator*(OTHER_T val) const;
 
     // m / #
-    template<typename OTHER_T> requires std::convertible_to<OTHER_T, T>
-    Matrix<COLUMNS, ROWS, T> divide(OTHER_T scalar) const;
-    template<typename OTHER_T> requires std::convertible_to<OTHER_T, T>
-    Matrix<COLUMNS, ROWS, T> operator/(OTHER_T scalar) const;
+    template<typename OTHER_T> requires has_common_type<OTHER_T, T>
+    Matrix<COLUMNS, ROWS, std::common_type_t<T, OTHER_T>> divide(OTHER_T scalar) const;
+    template<typename OTHER_T> requires has_common_type<OTHER_T, T>
+    Matrix<COLUMNS, ROWS, std::common_type_t<T, OTHER_T>> operator/(OTHER_T scalar) const;
 
     // m += m
     template<typename OTHER_T> requires std::convertible_to<OTHER_T, T>
@@ -162,8 +163,8 @@ struct Matrix {
 
     template<int N>
     Vector<N, T> applyHomogeneousTransformation(const Vector<N, T>& point) const requires (isSquare);
-    template<int N, typename OTHER_T> requires std::convertible_to<OTHER_T, T>
-    Vector<N, T> applyHomogeneousTransformation(const Vector<N, OTHER_T>& point) const requires (isSquare);
+    template<int N, typename OTHER_T> requires has_common_type<OTHER_T, T>
+    Vector<N, std::common_type_t<T, OTHER_T>> applyHomogeneousTransformation(const Vector<N, OTHER_T>& point) const requires (isSquare);
 
     T* operator[](int index);
     const T* operator[](int index) const;
@@ -288,7 +289,7 @@ public:
         P_TYPE p;
     };
 
-    LUPDecomposition<Matrix<std::min(ROWS, COLUMNS), ROWS, T>, Matrix<COLUMNS, std::min(ROWS, COLUMNS), T>, Matrix<ROWS, ROWS, T>> lupDecomposition() const;
+    LUPDecomposition<Matrix<ROWS, ROWS, T>, Matrix<COLUMNS, ROWS, T>, Matrix<ROWS, ROWS, T>> lupDecomposition() const;
 
     template<typename L_TYPE, typename U_TYPE, typename P_TYPE, typename Q_TYPE>
     struct LUPQDecomposition {
@@ -298,7 +299,7 @@ public:
         Q_TYPE q;
     };
 
-    LUPQDecomposition<Matrix<std::min(ROWS, COLUMNS), ROWS, T>, Matrix<COLUMNS, std::min(ROWS, COLUMNS), T>, Matrix<ROWS, ROWS, T>, Matrix<COLUMNS, COLUMNS, T>> lupqDecomposition() const;
+    LUPQDecomposition<Matrix<ROWS, ROWS, T>, Matrix<COLUMNS, ROWS, T>, Matrix<ROWS, ROWS, T>, Matrix<COLUMNS, COLUMNS, T>> lupqDecomposition() const;
 
     template<typename L_TYPE, typename U_TYPE>
     struct LUDecomposition {
@@ -306,7 +307,7 @@ public:
         U_TYPE u;
     };
 
-    LUDecomposition<Matrix<std::min(ROWS, COLUMNS), ROWS, T>, Matrix<COLUMNS, std::min(ROWS, COLUMNS), T>> luDecomposition() const;
+    LUDecomposition<Matrix<ROWS, ROWS, T>, Matrix<COLUMNS, ROWS, T>> luDecomposition() const;
 
     template<typename L_TYPE, typename D_TYPE, typename U_TYPE>
     struct LDUDecomposition {
@@ -315,7 +316,7 @@ public:
         U_TYPE u;
     };
 
-    LDUDecomposition<Matrix<std::min(ROWS, COLUMNS), ROWS, T>, Matrix<std::min(ROWS, COLUMNS), std::min(ROWS, COLUMNS), T>, Matrix<COLUMNS, std::min(ROWS, COLUMNS), T>> lduDecomposition() const;
+    LDUDecomposition<Matrix<ROWS, ROWS, T>, Matrix<ROWS, ROWS, T>, Matrix<COLUMNS, ROWS, T>> lduDecomposition() const;
 
     template<typename L_TYPE, typename L_TRANSPOSE_TYPE>
     struct CholeskyDecomposition {

@@ -31,21 +31,8 @@ struct Vector {
 
     static constexpr T epsilon = ::epsilon<T>();
 
-    typedef T value_type;
-
-private:
-    template<typename U>
-    struct DotProductType {
-        using type = U;
-    };
-
-    template<typename U>
-    struct DotProductType<std::complex<U>> {
-        using type = U;
-    };
-
-public:
-    using DotProductReturnType = DotProductType<T>::type;
+    using ValueType = T;
+    using UnderlyingType = underlying_type<T>::value_type;
 
     T data[N] = {};
 
@@ -195,8 +182,8 @@ public:
     }
 
     // v * v
-    DotProductReturnType componentDot(const Vector<N, T>& other) const {
-        DotProductReturnType result = {};
+    UnderlyingType componentDot(const Vector<N, T>& other) const {
+        UnderlyingType result = {};
 
         for (int i = 0; i < N; i++) {
             if constexpr (isComplex) {
@@ -210,7 +197,7 @@ public:
         return result;
     }
 
-    DotProductReturnType operator*(const Vector<N, T>& other) const {
+    UnderlyingType operator*(const Vector<N, T>& other) const {
         return componentDot(other);
     }
 
@@ -364,8 +351,8 @@ public:
 
     // v * v
     template<typename OTHER_T> requires std::convertible_to<OTHER_T, T>
-    DotProductReturnType componentDot(const Vector<N, OTHER_T>& other) const {
-        DotProductReturnType result = {};
+    UnderlyingType componentDot(const Vector<N, OTHER_T>& other) const {
+        UnderlyingType result = {};
 
         for (int i = 0; i < N; i++) {
             if constexpr (isComplex) {
@@ -380,7 +367,7 @@ public:
     }
 
     template<typename OTHER_T> requires std::convertible_to<OTHER_T, T>
-    DotProductReturnType operator*(const Vector<N, OTHER_T>& other) const {
+    UnderlyingType operator*(const Vector<N, OTHER_T>& other) const {
         return componentDot(other);
     }
 
@@ -459,12 +446,7 @@ public:
         T result = {};
 
         for (int i = 0; i < N; i++) {
-            if constexpr (isComplex) {
-                result += data[i] * std::conj(data[i]);
-            }
-            else {
-                result += std::pow(data[i], 2);
-            }
+            result += std::norm(data[i]);
         }
 
         return std::sqrt(result);

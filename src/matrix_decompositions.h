@@ -2,9 +2,9 @@
 #include "matrix.h"
 
 template<int COLUMNS, int ROWS, is_scalar_v T>
-Matrix<COLUMNS, ROWS, T>::template LUPDecomposition<Matrix<std::min(ROWS, COLUMNS), ROWS, T>, Matrix<COLUMNS, std::min(ROWS, COLUMNS), T>, Matrix<ROWS, ROWS, T>> Matrix<COLUMNS, ROWS, T>::lupDecomposition() const {
-    Matrix<std::min(ROWS, COLUMNS), ROWS, T> l = Matrix<ROWS, ROWS, T>::identity();
-    Matrix<COLUMNS, std::min(ROWS, COLUMNS), T> u = *this;
+Matrix<COLUMNS, ROWS, T>::template LUPDecomposition<Matrix<ROWS, ROWS, T>, Matrix<COLUMNS, ROWS, T>, Matrix<ROWS, ROWS, T>> Matrix<COLUMNS, ROWS, T>::lupDecomposition() const {
+    Matrix<ROWS, ROWS, T> l = Matrix<ROWS, ROWS, T>::identity();
+    Matrix<COLUMNS, ROWS, T> u = *this;
     Matrix<ROWS, ROWS, T> p = Matrix<ROWS, ROWS, T>::identity();
 
     // use std::min so we never access the pivot that's out of the matrix
@@ -13,11 +13,11 @@ Matrix<COLUMNS, ROWS, T>::template LUPDecomposition<Matrix<std::min(ROWS, COLUMN
         {
             int rowIndex = -1;
             const T pivot = u[c][c];
-            T rowValue = std::abs(pivot);
+            T rowValue = std::norm(pivot);
 
             // iterate through rows of this column. Looking for the biggest boi
             for (int r = c + 1; r < ROWS; r++) {
-                T curValue = std::abs(u[c][r]);
+                T curValue = std::norm(u[c][r]);
 
                 if (curValue > rowValue) {
                     rowIndex = r;
@@ -65,9 +65,9 @@ Matrix<COLUMNS, ROWS, T>::template LUPDecomposition<Matrix<std::min(ROWS, COLUMN
 }
 
 template<int COLUMNS, int ROWS, is_scalar_v T>
-Matrix<COLUMNS, ROWS, T>::template LUPQDecomposition<Matrix<std::min(ROWS, COLUMNS), ROWS, T>, Matrix<COLUMNS, std::min(ROWS, COLUMNS), T>, Matrix<ROWS, ROWS, T>, Matrix<COLUMNS, COLUMNS, T>> Matrix<COLUMNS, ROWS, T>::lupqDecomposition() const {
-    Matrix<std::min(ROWS, COLUMNS), ROWS, T> l = Matrix<ROWS, ROWS, T>::identity();
-    Matrix<COLUMNS, std::min(ROWS, COLUMNS), T> u = *this;
+Matrix<COLUMNS, ROWS, T>::template LUPQDecomposition<Matrix<ROWS, ROWS, T>, Matrix<COLUMNS, ROWS, T>, Matrix<ROWS, ROWS, T>, Matrix<COLUMNS, COLUMNS, T>> Matrix<COLUMNS, ROWS, T>::lupqDecomposition() const {
+    Matrix<ROWS, ROWS, T> l = Matrix<ROWS, ROWS, T>::identity();
+    Matrix<COLUMNS, ROWS, T> u = *this;
     Matrix<ROWS, ROWS, T> p = Matrix<ROWS, ROWS, T>::identity();
     Matrix<COLUMNS, COLUMNS, T> q = Matrix<COLUMNS, COLUMNS, T>::identity();
 
@@ -80,11 +80,11 @@ Matrix<COLUMNS, ROWS, T>::template LUPQDecomposition<Matrix<std::min(ROWS, COLUM
 
             const T pivot = u[c][c];
 
-            T maxValue = std::abs(pivot);
+            T maxValue = std::norm(pivot);
 
             for (int i = c; i < COLUMNS; i++) {
                 for (int j = c; j < ROWS; j++) {
-                    T curValue = std::abs(u[i][j]);
+                    T curValue = std::norm(u[i][j]);
 
                     if (curValue > maxValue) {
                         maxValue = curValue;
@@ -136,9 +136,9 @@ Matrix<COLUMNS, ROWS, T>::template LUPQDecomposition<Matrix<std::min(ROWS, COLUM
 }
 
 template<int COLUMNS, int ROWS, is_scalar_v T>
-Matrix<COLUMNS, ROWS, T>::template LUDecomposition<Matrix<std::min(ROWS, COLUMNS), ROWS, T>, Matrix<COLUMNS, std::min(ROWS, COLUMNS), T>> Matrix<COLUMNS, ROWS, T>::luDecomposition() const {
-    Matrix<std::min(ROWS, COLUMNS), ROWS, T> l = Matrix<ROWS, ROWS, T>::identity();
-    Matrix<COLUMNS, std::min(ROWS, COLUMNS), T> u = *this;
+Matrix<COLUMNS, ROWS, T>::template LUDecomposition<Matrix<ROWS, ROWS, T>, Matrix<COLUMNS, ROWS, T>> Matrix<COLUMNS, ROWS, T>::luDecomposition() const {
+    Matrix<ROWS, ROWS, T> l = Matrix<ROWS, ROWS, T>::identity();
+    Matrix<COLUMNS, ROWS, T> u = *this;
 
     // use std::min so we never access the pivot that's out of the matrix
     for (int c = 0; c < std::min(ROWS, COLUMNS); c++) {
@@ -166,10 +166,10 @@ Matrix<COLUMNS, ROWS, T>::template LUDecomposition<Matrix<std::min(ROWS, COLUMNS
 }
 
 template<int COLUMNS, int ROWS, is_scalar_v T>
-Matrix<COLUMNS, ROWS, T>::template LDUDecomposition<Matrix<std::min(ROWS, COLUMNS), ROWS, T>, Matrix<std::min(ROWS, COLUMNS), std::min(ROWS, COLUMNS), T>, Matrix<COLUMNS, std::min(ROWS, COLUMNS), T>> Matrix<COLUMNS, ROWS, T>::lduDecomposition() const {
-    Matrix<std::min(ROWS, COLUMNS), ROWS, T> l = Matrix<ROWS, ROWS, T>::identity();
-    Matrix<std::min(ROWS, COLUMNS), std::min(ROWS, COLUMNS), T> d = Matrix<std::min(ROWS, COLUMNS), std::min(ROWS, COLUMNS), T>::identity();
-    Matrix<COLUMNS, std::min(ROWS, COLUMNS), T> u = *this;
+Matrix<COLUMNS, ROWS, T>::template LDUDecomposition<Matrix<ROWS, ROWS, T>, Matrix<ROWS, ROWS, T>, Matrix<COLUMNS, ROWS, T>> Matrix<COLUMNS, ROWS, T>::lduDecomposition() const {
+    Matrix<ROWS, ROWS, T> l = Matrix<ROWS, ROWS, T>::identity();
+    Matrix<ROWS, ROWS, T> d = Matrix<ROWS, ROWS, T>::identity();
+    Matrix<COLUMNS, ROWS, T> u = *this;
 
     // use std::min so we never access the pivot that's out of the matrix
     for (int c = 0; c < std::min(ROWS, COLUMNS); c++) {
@@ -218,12 +218,7 @@ Matrix<COLUMNS, ROWS, T>::template CholeskyDecomposition<Matrix<COLUMNS, ROWS, T
                 T value = data[c][c];
 
                 for (int k = 0; k < c; k++) {
-                    if constexpr (isComplex) {
-                        value -= l[k][c] * std::conj(l[k][c]);
-                    }
-                    else {
-                        value -= std::pow(l[k][c], 2);
-                    }
+                    value -= std::norm(l[k][c]);
                 }
 
                 if (value < 0) {
