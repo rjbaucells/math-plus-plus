@@ -31,11 +31,27 @@ struct Vector {
 
     static constexpr T epsilon = ::epsilon<T>();
 
+    typedef T value_type;
+
+private:
+    template<typename U>
+    struct DotProductType {
+        using type = U;
+    };
+
+    template<typename U>
+    struct DotProductType<std::complex<U>> {
+        using type = U;
+    };
+
+public:
+    using DotProductReturnType = DotProductType<T>::type;
+
     T data[N] = {};
 
     Vector() = default;
 
-    Vector(std::initializer_list<T> list) {
+    constexpr Vector(std::initializer_list<T> list) {
         if (list.size() != N) {
             throw std::runtime_error("Incorrect number of elements in initializer list");
         }
@@ -54,7 +70,7 @@ struct Vector {
     }
 
     // different type copy constructor
-    template<is_convertable_to<T> OTHER_T>
+    template<typename OTHER_T> requires std::convertible_to<OTHER_T, T>
     Vector(const Vector<N, OTHER_T>& other) {
         for (int i = 0; i < N; i++) {
             data[i] = other.data[i];
@@ -179,17 +195,22 @@ struct Vector {
     }
 
     // v * v
-    T componentDot(const Vector<N, T>& other) const {
-        T result = {};
+    DotProductReturnType componentDot(const Vector<N, T>& other) const {
+        DotProductReturnType result = {};
 
         for (int i = 0; i < N; i++) {
-            result += data[i] * other[i];
+            if constexpr (isComplex) {
+                result += data[i] * std::conj(other[i]);
+            }
+            else {
+                result += data[i] * other[i];
+            }
         }
 
         return result;
     }
 
-    T operator*(const Vector<N, T>& other) const {
+    DotProductReturnType operator*(const Vector<N, T>& other) const {
         return componentDot(other);
     }
 
@@ -246,7 +267,7 @@ struct Vector {
     }
 
     // v = v
-    template<is_convertable_to<T> OTHER_T>
+    template<typename OTHER_T> requires std::convertible_to<OTHER_T, T>
     Vector<N, T>& operator=(const Vector<N, OTHER_T>& other) {
         if (*this != other) {
             for (int i = 0; i < N; i++) {
@@ -258,7 +279,7 @@ struct Vector {
     }
 
     // v == v
-    template<is_convertable_to<T> OTHER_T>
+    template<typename OTHER_T> requires std::convertible_to<OTHER_T, T>
     bool equals(const Vector<N, OTHER_T>& other) const {
         for (int i = 0; i < N; i++) {
             if (!compare(data[i], other.data[i]))
@@ -268,13 +289,13 @@ struct Vector {
         return true;
     }
 
-    template<is_convertable_to<T> OTHER_T>
+    template<typename OTHER_T> requires std::convertible_to<OTHER_T, T>
     bool operator==(const Vector<N, OTHER_T>& other) const {
         return equals(other);
     }
 
     // v + v
-    template<is_convertable_to<T> OTHER_T>
+    template<typename OTHER_T> requires std::convertible_to<OTHER_T, T>
     Vector<N, T> add(const Vector<N, OTHER_T>& other) const {
         Vector<N, T> v;
 
@@ -285,13 +306,13 @@ struct Vector {
         return v;
     }
 
-    template<is_convertable_to<T> OTHER_T>
+    template<typename OTHER_T> requires std::convertible_to<OTHER_T, T>
     Vector<N, T> operator+(const Vector<N, OTHER_T>& other) const {
         return add(other);
     }
 
     // v - v
-    template<is_convertable_to<T> OTHER_T>
+    template<typename OTHER_T> requires std::convertible_to<OTHER_T, T>
     Vector<N, T> subtract(const Vector<N, OTHER_T>& other) const {
         Vector<N, T> v;
 
@@ -302,13 +323,13 @@ struct Vector {
         return v;
     }
 
-    template<is_convertable_to<T> OTHER_T>
+    template<typename OTHER_T> requires std::convertible_to<OTHER_T, T>
     Vector<N, T> operator-(const Vector<N, OTHER_T>& other) const {
         return subtract(other);
     }
 
     // v * #
-    template<is_convertable_to<T> OTHER_T>
+    template<typename OTHER_T> requires std::convertible_to<OTHER_T, T>
     Vector<N, T> multiply(const OTHER_T scalar) const {
         Vector<N, T> v;
 
@@ -319,13 +340,13 @@ struct Vector {
         return v;
     }
 
-    template<is_convertable_to<T> OTHER_T>
+    template<typename OTHER_T> requires std::convertible_to<OTHER_T, T>
     Vector<N, T> operator*(const OTHER_T scalar) const {
         return multiply(scalar);
     }
 
     // v / #
-    template<is_convertable_to<T> OTHER_T>
+    template<typename OTHER_T> requires std::convertible_to<OTHER_T, T>
     Vector<N, T> divide(const OTHER_T scalar) const {
         Vector<N, T> v;
 
@@ -336,30 +357,35 @@ struct Vector {
         return v;
     }
 
-    template<is_convertable_to<T> OTHER_T>
+    template<typename OTHER_T> requires std::convertible_to<OTHER_T, T>
     Vector<N, T> operator/(const OTHER_T scalar) const {
         return divide(scalar);
     }
 
     // v * v
-    template<is_convertable_to<T> OTHER_T>
-    T componentDot(const Vector<N, OTHER_T>& other) const {
-        T result = {};
+    template<typename OTHER_T> requires std::convertible_to<OTHER_T, T>
+    DotProductReturnType componentDot(const Vector<N, OTHER_T>& other) const {
+        DotProductReturnType result = {};
 
         for (int i = 0; i < N; i++) {
-            result += data[i] * other[i];
+            if constexpr (isComplex) {
+                result += data[i] * std::conj(other[i]);
+            }
+            else {
+                result += data[i] * other[i];
+            }
         }
 
         return result;
     }
 
-    template<is_convertable_to<T> OTHER_T>
-    T operator*(const Vector<N, OTHER_T>& other) const {
+    template<typename OTHER_T> requires std::convertible_to<OTHER_T, T>
+    DotProductReturnType operator*(const Vector<N, OTHER_T>& other) const {
         return componentDot(other);
     }
 
     // v += v
-    template<is_convertable_to<T> OTHER_T>
+    template<typename OTHER_T> requires std::convertible_to<OTHER_T, T>
     Vector<N, T>& addEquals(const Vector<N, OTHER_T>& other) {
         for (int i = 0; i < N; i++) {
             data[i] += other.data[i];
@@ -368,13 +394,13 @@ struct Vector {
         return *this;
     }
 
-    template<is_convertable_to<T> OTHER_T>
+    template<typename OTHER_T> requires std::convertible_to<OTHER_T, T>
     Vector<N, T>& operator+=(const Vector<N, OTHER_T>& other) {
         return addEquals(other);
     }
 
     // v -= v
-    template<is_convertable_to<T> OTHER_T>
+    template<typename OTHER_T> requires std::convertible_to<OTHER_T, T>
     Vector<N, T>& subtractEquals(const Vector<N, OTHER_T>& other) {
         for (int i = 0; i < N; i++) {
             data[i] -= other.data[i];
@@ -383,13 +409,13 @@ struct Vector {
         return *this;
     }
 
-    template<is_convertable_to<T> OTHER_T>
+    template<typename OTHER_T> requires std::convertible_to<OTHER_T, T>
     Vector<N, T>& operator-=(const Vector<N, OTHER_T>& other) {
         return subtractEquals(other);
     }
 
     // v *= #
-    template<is_convertable_to<T> OTHER_T>
+    template<typename OTHER_T> requires std::convertible_to<OTHER_T, T>
     Vector<N, T>& multiplyEquals(const OTHER_T scalar) {
         for (int i = 0; i < N; i++) {
             data[i] *= scalar;
@@ -398,13 +424,13 @@ struct Vector {
         return *this;
     }
 
-    template<is_convertable_to<T> OTHER_T>
+    template<typename OTHER_T> requires std::convertible_to<OTHER_T, T>
     Vector<N, T>& operator*=(const OTHER_T scalar) {
         return multiplyEquals(scalar);
     }
 
     // v /= #
-    template<is_convertable_to<T> OTHER_T>
+    template<typename OTHER_T> requires std::convertible_to<OTHER_T, T>
     Vector<N, T>& divideEquals(const OTHER_T scalar) {
         for (int i = 0; i < N; i++) {
             data[i] /= scalar;
@@ -413,7 +439,7 @@ struct Vector {
         return *this;
     }
 
-    template<is_convertable_to<T> OTHER_T>
+    template<typename OTHER_T> requires std::convertible_to<OTHER_T, T>
     Vector<N, T>& operator/=(const OTHER_T scalar) {
         return divideEquals(scalar);
     }
@@ -423,7 +449,7 @@ struct Vector {
         return convert(RotationType::radians, type, radians);
     }
 
-    template<is_convertable_to<T> OTHER_T>
+    template<typename OTHER_T> requires std::convertible_to<OTHER_T, T>
     T angle(const Vector<N, OTHER_T>& other, const RotationType type = RotationType::degrees) const {
         T radians = std::acos(componentDot(other) / (magnitude() * other.magnitude()));
         return convert(RotationType::radians, type, radians);
@@ -452,7 +478,7 @@ struct Vector {
         return result;
     }
 
-    template<is_convertable_to<T> OTHER_T>
+    template<typename OTHER_T> requires std::convertible_to<OTHER_T, T>
     T geometricDot(const Vector<N, OTHER_T>& other) const {
         T result = {};
 
@@ -604,21 +630,18 @@ struct Vector {
 
     template<int OTHER_N>
     Matrix<OTHER_N, N, T> outerProductMatrix(const Vector<OTHER_N, T>& v) const;
-
-    template<int OTHER_N, is_convertable_to<T> OTHER_T>
+    template<int OTHER_N, typename OTHER_T> requires std::convertible_to<OTHER_T, T>
     Matrix<OTHER_N, N, T> outerProductMatrix(const Vector<OTHER_N, OTHER_T>& v) const;
 
-    template<int ROWS>
-    Vector<N, T> multiply(const Matrix<N, ROWS, T>& m) const;
+    template<int COLUMNS>
+    Vector<COLUMNS, T> multiply(const Matrix<COLUMNS, N, T>& m) const;
+    template<int COLUMNS>
+    Vector<COLUMNS, T> operator*(const Matrix<COLUMNS, N, T>& m) const;
 
-    template<int ROWS>
-    Vector<N, T> operator*(const Matrix<N, ROWS, T>& m) const;
-
-    template<int ROWS, is_convertable_to<T> OTHER_T>
-    Vector<N, T> multiply(const Matrix<N, ROWS, OTHER_T>& m) const;
-
-    template<int ROWS, is_convertable_to<T> OTHER_T>
-    Vector<N, T> operator*(const Matrix<N, ROWS, OTHER_T>& m) const;
+    template<int COLUMNS, typename OTHER_T> requires std::convertible_to<OTHER_T, T>
+    Vector<COLUMNS, T> multiply(const Matrix<COLUMNS, N, OTHER_T>& m) const;
+    template<int COLUMNS, typename OTHER_T> requires std::convertible_to<OTHER_T, T>
+    Vector<COLUMNS, T> operator*(const Matrix<COLUMNS, N, OTHER_T>& m) const;
 };
 
 template<int N, is_scalar_v T>
@@ -632,7 +655,7 @@ Vector<N, T> operator*(const T lhs, const Vector<N, T>& rhs) {
     return result;
 }
 
-template<int N, is_scalar_v T, is_convertable_to<T> OTHER_T>
+template<int N, is_scalar_v T, typename OTHER_T> requires std::convertible_to<OTHER_T, T>
 Vector<N, T> operator*(const OTHER_T lhs, const Vector<N, T>& rhs) {
     Vector<N, T> result;
 

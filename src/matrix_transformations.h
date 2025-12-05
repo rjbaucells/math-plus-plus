@@ -216,7 +216,7 @@ Vector<N, T> Matrix<COLUMNS, ROWS, T>::applyHomogeneousTransformation(const Vect
 }
 
 template<int COLUMNS, int ROWS, is_scalar_v T>
-template<int N, is_convertable_to<T> OTHER_T>
+template<int N, typename OTHER_T> requires std::convertible_to<OTHER_T, T>
 Vector<N, T> Matrix<COLUMNS, ROWS, T>::applyHomogeneousTransformation(const Vector<N, OTHER_T>& point) const requires (isSquare) {
     Vector<COLUMNS, T> resizedPoint;
 

@@ -12,9 +12,6 @@ concept is_complex_v = is_complex<T>::value;
 template<typename T>
 concept is_scalar_v = is_complex<T>::value || std::is_arithmetic_v<T>;
 
-template<typename T, typename U>
-concept is_convertable_to = std::convertible_to<U, T>;
-
 template<typename T>
 constexpr T epsilon() {
     // float, double, long double
@@ -25,14 +22,15 @@ constexpr T epsilon() {
     else if constexpr (std::is_integral_v<T>) {
         return 1;
     }
-    // complex number of some type
-    else if constexpr (is_complex_v<T>) {
-        return epsilon<typename T::value_type>();
-    }
     // fallback
     else {
         return static_cast<T>(1e-12);
     }
+}
+
+template<is_complex_v T>
+constexpr T::value_type epsilon() {
+    return epsilon<typename T::value_type>();
 }
 
 template<typename T>
