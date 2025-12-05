@@ -43,23 +43,3 @@ template<typename T, typename OTHER_T>
 bool compare(const T val, const OTHER_T target) {
     return std::abs(val - target) < epsilon<T>();
 }
-
-template<typename U>
-struct underlying_type {
-    using value_type = U;
-};
-
-template<typename U>
-struct underlying_type<std::complex<U>> {
-    using value_type = U;
-};
-
-template<typename T, typename U>
-concept has_common_type =
-    requires { typename std::common_type_t<T, U>; };
-
-template<typename T, typename U>
-concept equality_comparable =
-    requires (const T& a, const U& b) {
-    { a == b } -> std::convertible_to<bool>;
-    };
