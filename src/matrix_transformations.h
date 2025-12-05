@@ -216,17 +216,17 @@ Vector<N, T> Matrix<COLUMNS, ROWS, T>::applyHomogeneousTransformation(const Vect
 }
 
 template<int COLUMNS, int ROWS, is_scalar_v T>
-template<int N, typename OTHER_T> requires std::convertible_to<OTHER_T, T>
-Vector<N, T> Matrix<COLUMNS, ROWS, T>::applyHomogeneousTransformation(const Vector<N, OTHER_T>& point) const requires (isSquare) {
-    Vector<COLUMNS, T> resizedPoint;
+template<int N, typename OTHER_T> requires has_common_type<OTHER_T, T>
+Vector<N, std::common_type_t<T, OTHER_T>> Matrix<COLUMNS, ROWS, T>::applyHomogeneousTransformation(const Vector<N, OTHER_T>& point) const requires (isSquare) {
+    Vector<COLUMNS, std::common_type_t<T, OTHER_T>> resizedPoint;
 
     for (int i = 0; i < N; i++) {
         resizedPoint[i] = point[i];
     }
 
-    Vector<COLUMNS, T> transformedPoint = multiply(resizedPoint);
+    Vector<COLUMNS, std::common_type_t<T, OTHER_T>> transformedPoint = multiply(resizedPoint);
 
-    Vector<N, T> result;
+    Vector<N, std::common_type_t<T, OTHER_T>> result;
 
     for (int i = 0; i < N; i++) {
         result[i] = transformedPoint[i];

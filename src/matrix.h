@@ -28,7 +28,8 @@ struct Matrix {
     static constexpr bool isSquare = ROWS == COLUMNS;
     static constexpr bool isComplex = is_complex_v<T>;
 
-    typedef T value_type;
+    using ValueType = T;
+    using UnderlyingType = underlying_type<T>::value_type;
 
     T data[COLUMNS][ROWS] = {};
 
@@ -95,46 +96,46 @@ struct Matrix {
     Matrix<COLUMNS, ROWS, T>& operator=(const Matrix<COLUMNS, ROWS, OTHER_T>& other);
 
     // m == m
-    template<typename OTHER_T> requires std::convertible_to<OTHER_T, T>
+    template<typename OTHER_T> requires equality_comparable<OTHER_T, T>
     bool equals(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const;
-    template<typename OTHER_T> requires std::convertible_to<OTHER_T, T>
+    template<typename OTHER_T> requires equality_comparable<OTHER_T, T>
     bool operator==(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const;
 
     // m + m
-    template<typename OTHER_T> requires std::convertible_to<OTHER_T, T>
-    Matrix<COLUMNS, ROWS, T> add(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const;
-    template<typename OTHER_T> requires std::convertible_to<OTHER_T, T>
-    Matrix<COLUMNS, ROWS, T> operator+(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const;
+    template<typename OTHER_T> requires has_common_type<OTHER_T, T>
+    Matrix<COLUMNS, ROWS, std::common_type_t<T, OTHER_T>> add(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const;
+    template<typename OTHER_T> requires has_common_type<OTHER_T, T>
+    Matrix<COLUMNS, ROWS, std::common_type_t<T, OTHER_T>> operator+(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const;
 
     // m - m
-    template<typename OTHER_T> requires std::convertible_to<OTHER_T, T>
-    Matrix<COLUMNS, ROWS, T> subtract(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const;
-    template<typename OTHER_T> requires std::convertible_to<OTHER_T, T>
-    Matrix<COLUMNS, ROWS, T> operator-(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const;
+    template<typename OTHER_T> requires has_common_type<OTHER_T, T>
+    Matrix<COLUMNS, ROWS, std::common_type_t<T, OTHER_T>> subtract(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const;
+    template<typename OTHER_T> requires has_common_type<OTHER_T, T>
+    Matrix<COLUMNS, ROWS, std::common_type_t<T, OTHER_T>> operator-(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const;
 
     // m * m
-    template<int OTHER_COLUMNS, typename OTHER_T> requires std::convertible_to<OTHER_T, T>
-    Matrix<OTHER_COLUMNS, ROWS, T> multiply(const Matrix<OTHER_COLUMNS, COLUMNS, OTHER_T>& other) const;
-    template<int OTHER_COLUMNS, typename OTHER_T> requires std::convertible_to<OTHER_T, T>
-    Matrix<OTHER_COLUMNS, ROWS, T> operator*(const Matrix<OTHER_COLUMNS, COLUMNS, OTHER_T>& other) const;
+    template<int OTHER_COLUMNS, typename OTHER_T> requires has_common_type<OTHER_T, T>
+    Matrix<OTHER_COLUMNS, ROWS, std::common_type_t<T, OTHER_T>> multiply(const Matrix<OTHER_COLUMNS, COLUMNS, OTHER_T>& other) const;
+    template<int OTHER_COLUMNS, typename OTHER_T> requires has_common_type<OTHER_T, T>
+    Matrix<OTHER_COLUMNS, ROWS, std::common_type_t<T, OTHER_T>> operator*(const Matrix<OTHER_COLUMNS, COLUMNS, OTHER_T>& other) const;
 
     // m * v
-    template<typename OTHER_T> requires std::convertible_to<OTHER_T, T>
-    Vector<COLUMNS, T> multiply(const Vector<COLUMNS, OTHER_T>& other) const;
-    template<typename OTHER_T> requires std::convertible_to<OTHER_T, T>
-    Vector<COLUMNS, T> operator*(const Vector<COLUMNS, OTHER_T>& other) const;
+    template<typename OTHER_T> requires has_common_type<OTHER_T, T>
+    Vector<COLUMNS, std::common_type_t<T, OTHER_T>> multiply(const Vector<COLUMNS, OTHER_T>& other) const;
+    template<typename OTHER_T> requires has_common_type<OTHER_T, T>
+    Vector<COLUMNS, std::common_type_t<T, OTHER_T>> operator*(const Vector<COLUMNS, OTHER_T>& other) const;
 
     // m * #
-    template<typename OTHER_T> requires std::convertible_to<OTHER_T, T>
-    Matrix<COLUMNS, ROWS, T> multiply(OTHER_T val) const;
-    template<typename OTHER_T> requires std::convertible_to<OTHER_T, T>
-    Matrix<COLUMNS, ROWS, T> operator*(OTHER_T val) const;
+    template<typename OTHER_T> requires has_common_type<OTHER_T, T>
+    Matrix<COLUMNS, ROWS, std::common_type_t<T, OTHER_T>> multiply(OTHER_T val) const;
+    template<typename OTHER_T> requires has_common_type<OTHER_T, T>
+    Matrix<COLUMNS, ROWS, std::common_type_t<T, OTHER_T>> operator*(OTHER_T val) const;
 
     // m / #
-    template<typename OTHER_T> requires std::convertible_to<OTHER_T, T>
-    Matrix<COLUMNS, ROWS, T> divide(OTHER_T scalar) const;
-    template<typename OTHER_T> requires std::convertible_to<OTHER_T, T>
-    Matrix<COLUMNS, ROWS, T> operator/(OTHER_T scalar) const;
+    template<typename OTHER_T> requires has_common_type<OTHER_T, T>
+    Matrix<COLUMNS, ROWS, std::common_type_t<T, OTHER_T>> divide(OTHER_T scalar) const;
+    template<typename OTHER_T> requires has_common_type<OTHER_T, T>
+    Matrix<COLUMNS, ROWS, std::common_type_t<T, OTHER_T>> operator/(OTHER_T scalar) const;
 
     // m += m
     template<typename OTHER_T> requires std::convertible_to<OTHER_T, T>
@@ -162,8 +163,8 @@ struct Matrix {
 
     template<int N>
     Vector<N, T> applyHomogeneousTransformation(const Vector<N, T>& point) const requires (isSquare);
-    template<int N, typename OTHER_T> requires std::convertible_to<OTHER_T, T>
-    Vector<N, T> applyHomogeneousTransformation(const Vector<N, OTHER_T>& point) const requires (isSquare);
+    template<int N, typename OTHER_T> requires has_common_type<OTHER_T, T>
+    Vector<N, std::common_type_t<T, OTHER_T>> applyHomogeneousTransformation(const Vector<N, OTHER_T>& point) const requires (isSquare);
 
     T* operator[](int index);
     const T* operator[](int index) const;
@@ -206,8 +207,8 @@ public:
 
     static Matrix<COLUMNS, ROWS, T> orthoMatrix(T left, T right, T bottom, T top, T near, T far) requires (isSquare && COLUMNS == 4);
 
-    std::string toString() const;
-    std::string toLaTex() const;
+    [[nodiscard]] std::string toString() const;
+    [[nodiscard]] std::string toLaTex() const;
 
     template<int NUM_COLUMNS_TO_REMOVE>
     Matrix<COLUMNS - NUM_COLUMNS_TO_REMOVE, ROWS, T> removeColumns(const std::array<int, NUM_COLUMNS_TO_REMOVE>& columnsToRemove) const;
@@ -229,24 +230,24 @@ public:
 
     static Matrix<COLUMNS, ROWS, T> identity() requires (isSquare);
 
-    bool isRowEchelon(bool pivotMustBeOne = false) const;
+    [[nodiscard]] bool isRowEchelon(bool pivotMustBeOne = false) const;
     Matrix<COLUMNS, ROWS, T> toRowEchelon() const;
 
-    bool isReducedRowEchelon() const;
+    [[nodiscard]] bool isReducedRowEchelon() const;
     Matrix<COLUMNS, ROWS, T> toReducedRowEchelon() const;
 
-    int rank() const;
+    [[nodiscard]] int rank() const;
 
-    bool isSymmetrical() const requires (isSquare);
-    bool isSkewSymmetrical() const requires (isSquare);
+    [[nodiscard]] bool isSymmetrical() const requires (isSquare);
+    [[nodiscard]] bool isSkewSymmetrical() const requires (isSquare);
 
-    bool isHermitian() const requires (isSquare);
-    bool isSkewHermitian() const requires (isSquare);
+    [[nodiscard]] bool isHermitian() const requires (isSquare);
+    [[nodiscard]] bool isSkewHermitian() const requires (isSquare);
 
-    bool isPositiveDefinite() const;
-    bool isPositiveSemiDefinite() const;
-    bool isNegativeDefinite() const;
-    bool isNegativeSemiDefinite() const;
+    [[nodiscard]] bool isPositiveDefinite() const;
+    [[nodiscard]] bool isPositiveSemiDefinite() const;
+    [[nodiscard]] bool isNegativeDefinite() const;
+    [[nodiscard]] bool isNegativeSemiDefinite() const;
 
     Vector<ROWS, T> getColumnVector(int i) const;
     std::array<Vector<ROWS>, COLUMNS> getColumnVectors() const;
@@ -260,26 +261,26 @@ public:
 
     T trace() const requires (isSquare);
 
-    bool isUnitary() const requires (isSquare);
-    bool isSpecialUnitary() const requires (isSquare);
+    [[nodiscard]] bool isUnitary() const requires (isSquare);
+    [[nodiscard]] bool isSpecialUnitary() const requires (isSquare);
 
-    bool isOrthogonal() const requires (!isComplex && isSquare);
-    bool isSpecialOrthogonal() const requires (!isComplex && isSquare);
+    [[nodiscard]] bool isOrthogonal() const requires (!isComplex && isSquare);
+    [[nodiscard]] bool isSpecialOrthogonal() const requires (!isComplex && isSquare);
 
-    bool isSemiOrthogonal() const requires (!isComplex && !isSquare);
+    [[nodiscard]] bool isSemiOrthogonal() const requires (!isComplex && !isSquare);
 
-    bool isUpperTriangleMatrix() const requires (isSquare);
-    bool isLowerTriangleMatrix() const requires (isSquare);
+    [[nodiscard]] bool isUpperTriangleMatrix() const requires (isSquare);
+    [[nodiscard]] bool isLowerTriangleMatrix() const requires (isSquare);
 
-    bool isDiagonalMatrix() const requires (isSquare);
+    [[nodiscard]] bool isDiagonalMatrix() const requires (isSquare);
 
-    bool isUpperUnitriangularMatrix() const requires (isSquare);
-    bool isLowerUnitriangularMatrix() const requires (isSquare);
+    [[nodiscard]] bool isUpperUnitriangularMatrix() const requires (isSquare);
+    [[nodiscard]] bool isLowerUnitriangularMatrix() const requires (isSquare);
 
-    bool isStrictlyUpperTriangularMatrix() const requires (isSquare);
-    bool isStrictlyLowerTriangularMatrix() const requires (isSquare);
+    [[nodiscard]] bool isStrictlyUpperTriangularMatrix() const requires (isSquare);
+    [[nodiscard]] bool isStrictlyLowerTriangularMatrix() const requires (isSquare);
 
-    bool isFrobeniusMatrix() const requires (isSquare);
+    [[nodiscard]] bool isFrobeniusMatrix() const requires (isSquare);
 
     template<typename L_TYPE, typename U_TYPE, typename P_TYPE>
     struct LUPDecomposition {
@@ -288,7 +289,7 @@ public:
         P_TYPE p;
     };
 
-    LUPDecomposition<Matrix<std::min(ROWS, COLUMNS), ROWS, T>, Matrix<COLUMNS, std::min(ROWS, COLUMNS), T>, Matrix<ROWS, ROWS, T>> lupDecomposition() const;
+    LUPDecomposition<Matrix<ROWS, ROWS, T>, Matrix<COLUMNS, ROWS, T>, Matrix<ROWS, ROWS, T>> lupDecomposition() const;
 
     template<typename L_TYPE, typename U_TYPE, typename P_TYPE, typename Q_TYPE>
     struct LUPQDecomposition {
@@ -298,7 +299,7 @@ public:
         Q_TYPE q;
     };
 
-    LUPQDecomposition<Matrix<std::min(ROWS, COLUMNS), ROWS, T>, Matrix<COLUMNS, std::min(ROWS, COLUMNS), T>, Matrix<ROWS, ROWS, T>, Matrix<COLUMNS, COLUMNS, T>> lupqDecomposition() const;
+    LUPQDecomposition<Matrix<ROWS, ROWS, T>, Matrix<COLUMNS, ROWS, T>, Matrix<ROWS, ROWS, T>, Matrix<COLUMNS, COLUMNS, T>> lupqDecomposition() const;
 
     template<typename L_TYPE, typename U_TYPE>
     struct LUDecomposition {
@@ -306,7 +307,7 @@ public:
         U_TYPE u;
     };
 
-    LUDecomposition<Matrix<std::min(ROWS, COLUMNS), ROWS, T>, Matrix<COLUMNS, std::min(ROWS, COLUMNS), T>> luDecomposition() const;
+    LUDecomposition<Matrix<ROWS, ROWS, T>, Matrix<COLUMNS, ROWS, T>> luDecomposition() const;
 
     template<typename L_TYPE, typename D_TYPE, typename U_TYPE>
     struct LDUDecomposition {
@@ -315,7 +316,7 @@ public:
         U_TYPE u;
     };
 
-    LDUDecomposition<Matrix<std::min(ROWS, COLUMNS), ROWS, T>, Matrix<std::min(ROWS, COLUMNS), std::min(ROWS, COLUMNS), T>, Matrix<COLUMNS, std::min(ROWS, COLUMNS), T>> lduDecomposition() const;
+    LDUDecomposition<Matrix<ROWS, ROWS, T>, Matrix<ROWS, ROWS, T>, Matrix<COLUMNS, ROWS, T>> lduDecomposition() const;
 
     template<typename L_TYPE, typename L_TRANSPOSE_TYPE>
     struct CholeskyDecomposition {
@@ -352,13 +353,13 @@ public:
 
     Matrix<ROWS, COLUMNS, T> adjoint() const requires (isSquare);
 
-    bool isUpperHessenberg() const requires (isSquare);
-    bool isUnreducedUpperHessenberg() const requires (isSquare);
+    [[nodiscard]] bool isUpperHessenberg() const requires (isSquare);
+    [[nodiscard]] bool isUnreducedUpperHessenberg() const requires (isSquare);
 
-    bool isLowerHessenberg() const requires (isSquare);
-    bool isUnreducedLowerHessenberg() const requires (isSquare);
+    [[nodiscard]] bool isLowerHessenberg() const requires (isSquare);
+    [[nodiscard]] bool isUnreducedLowerHessenberg() const requires (isSquare);
 
-    bool isTridiagonal() const requires (isSquare);
+    [[nodiscard]] bool isTridiagonal() const requires (isSquare);
 
     template<typename T_TYPE, typename Q_TYPE>
     struct LanczosAlgorithm {
