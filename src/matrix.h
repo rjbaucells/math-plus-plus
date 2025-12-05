@@ -207,8 +207,8 @@ public:
 
     static Matrix<COLUMNS, ROWS, T> orthoMatrix(T left, T right, T bottom, T top, T near, T far) requires (isSquare && COLUMNS == 4);
 
-    std::string toString() const;
-    std::string toLaTex() const;
+    [[nodiscard]] std::string toString() const;
+    [[nodiscard]] std::string toLaTex() const;
 
     template<int NUM_COLUMNS_TO_REMOVE>
     Matrix<COLUMNS - NUM_COLUMNS_TO_REMOVE, ROWS, T> removeColumns(const std::array<int, NUM_COLUMNS_TO_REMOVE>& columnsToRemove) const;
@@ -230,24 +230,24 @@ public:
 
     static Matrix<COLUMNS, ROWS, T> identity() requires (isSquare);
 
-    bool isRowEchelon(bool pivotMustBeOne = false) const;
+    [[nodiscard]] bool isRowEchelon(bool pivotMustBeOne = false) const;
     Matrix<COLUMNS, ROWS, T> toRowEchelon() const;
 
-    bool isReducedRowEchelon() const;
+    [[nodiscard]] bool isReducedRowEchelon() const;
     Matrix<COLUMNS, ROWS, T> toReducedRowEchelon() const;
 
-    int rank() const;
+    [[nodiscard]] int rank() const;
 
-    bool isSymmetrical() const requires (isSquare);
-    bool isSkewSymmetrical() const requires (isSquare);
+    [[nodiscard]] bool isSymmetrical() const requires (isSquare);
+    [[nodiscard]] bool isSkewSymmetrical() const requires (isSquare);
 
-    bool isHermitian() const requires (isSquare);
-    bool isSkewHermitian() const requires (isSquare);
+    [[nodiscard]] bool isHermitian() const requires (isSquare);
+    [[nodiscard]] bool isSkewHermitian() const requires (isSquare);
 
-    bool isPositiveDefinite() const;
-    bool isPositiveSemiDefinite() const;
-    bool isNegativeDefinite() const;
-    bool isNegativeSemiDefinite() const;
+    [[nodiscard]] bool isPositiveDefinite() const;
+    [[nodiscard]] bool isPositiveSemiDefinite() const;
+    [[nodiscard]] bool isNegativeDefinite() const;
+    [[nodiscard]] bool isNegativeSemiDefinite() const;
 
     Vector<ROWS, T> getColumnVector(int i) const;
     std::array<Vector<ROWS>, COLUMNS> getColumnVectors() const;
@@ -261,26 +261,26 @@ public:
 
     T trace() const requires (isSquare);
 
-    bool isUnitary() const requires (isSquare);
-    bool isSpecialUnitary() const requires (isSquare);
+    [[nodiscard]] bool isUnitary() const requires (isSquare);
+    [[nodiscard]] bool isSpecialUnitary() const requires (isSquare);
 
-    bool isOrthogonal() const requires (!isComplex && isSquare);
-    bool isSpecialOrthogonal() const requires (!isComplex && isSquare);
+    [[nodiscard]] bool isOrthogonal() const requires (!isComplex && isSquare);
+    [[nodiscard]] bool isSpecialOrthogonal() const requires (!isComplex && isSquare);
 
-    bool isSemiOrthogonal() const requires (!isComplex && !isSquare);
+    [[nodiscard]] bool isSemiOrthogonal() const requires (!isComplex && !isSquare);
 
-    bool isUpperTriangleMatrix() const requires (isSquare);
-    bool isLowerTriangleMatrix() const requires (isSquare);
+    [[nodiscard]] bool isUpperTriangleMatrix() const requires (isSquare);
+    [[nodiscard]] bool isLowerTriangleMatrix() const requires (isSquare);
 
-    bool isDiagonalMatrix() const requires (isSquare);
+    [[nodiscard]] bool isDiagonalMatrix() const requires (isSquare);
 
-    bool isUpperUnitriangularMatrix() const requires (isSquare);
-    bool isLowerUnitriangularMatrix() const requires (isSquare);
+    [[nodiscard]] bool isUpperUnitriangularMatrix() const requires (isSquare);
+    [[nodiscard]] bool isLowerUnitriangularMatrix() const requires (isSquare);
 
-    bool isStrictlyUpperTriangularMatrix() const requires (isSquare);
-    bool isStrictlyLowerTriangularMatrix() const requires (isSquare);
+    [[nodiscard]] bool isStrictlyUpperTriangularMatrix() const requires (isSquare);
+    [[nodiscard]] bool isStrictlyLowerTriangularMatrix() const requires (isSquare);
 
-    bool isFrobeniusMatrix() const requires (isSquare);
+    [[nodiscard]] bool isFrobeniusMatrix() const requires (isSquare);
 
     template<typename L_TYPE, typename U_TYPE, typename P_TYPE>
     struct LUPDecomposition {
@@ -353,13 +353,13 @@ public:
 
     Matrix<ROWS, COLUMNS, T> adjoint() const requires (isSquare);
 
-    bool isUpperHessenberg() const requires (isSquare);
-    bool isUnreducedUpperHessenberg() const requires (isSquare);
+    [[nodiscard]] bool isUpperHessenberg() const requires (isSquare);
+    [[nodiscard]] bool isUnreducedUpperHessenberg() const requires (isSquare);
 
-    bool isLowerHessenberg() const requires (isSquare);
-    bool isUnreducedLowerHessenberg() const requires (isSquare);
+    [[nodiscard]] bool isLowerHessenberg() const requires (isSquare);
+    [[nodiscard]] bool isUnreducedLowerHessenberg() const requires (isSquare);
 
-    bool isTridiagonal() const requires (isSquare);
+    [[nodiscard]] bool isTridiagonal() const requires (isSquare);
 
     template<typename T_TYPE, typename Q_TYPE>
     struct LanczosAlgorithm {
