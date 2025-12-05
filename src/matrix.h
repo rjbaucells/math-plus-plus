@@ -103,39 +103,39 @@ struct Matrix {
 
     // m + m
     template<typename OTHER_T> requires has_common_type<OTHER_T, T>
-    Matrix<COLUMNS, ROWS, std::common_type<T, OTHER_T>> add(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const;
+    Matrix<COLUMNS, ROWS, std::common_type_t<T, OTHER_T>> add(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const;
     template<typename OTHER_T> requires has_common_type<OTHER_T, T>
-    Matrix<COLUMNS, ROWS, std::common_type<T, OTHER_T>> operator+(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const;
+    Matrix<COLUMNS, ROWS, std::common_type_t<T, OTHER_T>> operator+(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const;
 
     // m - m
     template<typename OTHER_T> requires has_common_type<OTHER_T, T>
-    Matrix<COLUMNS, ROWS, std::common_type<T, OTHER_T>> subtract(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const;
+    Matrix<COLUMNS, ROWS, std::common_type_t<T, OTHER_T>> subtract(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const;
     template<typename OTHER_T> requires has_common_type<OTHER_T, T>
-    Matrix<COLUMNS, ROWS, std::common_type<T, OTHER_T>> operator-(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const;
+    Matrix<COLUMNS, ROWS, std::common_type_t<T, OTHER_T>> operator-(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const;
 
     // m * m
     template<int OTHER_COLUMNS, typename OTHER_T> requires has_common_type<OTHER_T, T>
-    Matrix<OTHER_COLUMNS, ROWS, std::common_type<T, OTHER_T>> multiply(const Matrix<OTHER_COLUMNS, COLUMNS, OTHER_T>& other) const;
+    Matrix<OTHER_COLUMNS, ROWS, std::common_type_t<T, OTHER_T>> multiply(const Matrix<OTHER_COLUMNS, COLUMNS, OTHER_T>& other) const;
     template<int OTHER_COLUMNS, typename OTHER_T> requires has_common_type<OTHER_T, T>
-    Matrix<OTHER_COLUMNS, ROWS, std::common_type<T, OTHER_T>> operator*(const Matrix<OTHER_COLUMNS, COLUMNS, OTHER_T>& other) const;
+    Matrix<OTHER_COLUMNS, ROWS, std::common_type_t<T, OTHER_T>> operator*(const Matrix<OTHER_COLUMNS, COLUMNS, OTHER_T>& other) const;
 
     // m * v
     template<typename OTHER_T> requires has_common_type<OTHER_T, T>
-    Vector<COLUMNS, std::common_type<T, OTHER_T>> multiply(const Vector<COLUMNS, OTHER_T>& other) const;
+    Vector<COLUMNS, std::common_type_t<T, OTHER_T>> multiply(const Vector<COLUMNS, OTHER_T>& other) const;
     template<typename OTHER_T> requires has_common_type<OTHER_T, T>
-    Vector<COLUMNS, std::common_type<T, OTHER_T>> operator*(const Vector<COLUMNS, OTHER_T>& other) const;
+    Vector<COLUMNS, std::common_type_t<T, OTHER_T>> operator*(const Vector<COLUMNS, OTHER_T>& other) const;
 
     // m * #
     template<typename OTHER_T> requires has_common_type<OTHER_T, T>
-    Matrix<COLUMNS, ROWS, std::common_type<T, OTHER_T>> multiply(OTHER_T val) const;
+    Matrix<COLUMNS, ROWS, std::common_type_t<T, OTHER_T>> multiply(OTHER_T val) const;
     template<typename OTHER_T> requires has_common_type<OTHER_T, T>
-    Matrix<COLUMNS, ROWS, std::common_type<T, OTHER_T>> operator*(OTHER_T val) const;
+    Matrix<COLUMNS, ROWS, std::common_type_t<T, OTHER_T>> operator*(OTHER_T val) const;
 
     // m / #
     template<typename OTHER_T> requires has_common_type<OTHER_T, T>
-    Matrix<COLUMNS, ROWS, std::common_type<T, OTHER_T>> divide(OTHER_T scalar) const;
+    Matrix<COLUMNS, ROWS, std::common_type_t<T, OTHER_T>> divide(OTHER_T scalar) const;
     template<typename OTHER_T> requires has_common_type<OTHER_T, T>
-    Matrix<COLUMNS, ROWS, std::common_type<T, OTHER_T>> operator/(OTHER_T scalar) const;
+    Matrix<COLUMNS, ROWS, std::common_type_t<T, OTHER_T>> operator/(OTHER_T scalar) const;
 
     // m += m
     template<typename OTHER_T> requires std::convertible_to<OTHER_T, T>
@@ -164,7 +164,7 @@ struct Matrix {
     template<int N>
     Vector<N, T> applyHomogeneousTransformation(const Vector<N, T>& point) const requires (isSquare);
     template<int N, typename OTHER_T> requires has_common_type<OTHER_T, T>
-    Vector<N, std::common_type<T, OTHER_T>> applyHomogeneousTransformation(const Vector<N, OTHER_T>& point) const requires (isSquare);
+    Vector<N, std::common_type_t<T, OTHER_T>> applyHomogeneousTransformation(const Vector<N, OTHER_T>& point) const requires (isSquare);
 
     T* operator[](int index);
     const T* operator[](int index) const;
