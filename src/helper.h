@@ -35,11 +35,7 @@ constexpr T::value_type epsilon() {
 
 template<typename T>
 bool compare(const T val, const T target) {
-    if constexpr (std::is_same_v<T, std::complex<float>> || std::is_same_v<T, std::complex<double>>) {
-        return std::abs(val - target) < epsilon<typename T::value_type>();
-    } else {
-        return std::abs(val - target) < epsilon<T>();
-    }
+    return std::abs(val - target) < epsilon<T>();
 }
 
 template<typename T, typename OTHER_T>
