@@ -674,3 +674,70 @@ template<int COLUMNS, int ROWS, is_scalar_v T>
 Matrix<ROWS, COLUMNS, T> Matrix<COLUMNS, ROWS, T>::adjoint() const requires (isSquare) {
     return cofactorMatrix().transpose();
 }
+
+template<int COLUMNS, int ROWS, is_scalar_v T>
+Matrix<COLUMNS, ROWS, T> Matrix<COLUMNS, ROWS, T>::hadamardProduct(const Matrix<COLUMNS, ROWS, T>& other) const {
+    Matrix<COLUMNS, ROWS, T> result;
+
+    for (int c = 0; c < COLUMNS; c++) {
+        for (int r = 0; r < ROWS; r++) {
+            result[c][r] = data[c][r] * other[c][r];
+        }
+    }
+
+    return result;
+}
+
+template<int COLUMNS, int ROWS, is_scalar_v T>
+template<typename OTHER_T> requires has_common_type<OTHER_T, T>
+Matrix<COLUMNS, ROWS, std::common_type_t<T, OTHER_T>> Matrix<COLUMNS, ROWS, T>::hadamardProduct(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const {
+    Matrix<COLUMNS, ROWS, std::common_type_t<T, OTHER_T>> result;
+
+    for (int c = 0; c < COLUMNS; c++) {
+        for (int r = 0; r < ROWS; r++) {
+            result[c][r] = data[c][r] * other[c][r];
+        }
+    }
+
+    return result;
+}
+
+template<int COLUMNS, int ROWS, is_scalar_v T>
+template<int OTHER_COLUMNS, int OTHER_ROWS>
+Matrix<COLUMNS * OTHER_COLUMNS, ROWS * OTHER_ROWS, T> Matrix<COLUMNS, ROWS, T>::kroneckerProduct(const Matrix<OTHER_COLUMNS, OTHER_ROWS, T>& other) const {
+    Matrix<COLUMNS * OTHER_COLUMNS, ROWS * OTHER_ROWS, T> result;
+
+    for (int c = 0; c < COLUMNS; c++) {
+        for (int r = 0; r < ROWS; r++) {
+            const T val = data[c][r];
+
+            for (int cc = 0; cc < OTHER_COLUMNS; cc++) {
+                for (int rr = 0; rr < OTHER_ROWS; rr++) {
+                    result[c * OTHER_COLUMNS + cc][r * OTHER_ROWS + rr] = val * other[cc][rr];
+                }
+            }
+        }
+    }
+
+    return result;
+}
+
+template<int COLUMNS, int ROWS, is_scalar_v T>
+template<int OTHER_COLUMNS, int OTHER_ROWS, typename OTHER_T> requires has_common_type<OTHER_T, T>
+Matrix<COLUMNS * OTHER_COLUMNS, ROWS * OTHER_ROWS, std::common_type_t<T, OTHER_T>> Matrix<COLUMNS, ROWS, T>::kroneckerProduct(const Matrix<OTHER_COLUMNS, OTHER_ROWS, OTHER_T>& other) const {
+    Matrix<COLUMNS * OTHER_COLUMNS, ROWS * OTHER_ROWS, std::common_type_t<T, OTHER_T>> result;
+
+    for (int c = 0; c < COLUMNS; c++) {
+        for (int r = 0; r < ROWS; r++) {
+            const T val = data[c][r];
+
+            for (int cc = 0; cc < OTHER_COLUMNS; cc++) {
+                for (int rr = 0; rr < OTHER_ROWS; rr++) {
+                    result[c * OTHER_COLUMNS + cc][r * OTHER_ROWS + rr] = val * other[cc][rr];
+                }
+            }
+        }
+    }
+
+    return result;
+}

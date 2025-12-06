@@ -1,6 +1,6 @@
 #pragma once
 #include <vector>
-#include "vector.h"
+#include "math++/math.h"
 
 class Curve {
 public:

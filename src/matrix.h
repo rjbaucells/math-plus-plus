@@ -3,6 +3,7 @@
 #include <regex>
 #include <string>
 #include "helper.h"
+#include "matrix.h"
 #include "rotation.h"
 #include "vector.h"
 
@@ -279,6 +280,15 @@ public:
     [[nodiscard]] bool isStrictlyLowerTriangularMatrix() const requires (isSquare);
 
     [[nodiscard]] bool isFrobeniusMatrix() const requires (isSquare);
+
+    Matrix<COLUMNS, ROWS, T> hadamardProduct(const Matrix<COLUMNS, ROWS, T>& other) const;
+    template<typename OTHER_T> requires has_common_type<OTHER_T, T>
+    Matrix<COLUMNS, ROWS, std::common_type_t<T, OTHER_T>> hadamardProduct(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const;
+
+    template<int OTHER_COLUMNS, int OTHER_ROWS>
+    Matrix<COLUMNS * OTHER_COLUMNS, ROWS * OTHER_ROWS, T> kroneckerProduct(const Matrix<OTHER_COLUMNS, OTHER_ROWS, T>& other) const;
+    template<int OTHER_COLUMNS, int OTHER_ROWS, typename OTHER_T> requires has_common_type<OTHER_T, T>
+    Matrix<COLUMNS * OTHER_COLUMNS, ROWS * OTHER_ROWS, std::common_type_t<T, OTHER_T>> kroneckerProduct(const Matrix<OTHER_COLUMNS, OTHER_ROWS, OTHER_T>& other) const;
 
     template<typename L_TYPE, typename U_TYPE, typename P_TYPE>
     struct LUPDecomposition {
