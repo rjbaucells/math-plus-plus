@@ -1,6 +1,46 @@
 #pragma once
 
 template<int COLUMNS, int ROWS, is_scalar_v T>
+template<int N>
+Vector<N, T> Matrix<COLUMNS, ROWS, T>::applyHomogeneousTransformation(const Vector<N, T>& point) const requires (isSquare) {
+    Vector<COLUMNS, T> resizedPoint;
+
+    for (int i = 0; i < N; i++) {
+        resizedPoint[i] = point[i];
+    }
+
+    Vector<COLUMNS, T> transformedPoint = multiply(resizedPoint);
+
+    Vector<N, T> result;
+
+    for (int i = 0; i < N; i++) {
+        result[i] = transformedPoint[i];
+    }
+
+    return result;
+}
+
+template<int COLUMNS, int ROWS, is_scalar_v T>
+template<int N, typename OTHER_T> requires has_common_type<OTHER_T, T>
+Vector<N, std::common_type_t<T, OTHER_T>> Matrix<COLUMNS, ROWS, T>::applyHomogeneousTransformation(const Vector<N, OTHER_T>& point) const requires (isSquare) {
+    Vector<COLUMNS, std::common_type_t<T, OTHER_T>> resizedPoint;
+
+    for (int i = 0; i < N; i++) {
+        resizedPoint[i] = point[i];
+    }
+
+    Vector<COLUMNS, std::common_type_t<T, OTHER_T>> transformedPoint = multiply(resizedPoint);
+
+    Vector<N, std::common_type_t<T, OTHER_T>> result;
+
+    for (int i = 0; i < N; i++) {
+        result[i] = transformedPoint[i];
+    }
+
+    return result;
+}
+
+template<int COLUMNS, int ROWS, is_scalar_v T>
 Matrix<COLUMNS, ROWS, T> Matrix<COLUMNS, ROWS, T>::scalingMatrix(const Vector<COLUMNS, T>& factors) requires (isSquare) {
     Matrix<COLUMNS, ROWS, T> matrix;
 
@@ -170,6 +210,17 @@ Matrix<COLUMNS + 1, ROWS + 1, T> Matrix<COLUMNS, ROWS, T>::reflectionMatrixAlong
 }
 
 template<int COLUMNS, int ROWS, is_scalar_v T>
+Matrix<COLUMNS + 1, ROWS + 1, T> Matrix<COLUMNS, ROWS, T>::translationMatrix(const Vector<COLUMNS, T>& translation) requires (isSquare) {
+    Matrix<COLUMNS + 1, ROWS + 1, T> matrix = Matrix<COLUMNS + 1, ROWS + 1, T>::identity();
+
+    for (int r = 0; r < ROWS; r++) {
+        matrix[COLUMNS][r] = translation[r];
+    }
+
+    return matrix;
+}
+
+template<int COLUMNS, int ROWS, is_scalar_v T>
 Matrix<COLUMNS, ROWS, T> Matrix<COLUMNS, ROWS, T>::orthoMatrix(const T left, const T right, const T bottom, const T top, const T near, const T far) requires (isSquare && COLUMNS == 4) {
     // identity
     Matrix<COLUMNS, ROWS, T> transformation = Matrix<COLUMNS, ROWS, T>::identity();
@@ -182,55 +233,4 @@ Matrix<COLUMNS, ROWS, T> Matrix<COLUMNS, ROWS, T>::orthoMatrix(const T left, con
     transformation.data[3][2] = -(far + near) / (far - near);
     // return
     return transformation;
-}
-
-template<int COLUMNS, int ROWS, is_scalar_v T>
-Matrix<COLUMNS + 1, ROWS + 1, T> Matrix<COLUMNS, ROWS, T>::translationMatrix(const Vector<COLUMNS, T>& translation) requires (isSquare) {
-    Matrix<COLUMNS + 1, ROWS + 1, T> matrix = Matrix<COLUMNS + 1, ROWS + 1, T>::identity();
-
-    for (int r = 0; r < ROWS; r++) {
-        matrix[COLUMNS][r] = translation[r];
-    }
-
-    return matrix;
-}
-
-template<int COLUMNS, int ROWS, is_scalar_v T>
-template<int N>
-Vector<N, T> Matrix<COLUMNS, ROWS, T>::applyHomogeneousTransformation(const Vector<N, T>& point) const requires (isSquare) {
-    Vector<COLUMNS, T> resizedPoint;
-
-    for (int i = 0; i < N; i++) {
-        resizedPoint[i] = point[i];
-    }
-
-    Vector<COLUMNS, T> transformedPoint = multiply(resizedPoint);
-
-    Vector<N, T> result;
-
-    for (int i = 0; i < N; i++) {
-        result[i] = transformedPoint[i];
-    }
-
-    return result;
-}
-
-template<int COLUMNS, int ROWS, is_scalar_v T>
-template<int N, typename OTHER_T> requires has_common_type<OTHER_T, T>
-Vector<N, std::common_type_t<T, OTHER_T>> Matrix<COLUMNS, ROWS, T>::applyHomogeneousTransformation(const Vector<N, OTHER_T>& point) const requires (isSquare) {
-    Vector<COLUMNS, std::common_type_t<T, OTHER_T>> resizedPoint;
-
-    for (int i = 0; i < N; i++) {
-        resizedPoint[i] = point[i];
-    }
-
-    Vector<COLUMNS, std::common_type_t<T, OTHER_T>> transformedPoint = multiply(resizedPoint);
-
-    Vector<N, std::common_type_t<T, OTHER_T>> result;
-
-    for (int i = 0; i < N; i++) {
-        result[i] = transformedPoint[i];
-    }
-
-    return result;
 }

@@ -11,4 +11,7 @@
 #include "../../src/matrix_transformations.h"
 #include "../../src/rotation.h"
 #include "../../src/vector.h"
+#include "../../src/vector_checks.h"
+#include "../../src/vector_general.h"
+#include "../../src/vector_operators.h"
 #include "../../src/vertex.h"

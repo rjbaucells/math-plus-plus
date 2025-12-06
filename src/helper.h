@@ -57,9 +57,3 @@ struct underlying_type<std::complex<U>> {
 template<typename T, typename U>
 concept has_common_type =
     requires { typename std::common_type_t<T, U>; };
-
-template<typename T, typename U>
-concept equality_comparable =
-    requires (const T& a, const U& b) {
-    { a == b } -> std::convertible_to<bool>;
-    };

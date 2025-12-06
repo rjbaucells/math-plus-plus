@@ -234,7 +234,7 @@ Matrix<COLUMNS, ROWS, T>& Matrix<COLUMNS, ROWS, T>::operator=(const Matrix<COLUM
 // m == m
 template<int COLUMNS, int ROWS, is_scalar_v T>
 template<typename OTHER_T>
-requires equality_comparable<OTHER_T, T>
+requires std::equality_comparable_with<OTHER_T, T>
 bool Matrix<COLUMNS, ROWS, T>::equals(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const {
     for (int c = 0; c < COLUMNS; c++) {
         for (int r = 0; r < ROWS; r++) {
@@ -248,7 +248,7 @@ bool Matrix<COLUMNS, ROWS, T>::equals(const Matrix<COLUMNS, ROWS, OTHER_T>& othe
 
 template<int COLUMNS, int ROWS, is_scalar_v T>
 template<typename OTHER_T>
-requires equality_comparable<OTHER_T, T>
+requires std::equality_comparable_with<OTHER_T, T>
 bool Matrix<COLUMNS, ROWS, T>::operator==(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const {
     return equals(other);
 }

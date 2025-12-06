@@ -13,11 +13,11 @@ Matrix<COLUMNS, ROWS, T>::template LUPDecomposition<Matrix<ROWS, ROWS, T>, Matri
         {
             int rowIndex = -1;
             const T pivot = u[c][c];
-            T rowValue = std::norm(pivot);
+            UnderlyingType rowValue = std::norm(pivot);
 
             // iterate through rows of this column. Looking for the biggest boi
             for (int r = c + 1; r < ROWS; r++) {
-                T curValue = std::norm(u[c][r]);
+                UnderlyingType curValue = std::norm(u[c][r]);
 
                 if (curValue > rowValue) {
                     rowIndex = r;
@@ -80,11 +80,11 @@ Matrix<COLUMNS, ROWS, T>::template LUPQDecomposition<Matrix<ROWS, ROWS, T>, Matr
 
             const T pivot = u[c][c];
 
-            T maxValue = std::norm(pivot);
+            UnderlyingType maxValue = std::norm(pivot);
 
             for (int i = c; i < COLUMNS; i++) {
                 for (int j = c; j < ROWS; j++) {
-                    T curValue = std::norm(u[i][j]);
+                    UnderlyingType curValue = std::norm(u[i][j]);
 
                     if (curValue > maxValue) {
                         maxValue = curValue;

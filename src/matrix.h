@@ -1,11 +1,9 @@
 #pragma once
 
-#include <cassert>
-#include <complex>
 #include <regex>
-#include <stdexcept>
 #include <string>
 #include "helper.h"
+#include "rotation.h"
 #include "vector.h"
 
 template<int COLUMNS, int ROWS, is_scalar_v T>
@@ -96,9 +94,9 @@ struct Matrix {
     Matrix<COLUMNS, ROWS, T>& operator=(const Matrix<COLUMNS, ROWS, OTHER_T>& other);
 
     // m == m
-    template<typename OTHER_T> requires equality_comparable<OTHER_T, T>
+    template<typename OTHER_T> requires std::equality_comparable_with<OTHER_T, T>
     bool equals(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const;
-    template<typename OTHER_T> requires equality_comparable<OTHER_T, T>
+    template<typename OTHER_T> requires std::equality_comparable_with<OTHER_T, T>
     bool operator==(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const;
 
     // m + m
@@ -386,103 +384,42 @@ public:
     PowerIteration<Vector<COLUMNS, T>, T> powerIteration(int maxIterations, T tolerance = 1e-12) const;
 };
 
+// # * m
 template<int COLUMNS, int ROWS, is_scalar_v T>
-Matrix<COLUMNS, ROWS, T> multiply(const T lhs, const Matrix<COLUMNS, ROWS, T>& rhs) {
-    return rhs.multiply(lhs);
-}
-
-template<int COLUMNS, int ROWS, is_scalar_v T>
-Matrix<COLUMNS, ROWS, T> operator*(const T lhs, const Matrix<COLUMNS, ROWS, T>& rhs) {
-    return multiply(lhs, rhs);
-}
-
-template<int COLUMNS, int ROWS, is_scalar_v T, typename OTHER_T> requires std::convertible_to<OTHER_T, T>
-Matrix<COLUMNS, ROWS, T> multiply(const OTHER_T lhs, const Matrix<COLUMNS, ROWS, T>& rhs) {
-    return rhs.multiply(lhs);
-}
-
-template<int COLUMNS, int ROWS, is_scalar_v T, typename OTHER_T> requires std::convertible_to<OTHER_T, T>
-Matrix<COLUMNS, ROWS, T> operator*(const OTHER_T lhs, const Matrix<COLUMNS, ROWS, T>& rhs) {
-    return multiply(lhs, rhs);
-}
-
-template<int N, is_scalar_v T>
-Matrix<N, N, T> Vector<N, T>::crossProductMatrix() const requires (N == 3) {
-    return {{0, -data[2], data[1]}, {data[2], 0, -data[0]}, {-data[1], data[0], 0}};
-}
-
-template<int N, is_scalar_v T>
-template<int OTHER_N>
-Matrix<OTHER_N, N, T> Vector<N, T>::outerProductMatrix(const Vector<OTHER_N, T>& v) const {
-    Matrix<OTHER_N, N, T> result;
-
-    for (int c = 0; c < result.columns; c++) {
-        for (int r = 0; r < result.rows; r++) {
-            if constexpr (isComplex)
-                result[c][r] = data[r] * std::conj(v[c]);
-            else
-                result[c][r] = data[r] * v[c];
-        }
-    }
-
-    return result;
-}
-
-template<int N, is_scalar_v T>
-template<int OTHER_N, typename OTHER_T> requires std::convertible_to<OTHER_T, T>
-Matrix<OTHER_N, N, T> Vector<N, T>::outerProductMatrix(const Vector<OTHER_N, OTHER_T>& v) const {
-    Matrix<OTHER_N, N, T> result;
-
-    for (int c = 0; c < result.columns; c++) {
-        for (int r = 0; r < result.rows; r++) {
-            if constexpr (isComplex)
-                result[c][r] = data[r] * std::conj(v[c]);
-            else
-                result[c][r] = data[r] * v[c];
-        }
-    }
-
-    return result;
-}
-
-template<int N, is_scalar_v T>
-template<int COLUMNS>
-Vector<COLUMNS, T> Vector<N, T>::multiply(const Matrix<COLUMNS, N, T>& m) const {
-    Vector<COLUMNS, T> result;
+Matrix<COLUMNS, ROWS, T> multiply(const T scalar, const Matrix<COLUMNS, ROWS, T>& matrix) {
+    Matrix<COLUMNS, ROWS, T> result;
 
     for (int c = 0; c < COLUMNS; c++) {
-        for (int r = 0; r < N; r++) {
-            result[c] += data[r] * m[c][r];
+        for (int r = 0; r < ROWS; r++) {
+            result[c][r] = scalar * matrix[c][r];
         }
     }
 
     return result;
 }
 
-template<int N, is_scalar_v T>
-template<int COLUMNS>
-Vector<COLUMNS, T> Vector<N, T>::operator*(const Matrix<COLUMNS, N, T>& m) const {
-    return multiply(m);
+template<int COLUMNS, int ROWS, is_scalar_v T>
+Matrix<COLUMNS, ROWS, T> operator*(const T scalar, const Matrix<COLUMNS, ROWS, T>& matrix) {
+    return multiply(scalar, matrix);
 }
 
-template<int N, is_scalar_v T>
-template<int COLUMNS, typename OTHER_T> requires std::convertible_to<OTHER_T, T>
-Vector<COLUMNS, T> Vector<N, T>::multiply(const Matrix<COLUMNS, N, OTHER_T>& m) const {
-    Vector<COLUMNS, T> result;
+// # * m
+template<int COLUMNS, int ROWS, is_scalar_v T, typename OTHER_T> requires has_common_type<OTHER_T, T>
+Matrix<COLUMNS, ROWS, std::common_type_t<T, OTHER_T>> multiply(const OTHER_T scalar, const Matrix<COLUMNS, ROWS, T>& matrix) {
+    Matrix<COLUMNS, ROWS, std::common_type_t<T, OTHER_T>> result;
 
     for (int c = 0; c < COLUMNS; c++) {
-        for (int r = 0; r < N; r++) {
-            result[c] += data[r] * m[r][c];
+        for (int r = 0; r < ROWS; r++) {
+            result[c][r] = scalar * matrix[c][r];
         }
     }
 
     return result;
 }
 
-template<int N, is_scalar_v T>
-template<int COLUMNS, typename OTHER_T> requires std::convertible_to<OTHER_T, T>
-Vector<COLUMNS, T> Vector<N, T>::operator*(const Matrix<COLUMNS, N, OTHER_T>& m) const {
-    return multiply(m);
+template<int COLUMNS, int ROWS, is_scalar_v T, typename OTHER_T> requires has_common_type<OTHER_T, T>
+Matrix<COLUMNS, ROWS, std::common_type_t<T, OTHER_T>> operator*(const OTHER_T scalar, const Matrix<COLUMNS, ROWS, T>& matrix) {
+    return multiply(scalar, matrix);
 }
 
 // block matrix
