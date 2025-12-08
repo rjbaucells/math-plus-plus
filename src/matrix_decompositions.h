@@ -1,4 +1,6 @@
 #pragma once
+#include <complex>
+
 #include "matrix.h"
 
 template<int COLUMNS, int ROWS, is_scalar_v T>

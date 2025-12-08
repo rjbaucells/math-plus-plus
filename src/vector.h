@@ -1,9 +1,7 @@
 #pragma once
 #include <array>
-#include <complex>
 #include <random>
 #include "helper.h"
-#include "vector.h"
 
 template<int N, is_scalar_v T>
 struct Vector;
@@ -190,6 +188,14 @@ struct Vector {
     Matrix<N, N, T> crossProductMatrix() const requires (N == 3);
 
     Vector<N, std::common_type_t<T, UnderlyingType>> normalized() const;
+
+    UnderlyingType angle(const Vector<N, T>& other, RotationType type = RotationType::radians) const;
+    template<typename OTHER_T> requires has_common_type<OTHER_T, T>
+    std::common_type_t<UnderlyingType, typename Vector<N, OTHER_T>::UnderlyingType> angle(const Vector<N, OTHER_T>& other, RotationType type = RotationType::radians) const;
+
+    std::common_type_t<T, UnderlyingType> scalarProjection(const Vector<N, T>& other) const;
+    template<typename OTHER_T> requires has_common_type<T, OTHER_T, typename Vector<N, OTHER_T>::UnderlyingType>
+    std::common_type_t<T, OTHER_T, typename Vector<N, OTHER_T>::UnderlyingType> scalarProjection(const Vector<N, OTHER_T>& other) const;
 };
 
 template<int N, is_scalar_v T>

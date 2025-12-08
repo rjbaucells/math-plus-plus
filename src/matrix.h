@@ -3,8 +3,6 @@
 #include <regex>
 #include <string>
 #include "helper.h"
-#include "matrix.h"
-#include "rotation.h"
 #include "vector.h"
 
 template<int COLUMNS, int ROWS, is_scalar_v T>

@@ -1,6 +1,7 @@
 #pragma once
-#include "vector.h"
+#include <complex>
 #include "matrix.h"
+#include "vector.h"
 
 template<int N, is_scalar_v T>
 template<int OTHER_N>
@@ -210,4 +211,28 @@ Vector<N, T> Vector<N, T>::cross(const Vector<N, T>& other) const requires (N ==
 template<int N, is_scalar_v T>
 Vector<N, std::common_type_t<T, typename Vector<N, T>::UnderlyingType>> Vector<N, T>::normalized() const {
     return divide(euclidianNorm());
+}
+
+template<int N, is_scalar_v T>
+Vector<N, T>::UnderlyingType Vector<N, T>::angle(const Vector<N, T>& other, const RotationType type) const {
+    UnderlyingType result = std::acos(std::real(dot(other)) / (euclidianNorm() * other.euclidianNorm()));
+    return convert(RotationType::radians, type, result);
+}
+
+template<int N, is_scalar_v T>
+template<typename OTHER_T> requires has_common_type<OTHER_T, T>
+std::common_type_t<typename Vector<N, T>::UnderlyingType, typename Vector<N, OTHER_T>::UnderlyingType> Vector<N, T>::angle(const Vector<N, OTHER_T>& other, const RotationType type) const {
+    std::common_type_t<UnderlyingType, typename Vector<N, OTHER_T>::UnderlyingType> result = std::acos(std::real(dot(other)) / (euclidianNorm() * other.euclidianNorm()));
+    return convert(RotationType::radians, type, result);
+}
+
+template<int N, is_scalar_v T>
+std::common_type_t<T, typename Vector<N, T>::UnderlyingType> Vector<N, T>::scalarProjection(const Vector<N, T>& other) const {
+    return dot(other) / other.euclidianNorm();
+}
+
+template<int N, is_scalar_v T>
+template<typename OTHER_T> requires has_common_type<T, OTHER_T, typename Vector<N, OTHER_T>::UnderlyingType>
+std::common_type_t<T, OTHER_T, typename Vector<N, OTHER_T>::UnderlyingType> Vector<N, T>::scalarProjection(const Vector<N, OTHER_T>& other) const {
+    return dot(other) / other.euclidianNorm();
 }

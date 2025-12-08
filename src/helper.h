@@ -1,5 +1,6 @@
 #pragma once
 #include <type_traits>
+#include <complex>
 
 template<typename T>
 struct is_complex : std::false_type {};
@@ -54,6 +55,45 @@ struct underlying_type<std::complex<U>> {
     using value_type = U;
 };
 
-template<typename T, typename U>
+template<typename... T>
 concept has_common_type =
-    requires { typename std::common_type_t<T, U>; };
+    requires { typename std::common_type_t<T...>; };
+
+enum class RotationType {
+    degrees,
+    radians
+};
+
+template<typename T = float>
+T radiansToDegrees(const T radians) {
+    return radians * (static_cast<T>(180) / static_cast<T>(M_PI));
+}
+
+template<typename T = float>
+T degreesToRadians(const T degrees) {
+    return degrees * (static_cast<T>(M_PI) / static_cast<T>(180));
+}
+
+template<typename T = float>
+T convert(const RotationType from, const RotationType to, const T value) {
+    switch (from) {
+        case RotationType::degrees:
+            switch (to) {
+            case RotationType::degrees:
+                    return value;
+            case RotationType::radians:
+                    return degreesToRadians(value);
+            }
+            break;
+        case RotationType::radians:
+            switch (to) {
+            case RotationType::radians:
+                    return value;
+            case RotationType::degrees:
+                    return radiansToDegrees(value);
+            }
+            break;
+    }
+
+    return value;
+}
