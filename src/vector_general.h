@@ -1,44 +1,8 @@
 #pragma once
 #include <complex>
+#include <cstring>
 #include "matrix.h"
 #include "vector.h"
-
-template<int N, is_scalar_v T>
-template<int OTHER_N>
-Matrix<OTHER_N, N, T> Vector<N, T>::outerProductMatrix(const Vector<OTHER_N, T>& other) const {
-    Matrix<OTHER_N, N, T> result;
-
-    for (int c = 0; c < OTHER_N; c++) {
-        for (int r = 0; r < N; r++) {
-            result[c][r] = data[r] * other[c];
-        }
-    }
-
-    return result;
-}
-
-template<int N, is_scalar_v T>
-template<int OTHER_N, typename OTHER_T> requires has_common_type<OTHER_T, T>
-Matrix<OTHER_N, N, std::common_type_t<T, OTHER_T>> Vector<N, T>::outerProductMatrix(const Vector<OTHER_N, OTHER_T>& other) const {
-    Matrix<OTHER_N, N, std::common_type_t<T, OTHER_T>> result;
-
-    for (int c = 0; c < OTHER_N; c++) {
-        for (int r = 0; r < N; r++) {
-            result[c][r] = data[r] * other[c];
-        }
-    }
-
-    return result;
-}
-
-template<int N, is_scalar_v T>
-Matrix<N, N, T> Vector<N, T>::crossProductMatrix() const requires (N == 3) {
-    return {
-        {0, -data[2], data[1]},
-        {data[2], 0, -data[0]},
-        {-data[1], data[0], 0}
-    };
-}
 
 template<int N, is_scalar_v T>
 constexpr Vector<N, T>::Vector(std::initializer_list<T> list) {
@@ -131,7 +95,6 @@ std::array<Vector<N, T>, V_SIZE> Vector<N, T>::orthogonalize(const std::array<Ve
     return u;
 }
 
-
 template<int N, is_scalar_v T>
 Vector<N, T> Vector<N, T>::conjugate() const {
     if constexpr (!isComplex)
@@ -200,11 +163,48 @@ template<int N, is_scalar_v T>
 }
 
 template<int N, is_scalar_v T>
+template<int OTHER_N>
+Matrix<OTHER_N, N, T> Vector<N, T>::outerProductMatrix(const Vector<OTHER_N, T>& other) const {
+    Matrix<OTHER_N, N, T> result;
+
+    for (int c = 0; c < OTHER_N; c++) {
+        for (int r = 0; r < N; r++) {
+            result[c][r] = data[r] * other[c];
+        }
+    }
+
+    return result;
+}
+
+template<int N, is_scalar_v T>
+template<int OTHER_N, typename OTHER_T> requires has_common_type<OTHER_T, T>
+Matrix<OTHER_N, N, std::common_type_t<T, OTHER_T>> Vector<N, T>::outerProductMatrix(const Vector<OTHER_N, OTHER_T>& other) const {
+    Matrix<OTHER_N, N, std::common_type_t<T, OTHER_T>> result;
+
+    for (int c = 0; c < OTHER_N; c++) {
+        for (int r = 0; r < N; r++) {
+            result[c][r] = data[r] * other[c];
+        }
+    }
+
+    return result;
+}
+
+template<int N, is_scalar_v T>
 Vector<N, T> Vector<N, T>::cross(const Vector<N, T>& other) const requires (N == 3) {
     return {
         data[1] * other[2] - data[2] * other[1],
         data[2] * other[0] - data[0] * other[2],
         data[0] * other[1] - data[1] * other[0]
+    };
+}
+
+template<int N, is_scalar_v T>
+Matrix<N, N, T> Vector<N, T>::crossProductMatrix() const requires (N == 3) {
+    return {
+        {0, -data[2], data[1]},
+        {data[2], 0, -data[0]},
+        {-data[1], data[0], 0}
     };
 }
 

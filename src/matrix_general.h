@@ -1,5 +1,6 @@
 #pragma once
 #include "matrix.h"
+#include <cstring>
 
 template<int COLUMNS, int ROWS, is_scalar_v T>
 constexpr Matrix<COLUMNS, ROWS, T>::Matrix(std::initializer_list<std::initializer_list<T>> initializerList) {
