@@ -380,25 +380,43 @@ public:
 
     T rayleighQuotient(const Vector<COLUMNS, T>& vec) const;
 
-    // eigen-vector approximation from eigen-value approximation
-    Vector<COLUMNS, T> inverseIteration(int maxIterations, T eigenVal, const Vector<COLUMNS, T>&startingVector = Vector<COLUMNS, T>::random(), T tolerance = 1e-12) const;
-
-    template<typename EIGENVECTOR_TYPE, typename EIGENVALUE_TYPE>
-    struct RayleighQuotientIteration {
-        EIGENVECTOR_TYPE vector;
-        EIGENVALUE_TYPE value;
+    template<typename VECTOR_TYPE, typename VALUE_TYPE>
+    struct EigenPair {
+        VECTOR_TYPE eigenVector;
+        VALUE_TYPE eigenValue;
     };
 
-    RayleighQuotientIteration<Vector<COLUMNS, T>, T> rayleighQuotientIteration(int maxIterations, std::optional<T> valueApproximation = std::nullopt, const Vector<COLUMNS, T>&vectorApproximation = Vector<COLUMNS, T>::random(), T tolerance = 1e-12) const;
+    template<typename VECTOR_TYPE, typename VALUE_TYPE, typename TOLERANCE_TYPE>
+    struct InverseIterationParams {
+        const VALUE_TYPE valueApproximation;
 
-    template<typename EIGENVECTOR_TYPE, typename EIGENVALUE_TYPE>
-    struct PowerIteration {
-        EIGENVECTOR_TYPE vector;
-        EIGENVALUE_TYPE value;
+        const int maxIterations = 100;
+        const VECTOR_TYPE vectorApproximation = VECTOR_TYPE::random();
+        const TOLERANCE_TYPE tolerance = 1e-12;
+    };
+
+    // eigen-vector approximation from eigen-value approximation
+    Vector<COLUMNS, T> inverseIteration(InverseIterationParams<Vector<COLUMNS, T>, T, UnderlyingType> params) const;
+
+    template<typename VECTOR_TYPE, typename VALUE_TYPE, typename TOLERANCE_TYPE>
+    struct RayleighQuotientIterationParams {
+        const int maxIterations = 100;
+        const VECTOR_TYPE vectorApproximation = VECTOR_TYPE::random();
+        const std::optional<VALUE_TYPE> valueApproximation = std::nullopt;
+        const TOLERANCE_TYPE tolerance = 1e-12;
+    };
+
+    EigenPair<Vector<COLUMNS, T>, T> rayleighQuotientIteration(RayleighQuotientIterationParams<Vector<COLUMNS, T>, T, UnderlyingType> params = RayleighQuotientIterationParams<Vector<COLUMNS, T>, T, T>()) const;
+
+    template<typename VECTOR_TYPE, typename TOLERANCE_TYPE>
+    struct PowerIterationParams {
+        const int maxIterations = 100;
+        const VECTOR_TYPE vectorApproximation = VECTOR_TYPE::random();
+        const TOLERANCE_TYPE tolerance = 1e-12;
     };
 
     // greatest eigen-value and eigen-vector approximation
-    PowerIteration<Vector<COLUMNS, T>, T> powerIteration(int maxIterations, const Vector<COLUMNS, T>&vectorApproximation = Vector<COLUMNS, T>::random(), T tolerance = 1e-12) const;
+    EigenPair<Vector<COLUMNS, T>, T> powerIteration(PowerIterationParams<Vector<COLUMNS, T>, UnderlyingType> params = PowerIterationParams<Vector<COLUMNS, T>, UnderlyingType>()) const;
 };
 
 // # * m

@@ -41,18 +41,18 @@ Matrix<COLUMNS, ROWS, T>::template LanczosAlgorithm<Matrix<ITER, ITER, T>, Matri
 
 template<int COLUMNS, int ROWS, is_scalar_v T>
 T Matrix<COLUMNS, ROWS, T>::rayleighQuotient(const Vector<COLUMNS, T>& vec) const {
-    return vec.dot(this->multiply(vec)) / vec.euclidianNormSquared();
+    return vec.dot(multiply(vec)) / vec.euclidianNormSquared();
 }
 
 template<int COLUMNS, int ROWS, is_scalar_v T>
-Vector<COLUMNS, T> Matrix<COLUMNS, ROWS, T>::inverseIteration(const int maxIterations, const T eigenVal, const Vector<COLUMNS, T>& startingVector, const T tolerance) const {
-    Vector<COLUMNS, T> b_k = startingVector;
-    Matrix<COLUMNS, ROWS, T> thisMinusEigenIdentityInverse = subtract(eigenVal * identity()).inverse();
+Vector<COLUMNS, T> Matrix<COLUMNS, ROWS, T>::inverseIteration(InverseIterationParams<Vector<COLUMNS, T>, T, UnderlyingType> params) const {
+    Vector<COLUMNS, T> b_k = params.startingVector;
+    Matrix<COLUMNS, ROWS, T> thisMinusEigenIdentityInverse = subtract(params.eigenVal * identity()).inverse();
 
-    for (int k = 0; k < maxIterations; k++) {
+    for (int k = 0; k < params.maxIterations; k++) {
         Vector<COLUMNS, T> b_k1 = (thisMinusEigenIdentityInverse * b_k).normalized();
 
-        if (tolerance > 0 && (b_k - b_k1).euclidianNorm() < tolerance)
+        if (params.tolerance > 0 && (b_k - b_k1).euclidianNorm() < params.tolerance)
             return b_k1;
 
         b_k = b_k1;
@@ -62,15 +62,15 @@ Vector<COLUMNS, T> Matrix<COLUMNS, ROWS, T>::inverseIteration(const int maxItera
 }
 
 template<int COLUMNS, int ROWS, is_scalar_v T>
-Matrix<COLUMNS, ROWS, T>::template RayleighQuotientIteration<Vector<COLUMNS, T>, T> Matrix<COLUMNS, ROWS, T>::rayleighQuotientIteration(const int maxIterations, const std::optional<T> valueApproximation, const Vector<COLUMNS, T>& vectorApproximation, const T tolerance) const {
-    Vector<COLUMNS, T> b_k = vectorApproximation;
-    T u_k = valueApproximation.value_or(rayleighQuotient(b_k));
+Matrix<COLUMNS, ROWS, T>::template EigenPair<Vector<COLUMNS, T>, T> Matrix<COLUMNS, ROWS, T>::rayleighQuotientIteration(RayleighQuotientIterationParams<Vector<COLUMNS, T>, T, UnderlyingType> params ) const {
+    Vector<COLUMNS, T> b_k = params.vectorApproximation;
+    T u_k = params.valueApproximation.value_or(rayleighQuotient(b_k));
 
-    for (int k = 0; k < maxIterations; k++) {
+    for (int k = 0; k < params.maxIterations; k++) {
         Vector<COLUMNS, T> b_k1 = (subtract(u_k * identity()).inverse() * b_k).normalized();
         T u_k1 = rayleighQuotient(b_k1);
 
-        if (tolerance > 0 && (b_k - b_k1).euclidianNorm() < tolerance && std::abs(u_k - u_k1) < tolerance)
+        if (params.tolerance > 0 && (b_k - b_k1).euclidianNorm() < params.tolerance && std::abs(u_k - u_k1) < params.tolerance)
             return {b_k1, u_k1};
 
         b_k = b_k1;
@@ -81,18 +81,15 @@ Matrix<COLUMNS, ROWS, T>::template RayleighQuotientIteration<Vector<COLUMNS, T>,
 }
 
 template<int COLUMNS, int ROWS, is_scalar_v T>
-Matrix<COLUMNS, ROWS, T>::template PowerIteration<Vector<COLUMNS, T>, T> Matrix<COLUMNS, ROWS, T>::powerIteration(const int maxIterations, const Vector<COLUMNS, T>& vectorApproximation, const T tolerance) const {
-    Vector<COLUMNS, T> b_k = vectorApproximation;
+Matrix<COLUMNS, ROWS, T>::template EigenPair<Vector<COLUMNS, T>, T> Matrix<COLUMNS, ROWS, T>::powerIteration(PowerIterationParams<Vector<COLUMNS, T>, UnderlyingType> params) const {
+    Vector<COLUMNS, T> b_k = params.vectorApproximation;
     T u_k = {};
 
-    for (int k = 0; k < maxIterations; k++) {
+    for (int k = 0; k < params.maxIterations; k++) {
         Vector<COLUMNS, T> b_k1 = multiply(b_k).normalized();
         T u_k1 = rayleighQuotient(b_k1);
 
-        if (tolerance < 0)
-            continue;
-
-        if ((b_k - b_k1).euclidianNorm() < tolerance || std::abs(u_k - u_k1) < tolerance)
+        if (params.tolerance > 0 && (b_k - b_k1).euclidianNorm() < params.tolerance && std::abs(u_k - u_k1) < params.tolerance)
             return {b_k1, u_k1};
 
         b_k = b_k1;
