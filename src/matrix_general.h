@@ -203,9 +203,7 @@ T Matrix<COLUMNS, ROWS, T>::triangularDeterminant() const requires (isSquare) {
 }
 
 template<int COLUMNS, int ROWS, is_scalar_v T>
-T Matrix<COLUMNS, ROWS, T>::tridiagonalDeterminant() const requires (isSquare) {
-
-}
+T Matrix<COLUMNS, ROWS, T>::tridiagonalDeterminant() const requires (isSquare) {}
 
 
 template<int COLUMNS, int ROWS, is_scalar_v T>
@@ -748,4 +746,52 @@ Matrix<COLUMNS * OTHER_COLUMNS, ROWS * OTHER_ROWS, std::common_type_t<T, OTHER_T
     }
 
     return result;
+}
+
+template<int COLUMNS, int ROWS, is_scalar_v T>
+Vector<ROWS, T> Matrix<COLUMNS, ROWS, T>::backwardsSubstitution(const Vector<ROWS, T>& b) const requires (isSquare) {
+    Vector<ROWS, T> result;
+
+    for (int r = ROWS - 1; r >= 0; --r) {
+        T numerator = b[r];
+
+        for (int c = r + 1; c < COLUMNS; ++c) {
+            numerator -= data[c][r] * result[c];
+        }
+
+        result[r] = numerator / data[r][r];
+    }
+
+    return result;
+}
+
+template<int COLUMNS, int ROWS, is_scalar_v T>
+Vector<ROWS, T> Matrix<COLUMNS, ROWS, T>::forwardSubstitution(const Vector<ROWS, T>& b) const requires (isSquare) {
+    Vector<ROWS, T> result;
+
+    for (int r = 0; r < ROWS; r++) {
+        T numerator = b[r];
+
+        for (int c = 0; c < r; c++) {
+            numerator -= data[c][r] * result[c];
+        }
+
+        result[r] = numerator / data[r][r];
+    }
+
+    return result;
+}
+
+template<int COLUMNS, int ROWS, is_scalar_v T>
+Vector<COLUMNS, T> Matrix<COLUMNS, ROWS, T>::solveLinearSystem(const Vector<ROWS, T>& b, const LinearSystemAlgorithm algorithm) const {
+    switch (algorithm) {
+        default:
+        case LinearSystemAlgorithm::inverse:
+            return solveLinearSystemThroughInverse(b);
+    }
+}
+
+template<int COLUMNS, int ROWS, is_scalar_v T>
+Vector<COLUMNS, T> Matrix<COLUMNS, ROWS, T>::solveLinearSystemThroughInverse(const Vector<ROWS, T>& b) const requires (isSquare) {
+    return inverse() * b;
 }

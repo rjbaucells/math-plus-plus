@@ -247,3 +247,4 @@ template<typename OTHER_T> requires has_common_type<T, OTHER_T, typename Vector<
 std::common_type_t<T, OTHER_T, typename Vector<N, OTHER_T>::UnderlyingType> Vector<N, T>::scalarProjection(const Vector<N, OTHER_T>& other) const {
     return dot(other) / other.euclidianNorm();
 }
+

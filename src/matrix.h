@@ -281,6 +281,19 @@ public:
 
     [[nodiscard]] bool isFrobeniusMatrix() const requires (isSquare);
 
+    Vector<ROWS, T> forwardSubstitution(const Vector<ROWS, T>& b) const requires (isSquare);
+    Vector<ROWS, T> backwardsSubstitution(const Vector<ROWS, T>& b) const requires (isSquare);
+
+    enum class LinearSystemAlgorithm {
+        inverse
+    };
+
+    Vector<COLUMNS, T> solveLinearSystem(const Vector<ROWS, T>& b, LinearSystemAlgorithm algorithm) const;
+
+private:
+    Vector<COLUMNS, T> solveLinearSystemThroughInverse(const Vector<ROWS, T>& b) const requires (isSquare);
+
+public:
     Matrix<COLUMNS, ROWS, T> hadamardProduct(const Matrix<COLUMNS, ROWS, T>& other) const;
     template<typename OTHER_T> requires has_common_type<OTHER_T, T>
     Matrix<COLUMNS, ROWS, std::common_type_t<T, OTHER_T>> hadamardProduct(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const;
