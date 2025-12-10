@@ -61,8 +61,8 @@ struct Matrix {
     Matrix<OTHER_COLUMNS, ROWS, T> operator*(const Matrix<OTHER_COLUMNS, COLUMNS, T>& other) const;
 
     // m * v
-    const Vector<COLUMNS, T>&multiply(const Vector<COLUMNS, T>& other) const;
-    const Vector<COLUMNS, T>&operator*(const Vector<COLUMNS, T>& other) const;
+    Vector<COLUMNS, T> multiply(const Vector<COLUMNS, T>& other) const;
+    Vector<COLUMNS, T> operator*(const Vector<COLUMNS, T>& other) const;
 
     // m * #
     Matrix<COLUMNS, ROWS, T> multiply(T val) const;
@@ -249,7 +249,7 @@ public:
 
     Vector<ROWS, T> getColumnVector(int i) const;
     std::array<Vector<ROWS>, COLUMNS> getColumnVectors() const;
-    const Vector<COLUMNS, T>&getRowVector(int i) const;
+    Vector<COLUMNS, T> getRowVector(int i) const;
     std::array<Vector<COLUMNS>, ROWS> getRowVectors() const;
 
     void setColumnVectors(const std::array<Vector<ROWS, T>, COLUMNS>& columnVectors);
