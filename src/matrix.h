@@ -4,6 +4,7 @@
 #include <string>
 #include "helper.h"
 #include "vector.h"
+#include <optional>
 
 template<int COLUMNS, int ROWS, is_scalar_v T>
 struct Matrix;
