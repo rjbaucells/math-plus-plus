@@ -176,7 +176,7 @@ struct Matrix {
     enum DeterminantAlgorithm {
         laplace,
         triangular,
-        hessenberg
+        tridiagonal
     };
 
     T determinant(DeterminantAlgorithm algorithm = laplace) const requires (isSquare);
@@ -184,6 +184,7 @@ struct Matrix {
 private:
     T laplaceDeterminant() const requires (isSquare);
     T triangularDeterminant() const requires (isSquare);
+    T tridiagonalDeterminant() const requires (isSquare);
 
 public:
     static Matrix<COLUMNS, ROWS, T> scalingMatrix(const Vector<COLUMNS, T>& factors) requires (isSquare);
@@ -225,7 +226,7 @@ public:
 
     explicit operator T*();
 
-    static Matrix<COLUMNS, ROWS, T> identity() requires (isSquare);
+    constexpr static Matrix<COLUMNS, ROWS, T> identity() requires (isSquare);
 
     [[nodiscard]] bool isRowEchelon(bool pivotMustBeOne = false) const;
     Matrix<COLUMNS, ROWS, T> toRowEchelon() const;
@@ -376,12 +377,10 @@ public:
     template<int ITER>
     LanczosAlgorithm<Matrix<ITER, ITER, T>, Matrix<ITER + 1, COLUMNS, T>> lanczosAlgorithm() const requires (isSquare);
 
-    /**
-     * Used to get an eigen-value approximation from an eigen-vector approximation
-     * @param vec eigen-vector approximation
-     * @return corresponding eigen-value approximation for given vector @a vec
-     */
     T rayleighQuotient(const Vector<COLUMNS, T>& vec) const;
+
+    // eigen-vector approximation from eigen-value approximation
+    Vector<COLUMNS, T> inverseIteration(int maxIterations, T eigenVal,  T tolerance = 1e-12) const;
 
     template<typename EIGENVECTOR_TYPE, typename EIGENVALUE_TYPE>
     struct PowerIteration {
@@ -389,7 +388,8 @@ public:
         EIGENVALUE_TYPE value;
     };
 
-    PowerIteration<Vector<COLUMNS, T>, T> powerIteration(int maxIterations, T tolerance = 1e-12) const;
+    // greatest eigen-value and eigen-vector approximation
+    PowerIteration<Vector<COLUMNS, T>, T> powerIteration(int maxIterations, Vector<COLUMNS, T> startingVector = Vector<COLUMNS, T>::random(), T tolerance = 1e-12) const;
 };
 
 // # * m

@@ -168,8 +168,8 @@ T Matrix<COLUMNS, ROWS, T>::determinant(const DeterminantAlgorithm algorithm) co
         switch (algorithm) {
             case triangular:
                 return triangularDeterminant();
-            case hessenberg:
-                return 0;
+            case tridiagonal:
+                return tridiagonalDeterminant();
             default:
                 return laplaceDeterminant();
         }
@@ -201,6 +201,12 @@ T Matrix<COLUMNS, ROWS, T>::triangularDeterminant() const requires (isSquare) {
 
     return result;
 }
+
+template<int COLUMNS, int ROWS, is_scalar_v T>
+T Matrix<COLUMNS, ROWS, T>::tridiagonalDeterminant() const requires (isSquare) {
+
+}
+
 
 template<int COLUMNS, int ROWS, is_scalar_v T>
 std::string Matrix<COLUMNS, ROWS, T>::toString() const {
@@ -399,7 +405,7 @@ Matrix<COLUMNS, ROWS, T> Matrix<COLUMNS, ROWS, T>::swapColumns(const int columnA
 }
 
 template<int COLUMNS, int ROWS, is_scalar_v T>
-Matrix<COLUMNS, ROWS, T> Matrix<COLUMNS, ROWS, T>::identity() requires (isSquare) {
+constexpr Matrix<COLUMNS, ROWS, T> Matrix<COLUMNS, ROWS, T>::identity() requires (isSquare) {
     Matrix<COLUMNS, ROWS, T> result;
 
     for (int i = 0; i < COLUMNS; i++) {

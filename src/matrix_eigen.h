@@ -9,8 +9,8 @@ Matrix<COLUMNS, ROWS, T>::template LanczosAlgorithm<Matrix<ITER, ITER, T>, Matri
 
     std::array<Vector<COLUMNS, T>, ITER + 1> q;
 
-    Matrix < ITER, ITER, T > t;
-    Matrix < ITER + 1, COLUMNS, T > qMatrix;
+    Matrix<ITER, ITER, T> t;
+    Matrix<ITER + 1, COLUMNS, T> qMatrix;
 
     qMatrix.setColumnVector(0, Vector<COLUMNS, T>::random().normalize());
 
@@ -41,24 +41,44 @@ Matrix<COLUMNS, ROWS, T>::template LanczosAlgorithm<Matrix<ITER, ITER, T>, Matri
 
 template<int COLUMNS, int ROWS, is_scalar_v T>
 T Matrix<COLUMNS, ROWS, T>::rayleighQuotient(const Vector<COLUMNS, T>& vec) const {
-    return (vec * *this * vec) / (vec * vec);
+    return vec.dot(this->multiply(vec)) / vec.euclidianNormSquared();
 }
 
 template<int COLUMNS, int ROWS, is_scalar_v T>
-Matrix<COLUMNS, ROWS, T>::template PowerIteration<Vector<COLUMNS, T>, T> Matrix<COLUMNS, ROWS, T>::powerIteration(const int maxIterations, const T tolerance) const {
-    Vector<COLUMNS, T> vec = Vector<COLUMNS, T>::random();
-    T val = {};
+Vector<COLUMNS, T> Matrix<COLUMNS, ROWS, T>::inverseIteration(const int maxIterations, const T tolerance, const T eigenVal) const {
+    Vector<COLUMNS, T> b_k = Vector<COLUMNS, T>::random();
+    Matrix<COLUMNS, ROWS, T> thisMinusEigenIdentityInverse = subtract(eigenVal * identity()).inverse();
 
-    for (int i = 0; i < maxIterations; i++) {
-        vec = multiply(vec).normalize();
-        T nextVal = rayleighQuotient(vec);
+    for (int k = 0; k < maxIterations; k++) {
+        Vector<COLUMNS, T> b_k1 = (thisMinusEigenIdentityInverse * b_k).normalized();
 
-        if (std::abs(val - nextVal) < tolerance) {
-            return {vec, nextVal};
-        }
+        if (tolerance > 0 && (b_k - b_k1).euclidianNorm() < tolerance)
+            return b_k1;
 
-        val = nextVal;
+        b_k = b_k1;
     }
 
-    return {vec, val};
+    return b_k;
+}
+
+template<int COLUMNS, int ROWS, is_scalar_v T>
+Matrix<COLUMNS, ROWS, T>::template PowerIteration<Vector<COLUMNS, T>, T> Matrix<COLUMNS, ROWS, T>::powerIteration(const int maxIterations, Vector<COLUMNS, T> startingVector, const T tolerance) const {
+    Vector<COLUMNS, T> b_k = startingVector;
+    T u_k = {};
+
+    for (int k = 0; k < maxIterations; k++) {
+        Vector<COLUMNS, T> b_k1 = multiply(b_k).normalized();
+        T u_k1 = rayleighQuotient(b_k1);
+
+        if (tolerance < 0)
+            continue;
+
+        if ((b_k - b_k1).euclidianNorm() < tolerance || std::abs(u_k - u_k1) < tolerance)
+            return {b_k1, u_k1};
+
+        b_k = b_k1;
+        u_k = u_k1;
+    }
+
+    return {b_k, u_k};
 }

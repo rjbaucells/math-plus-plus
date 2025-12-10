@@ -167,15 +167,22 @@ struct Vector {
 
     UnderlyingType taxicabNorm() const;
     UnderlyingType euclidianNorm() const;
+    UnderlyingType euclidianNormSquared() const;
     UnderlyingType maxNorm() const;
 
     [[nodiscard]] std::string toString() const;
 
-    [[nodiscard]] T dot(const Vector<N, T>& other) const;
+    enum DotProductConjugationBehavior {
+        first_argument,
+        second_argument,
+        neither
+    };
+
+    [[nodiscard]] T dot(const Vector<N, T>& other, DotProductConjugationBehavior behavior = first_argument) const;
     T operator*(const Vector<N, T>& other) const;
 
     template<typename OTHER_T> requires has_common_type<OTHER_T, T>
-    [[nodiscard]] std::common_type_t<T, OTHER_T> dot(const Vector<N, T>& other) const;
+    [[nodiscard]] std::common_type_t<T, OTHER_T> dot(const Vector<N, OTHER_T>& other, DotProductConjugationBehavior behavior = first_argument) const;
     template<typename OTHER_T> requires has_common_type<OTHER_T, T>
     std::common_type_t<T, OTHER_T> operator*(const Vector<N, OTHER_T>& other) const;
 

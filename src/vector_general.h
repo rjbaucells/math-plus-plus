@@ -133,6 +133,17 @@ Vector<N, T>::UnderlyingType Vector<N, T>::euclidianNorm() const {
 }
 
 template<int N, is_scalar_v T>
+Vector<N, T>::UnderlyingType Vector<N, T>::euclidianNormSquared() const {
+    UnderlyingType result = {};
+
+    for (int i = 0; i < N; i++) {
+        result += std::norm(data[i]);
+    }
+
+    return result;
+}
+
+template<int N, is_scalar_v T>
 Vector<N, T>::UnderlyingType Vector<N, T>::maxNorm() const {
     UnderlyingType greatest = {};
 

@@ -418,15 +418,21 @@ Vector<N, std::common_type_t<T, OTHER_T>> operator*(const OTHER_T scalar, const 
 }
 
 template<int N, is_scalar_v T>
-T Vector<N, T>::dot(const Vector<N, T>& other) const {
+T Vector<N, T>::dot(const Vector<N, T>& other, const DotProductConjugationBehavior behavior) const {
     T result = {};
 
     for (int i = 0; i < N; i++) {
-        if constexpr (isComplex) {
-            result += data[i] * std::conj(other[i]);
-        }
-        else {
-            result += data[i] * other[i];
+        switch (behavior) {
+            case second_argument:
+                result += data[i] * std::conj(other[i]);
+                break;
+            case neither:
+                result += data[i] * other[i];
+                break;
+            case first_argument:
+            default:
+                result += std::conj(data[i]) * other[i];
+                break;
         }
     }
 
@@ -440,15 +446,21 @@ T Vector<N, T>::operator*(const Vector<N, T>& other) const {
 
 template<int N, is_scalar_v T>
 template<typename OTHER_T> requires has_common_type<OTHER_T, T>
-std::common_type_t<T, OTHER_T> Vector<N, T>::dot(const Vector<N, T>& other) const {
+std::common_type_t<T, OTHER_T> Vector<N, T>::dot(const Vector<N, OTHER_T>& other, const DotProductConjugationBehavior behavior) const {
     std::common_type_t<T, OTHER_T> result = {};
 
     for (int i = 0; i < N; i++) {
-        if constexpr (isComplex) {
-            result += data[i] * std::conj(other[i]);
-        }
-        else {
-            result += data[i] * other[i];
+        switch (behavior) {
+            case second_argument:
+                result += data[i] * std::conj(other[i]);
+                break;
+            case neither:
+                result += data[i] * other[i];
+                break;
+            case first_argument:
+            default:
+                result += std::conj(data[i]) * other[i];
+                break;
         }
     }
 
