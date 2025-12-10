@@ -45,8 +45,8 @@ T Matrix<COLUMNS, ROWS, T>::rayleighQuotient(const Vector<COLUMNS, T>& vec) cons
 }
 
 template<int COLUMNS, int ROWS, is_scalar_v T>
-Vector<COLUMNS, T> Matrix<COLUMNS, ROWS, T>::inverseIteration(const int maxIterations, const T tolerance, const T eigenVal) const {
-    Vector<COLUMNS, T> b_k = Vector<COLUMNS, T>::random();
+Vector<COLUMNS, T> Matrix<COLUMNS, ROWS, T>::inverseIteration(const int maxIterations, const T eigenVal, const Vector<COLUMNS, T>& startingVector, const T tolerance) const {
+    Vector<COLUMNS, T> b_k = startingVector;
     Matrix<COLUMNS, ROWS, T> thisMinusEigenIdentityInverse = subtract(eigenVal * identity()).inverse();
 
     for (int k = 0; k < maxIterations; k++) {
@@ -62,8 +62,27 @@ Vector<COLUMNS, T> Matrix<COLUMNS, ROWS, T>::inverseIteration(const int maxItera
 }
 
 template<int COLUMNS, int ROWS, is_scalar_v T>
-Matrix<COLUMNS, ROWS, T>::template PowerIteration<Vector<COLUMNS, T>, T> Matrix<COLUMNS, ROWS, T>::powerIteration(const int maxIterations, Vector<COLUMNS, T> startingVector, const T tolerance) const {
-    Vector<COLUMNS, T> b_k = startingVector;
+Matrix<COLUMNS, ROWS, T>::template RayleighQuotientIteration<Vector<COLUMNS, T>, T> Matrix<COLUMNS, ROWS, T>::rayleighQuotientIteration(const int maxIterations, const std::optional<T> valueApproximation, const Vector<COLUMNS, T>& vectorApproximation, const T tolerance) const {
+    Vector<COLUMNS, T> b_k = vectorApproximation;
+    T u_k = valueApproximation.value_or(rayleighQuotient(b_k));
+
+    for (int k = 0; k < maxIterations; k++) {
+        Vector<COLUMNS, T> b_k1 = (subtract(u_k * identity()).inverse() * b_k).normalized();
+        T u_k1 = rayleighQuotient(b_k1);
+
+        if (tolerance > 0 && (b_k - b_k1).euclidianNorm() < tolerance && std::abs(u_k - u_k1) < tolerance)
+            return {b_k1, u_k1};
+
+        b_k = b_k1;
+        u_k = u_k1;
+    }
+
+    return {b_k, u_k};
+}
+
+template<int COLUMNS, int ROWS, is_scalar_v T>
+Matrix<COLUMNS, ROWS, T>::template PowerIteration<Vector<COLUMNS, T>, T> Matrix<COLUMNS, ROWS, T>::powerIteration(const int maxIterations, const Vector<COLUMNS, T>& vectorApproximation, const T tolerance) const {
+    Vector<COLUMNS, T> b_k = vectorApproximation;
     T u_k = {};
 
     for (int k = 0; k < maxIterations; k++) {

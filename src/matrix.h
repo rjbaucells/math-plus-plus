@@ -61,8 +61,8 @@ struct Matrix {
     Matrix<OTHER_COLUMNS, ROWS, T> operator*(const Matrix<OTHER_COLUMNS, COLUMNS, T>& other) const;
 
     // m * v
-    Vector<COLUMNS, T> multiply(const Vector<COLUMNS, T>& other) const;
-    Vector<COLUMNS, T> operator*(const Vector<COLUMNS, T>& other) const;
+    const Vector<COLUMNS, T>&multiply(const Vector<COLUMNS, T>& other) const;
+    const Vector<COLUMNS, T>&operator*(const Vector<COLUMNS, T>& other) const;
 
     // m * #
     Matrix<COLUMNS, ROWS, T> multiply(T val) const;
@@ -249,7 +249,7 @@ public:
 
     Vector<ROWS, T> getColumnVector(int i) const;
     std::array<Vector<ROWS>, COLUMNS> getColumnVectors() const;
-    Vector<COLUMNS, T> getRowVector(int i) const;
+    const Vector<COLUMNS, T>&getRowVector(int i) const;
     std::array<Vector<COLUMNS>, ROWS> getRowVectors() const;
 
     void setColumnVectors(const std::array<Vector<ROWS, T>, COLUMNS>& columnVectors);
@@ -380,7 +380,15 @@ public:
     T rayleighQuotient(const Vector<COLUMNS, T>& vec) const;
 
     // eigen-vector approximation from eigen-value approximation
-    Vector<COLUMNS, T> inverseIteration(int maxIterations, T eigenVal,  T tolerance = 1e-12) const;
+    Vector<COLUMNS, T> inverseIteration(int maxIterations, T eigenVal, const Vector<COLUMNS, T>&startingVector = Vector<COLUMNS, T>::random(), T tolerance = 1e-12) const;
+
+    template<typename EIGENVECTOR_TYPE, typename EIGENVALUE_TYPE>
+    struct RayleighQuotientIteration {
+        EIGENVECTOR_TYPE vector;
+        EIGENVALUE_TYPE value;
+    };
+
+    RayleighQuotientIteration<Vector<COLUMNS, T>, T> rayleighQuotientIteration(int maxIterations, std::optional<T> valueApproximation = std::nullopt, const Vector<COLUMNS, T>&vectorApproximation = Vector<COLUMNS, T>::random(), T tolerance = 1e-12) const;
 
     template<typename EIGENVECTOR_TYPE, typename EIGENVALUE_TYPE>
     struct PowerIteration {
@@ -389,7 +397,7 @@ public:
     };
 
     // greatest eigen-value and eigen-vector approximation
-    PowerIteration<Vector<COLUMNS, T>, T> powerIteration(int maxIterations, Vector<COLUMNS, T> startingVector = Vector<COLUMNS, T>::random(), T tolerance = 1e-12) const;
+    PowerIteration<Vector<COLUMNS, T>, T> powerIteration(int maxIterations, const Vector<COLUMNS, T>&vectorApproximation = Vector<COLUMNS, T>::random(), T tolerance = 1e-12) const;
 };
 
 // # * m
