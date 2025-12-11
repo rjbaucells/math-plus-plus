@@ -3,7 +3,7 @@
 #include "matrix.h"
 
 // v = v
-template<int N, is_scalar_v T>
+template<int N, scalar T>
 Vector<N, T>& Vector<N, T>::operator=(const Vector<N, T>& other) {
     if (this != &other) {
         for (int i = 0; i < N; i++) {
@@ -15,7 +15,7 @@ Vector<N, T>& Vector<N, T>::operator=(const Vector<N, T>& other) {
 }
 
 // v == v
-template<int N, is_scalar_v T>
+template<int N, scalar T>
 bool Vector<N, T>::equals(const Vector<N, T>& other) const {
     for (int i = 0; i < N; i++) {
         if (!compare(data[i], other.data[i]))
@@ -25,13 +25,13 @@ bool Vector<N, T>::equals(const Vector<N, T>& other) const {
     return true;
 }
 
-template<int N, is_scalar_v T>
+template<int N, scalar T>
 bool Vector<N, T>::operator==(const Vector<N, T>& other) const {
     return equals(other);
 }
 
 // v + v
-template<int N, is_scalar_v T>
+template<int N, scalar T>
 Vector<N, T> Vector<N, T>::add(const Vector<N, T>& other) const {
     Vector<N, T> v;
 
@@ -42,13 +42,13 @@ Vector<N, T> Vector<N, T>::add(const Vector<N, T>& other) const {
     return v;
 }
 
-template<int N, is_scalar_v T>
+template<int N, scalar T>
 Vector<N, T> Vector<N, T>::operator+(const Vector<N, T>& other) const {
     return add(other);
 }
 
 // v - v
-template<int N, is_scalar_v T>
+template<int N, scalar T>
 Vector<N, T> Vector<N, T>::subtract(const Vector<N, T>& other) const {
     Vector<N, T> v;
 
@@ -59,13 +59,13 @@ Vector<N, T> Vector<N, T>::subtract(const Vector<N, T>& other) const {
     return v;
 }
 
-template<int N, is_scalar_v T>
+template<int N, scalar T>
 Vector<N, T> Vector<N, T>::operator-(const Vector<N, T>& other) const {
     return subtract(other);
 }
 
 // v * #
-template<int N, is_scalar_v T>
+template<int N, scalar T>
 Vector<N, T> Vector<N, T>::multiply(const T scalar) const {
     Vector<N, T> v;
 
@@ -76,13 +76,13 @@ Vector<N, T> Vector<N, T>::multiply(const T scalar) const {
     return v;
 }
 
-template<int N, is_scalar_v T>
+template<int N, scalar T>
 Vector<N, T> Vector<N, T>::operator*(const T scalar) const {
     return multiply(scalar);
 }
 
 // v / #
-template<int N, is_scalar_v T>
+template<int N, scalar T>
 Vector<N, T> Vector<N, T>::divide(const T scalar) const {
     Vector<N, T> v;
 
@@ -93,13 +93,13 @@ Vector<N, T> Vector<N, T>::divide(const T scalar) const {
     return v;
 }
 
-template<int N, is_scalar_v T>
+template<int N, scalar T>
 Vector<N, T> Vector<N, T>::operator/(const T scalar) const {
     return divide(scalar);
 }
 
 // v += v
-template<int N, is_scalar_v T>
+template<int N, scalar T>
 Vector<N, T>& Vector<N, T>::addEquals(const Vector<N, T>& other) {
     for (int i = 0; i < N; i++) {
         data[i] += other.data[i];
@@ -108,13 +108,13 @@ Vector<N, T>& Vector<N, T>::addEquals(const Vector<N, T>& other) {
     return *this;
 }
 
-template<int N, is_scalar_v T>
+template<int N, scalar T>
 Vector<N, T>& Vector<N, T>::operator+=(const Vector<N, T>& other) {
     return addEquals(other);
 }
 
 // v -= v
-template<int N, is_scalar_v T>
+template<int N, scalar T>
 Vector<N, T>& Vector<N, T>::subtractEquals(const Vector<N, T>& other) {
     for (int i = 0; i < N; i++) {
         data[i] -= other.data[i];
@@ -123,13 +123,13 @@ Vector<N, T>& Vector<N, T>::subtractEquals(const Vector<N, T>& other) {
     return *this;
 }
 
-template<int N, is_scalar_v T>
+template<int N, scalar T>
 Vector<N, T>& Vector<N, T>::operator-=(const Vector<N, T>& other) {
     return subtractEquals(other);
 }
 
 // v *= #
-template<int N, is_scalar_v T>
+template<int N, scalar T>
 Vector<N, T>& Vector<N, T>::multiplyEquals(const T scalar) {
     for (int i = 0; i < N; i++) {
         data[i] *= scalar;
@@ -138,13 +138,13 @@ Vector<N, T>& Vector<N, T>::multiplyEquals(const T scalar) {
     return *this;
 }
 
-template<int N, is_scalar_v T>
+template<int N, scalar T>
 Vector<N, T>& Vector<N, T>::operator*=(const T scalar) {
     return multiplyEquals(scalar);
 }
 
 // v /= #
-template<int N, is_scalar_v T>
+template<int N, scalar T>
 Vector<N, T>& Vector<N, T>::divideEquals(const T scalar) {
     for (int i = 0; i < N; i++) {
         data[i] /= scalar;
@@ -153,13 +153,13 @@ Vector<N, T>& Vector<N, T>::divideEquals(const T scalar) {
     return *this;
 }
 
-template<int N, is_scalar_v T>
+template<int N, scalar T>
 Vector<N, T>& Vector<N, T>::operator/=(const T scalar) {
     return divideEquals(scalar);
 }
 
 // v * m
-template<int N, is_scalar_v T>
+template<int N, scalar T>
 template<int COLUMNS>
 Vector<COLUMNS, T> Vector<N, T>::multiply(const Matrix<COLUMNS, N, T>& m) const {
     Vector<COLUMNS, T> result;
@@ -173,14 +173,14 @@ Vector<COLUMNS, T> Vector<N, T>::multiply(const Matrix<COLUMNS, N, T>& m) const 
     return result;
 }
 
-template<int N, is_scalar_v T>
+template<int N, scalar T>
 template<int COLUMNS>
 Vector<COLUMNS, T> Vector<N, T>::operator*(const Matrix<COLUMNS, N, T>& m) const {
     return multiply(m);
 }
 
 // v = v
-template<int N, is_scalar_v T>
+template<int N, scalar T>
 template<typename OTHER_T> requires std::convertible_to<OTHER_T, T>
 Vector<N, T>& Vector<N, T>::operator=(const Vector<N, OTHER_T>& other) {
     if (*this != other) {
@@ -193,7 +193,7 @@ Vector<N, T>& Vector<N, T>::operator=(const Vector<N, OTHER_T>& other) {
 }
 
 // v == v
-template<int N, is_scalar_v T>
+template<int N, scalar T>
 template<typename OTHER_T> requires std::equality_comparable_with<OTHER_T, T>
 bool Vector<N, T>::equals(const Vector<N, OTHER_T>& other) const {
     for (int i = 0; i < N; i++) {
@@ -204,15 +204,15 @@ bool Vector<N, T>::equals(const Vector<N, OTHER_T>& other) const {
     return true;
 }
 
-template<int N, is_scalar_v T>
+template<int N, scalar T>
 template<typename OTHER_T> requires std::equality_comparable_with<OTHER_T, T>
 bool Vector<N, T>::operator==(const Vector<N, OTHER_T>& other) const {
     return equals(other);
 }
 
 // v + v
-template<int N, is_scalar_v T>
-template<typename OTHER_T> requires has_common_type<OTHER_T, T>
+template<int N, scalar T>
+template<typename OTHER_T> requires HasCommonType<OTHER_T, T>
 Vector<N, std::common_type_t<T, OTHER_T>> Vector<N, T>::add(const Vector<N, OTHER_T>& other) const {
     Vector<N, std::common_type_t<T, OTHER_T>> v;
 
@@ -223,15 +223,15 @@ Vector<N, std::common_type_t<T, OTHER_T>> Vector<N, T>::add(const Vector<N, OTHE
     return v;
 }
 
-template<int N, is_scalar_v T>
-template<typename OTHER_T> requires has_common_type<OTHER_T, T>
+template<int N, scalar T>
+template<typename OTHER_T> requires HasCommonType<OTHER_T, T>
 Vector<N, std::common_type_t<T, OTHER_T>> Vector<N, T>::operator+(const Vector<N, OTHER_T>& other) const {
     return add(other);
 }
 
 // v - v
-template<int N, is_scalar_v T>
-template<typename OTHER_T> requires has_common_type<OTHER_T, T>
+template<int N, scalar T>
+template<typename OTHER_T> requires HasCommonType<OTHER_T, T>
 Vector<N, std::common_type_t<T, OTHER_T>> Vector<N, T>::subtract(const Vector<N, OTHER_T>& other) const {
     Vector<N, std::common_type_t<T, OTHER_T>> v;
 
@@ -242,15 +242,15 @@ Vector<N, std::common_type_t<T, OTHER_T>> Vector<N, T>::subtract(const Vector<N,
     return v;
 }
 
-template<int N, is_scalar_v T>
-template<typename OTHER_T> requires has_common_type<OTHER_T, T>
+template<int N, scalar T>
+template<typename OTHER_T> requires HasCommonType<OTHER_T, T>
 Vector<N, std::common_type_t<T, OTHER_T>> Vector<N, T>::operator-(const Vector<N, OTHER_T>& other) const {
     return subtract(other);
 }
 
 // v * #
-template<int N, is_scalar_v T>
-template<typename OTHER_T> requires has_common_type<OTHER_T, T>
+template<int N, scalar T>
+template<typename OTHER_T> requires HasCommonType<OTHER_T, T>
 Vector<N, std::common_type_t<T, OTHER_T>> Vector<N, T>::multiply(const OTHER_T scalar) const {
     Vector<N, std::common_type_t<T, OTHER_T>> v;
 
@@ -261,15 +261,15 @@ Vector<N, std::common_type_t<T, OTHER_T>> Vector<N, T>::multiply(const OTHER_T s
     return v;
 }
 
-template<int N, is_scalar_v T>
-template<typename OTHER_T> requires has_common_type<OTHER_T, T>
+template<int N, scalar T>
+template<typename OTHER_T> requires HasCommonType<OTHER_T, T>
 Vector<N, std::common_type_t<T, OTHER_T>> Vector<N, T>::operator*(const OTHER_T scalar) const {
     return multiply(scalar);
 }
 
 // v / #
-template<int N, is_scalar_v T>
-template<typename OTHER_T> requires has_common_type<OTHER_T, T>
+template<int N, scalar T>
+template<typename OTHER_T> requires HasCommonType<OTHER_T, T>
 Vector<N, std::common_type_t<T, OTHER_T>> Vector<N, T>::divide(const OTHER_T scalar) const {
     Vector<N, std::common_type_t<T, OTHER_T>> v;
 
@@ -280,14 +280,14 @@ Vector<N, std::common_type_t<T, OTHER_T>> Vector<N, T>::divide(const OTHER_T sca
     return v;
 }
 
-template<int N, is_scalar_v T>
-template<typename OTHER_T> requires has_common_type<OTHER_T, T>
+template<int N, scalar T>
+template<typename OTHER_T> requires HasCommonType<OTHER_T, T>
 Vector<N, std::common_type_t<T, OTHER_T>> Vector<N, T>::operator/(const OTHER_T scalar) const {
     return divide(scalar);
 }
 
 // v += v
-template<int N, is_scalar_v T>
+template<int N, scalar T>
 template<typename OTHER_T> requires std::convertible_to<OTHER_T, T>
 Vector<N, T>& Vector<N, T>::addEquals(const Vector<N, OTHER_T>& other) {
     for (int i = 0; i < N; i++) {
@@ -297,14 +297,14 @@ Vector<N, T>& Vector<N, T>::addEquals(const Vector<N, OTHER_T>& other) {
     return *this;
 }
 
-template<int N, is_scalar_v T>
+template<int N, scalar T>
 template<typename OTHER_T> requires std::convertible_to<OTHER_T, T>
 Vector<N, T>& Vector<N, T>::operator+=(const Vector<N, OTHER_T>& other) {
     return addEquals(other);
 }
 
 // v -= v
-template<int N, is_scalar_v T>
+template<int N, scalar T>
 template<typename OTHER_T> requires std::convertible_to<OTHER_T, T>
 Vector<N, T>& Vector<N, T>::subtractEquals(const Vector<N, OTHER_T>& other) {
     for (int i = 0; i < N; i++) {
@@ -314,14 +314,14 @@ Vector<N, T>& Vector<N, T>::subtractEquals(const Vector<N, OTHER_T>& other) {
     return *this;
 }
 
-template<int N, is_scalar_v T>
+template<int N, scalar T>
 template<typename OTHER_T> requires std::convertible_to<OTHER_T, T>
 Vector<N, T>& Vector<N, T>::operator-=(const Vector<N, OTHER_T>& other) {
     return subtractEquals(other);
 }
 
 // v *= #
-template<int N, is_scalar_v T>
+template<int N, scalar T>
 template<typename OTHER_T> requires std::convertible_to<OTHER_T, T>
 Vector<N, T>& Vector<N, T>::multiplyEquals(const OTHER_T scalar) {
     for (int i = 0; i < N; i++) {
@@ -331,14 +331,14 @@ Vector<N, T>& Vector<N, T>::multiplyEquals(const OTHER_T scalar) {
     return *this;
 }
 
-template<int N, is_scalar_v T>
+template<int N, scalar T>
 template<typename OTHER_T> requires std::convertible_to<OTHER_T, T>
 Vector<N, T>& Vector<N, T>::operator*=(const OTHER_T scalar) {
     return multiplyEquals(scalar);
 }
 
 // v /= #
-template<int N, is_scalar_v T>
+template<int N, scalar T>
 template<typename OTHER_T> requires std::convertible_to<OTHER_T, T>
 Vector<N, T>& Vector<N, T>::divideEquals(const OTHER_T scalar) {
     for (int i = 0; i < N; i++) {
@@ -348,15 +348,15 @@ Vector<N, T>& Vector<N, T>::divideEquals(const OTHER_T scalar) {
     return *this;
 }
 
-template<int N, is_scalar_v T>
+template<int N, scalar T>
 template<typename OTHER_T> requires std::convertible_to<OTHER_T, T>
 Vector<N, T>& Vector<N, T>::operator/=(const OTHER_T scalar) {
     return divideEquals(scalar);
 }
 
 // v * m
-template<int N, is_scalar_v T>
-template<int COLUMNS, typename OTHER_T> requires has_common_type<OTHER_T, T>
+template<int N, scalar T>
+template<int COLUMNS, typename OTHER_T> requires HasCommonType<OTHER_T, T>
 Vector<COLUMNS, std::common_type_t<T, OTHER_T>> Vector<N, T>::multiply(const Matrix<COLUMNS, N, OTHER_T>& m) const {
     Vector<COLUMNS, std::common_type_t<T, OTHER_T>> result;
 
@@ -369,33 +369,33 @@ Vector<COLUMNS, std::common_type_t<T, OTHER_T>> Vector<N, T>::multiply(const Mat
     return result;
 }
 
-template<int N, is_scalar_v T>
-template<int COLUMNS, typename OTHER_T> requires has_common_type<OTHER_T, T>
+template<int N, scalar T>
+template<int COLUMNS, typename OTHER_T> requires HasCommonType<OTHER_T, T>
 Vector<COLUMNS, std::common_type_t<T, OTHER_T>> Vector<N, T>::operator*(const Matrix<COLUMNS, N, OTHER_T>& m) const {
     return multiply(m);
 }
 
-template<int N, is_scalar_v T>
+template<int N, scalar T>
 Vector<N, T>::operator T*() {
     return &data[0];
 }
 
-template<int N, is_scalar_v T>
+template<int N, scalar T>
 Vector<N, T>::operator const T*() const {
     return &data[0];
 }
 
-template<int N, is_scalar_v T>
+template<int N, scalar T>
 T& Vector<N, T>::operator[](const int index) {
     return data[index];
 }
 
-template<int N, is_scalar_v T>
+template<int N, scalar T>
 const T& Vector<N, T>::operator[](const int index) const {
     return data[index];
 }
 
-template<int N, is_scalar_v T>
+template<int N, scalar T>
 Vector<N, T> operator*(const T scalar, const Vector<N, T>& vector) {
     Vector<N, T> result;
 
@@ -406,7 +406,7 @@ Vector<N, T> operator*(const T scalar, const Vector<N, T>& vector) {
     return result;
 }
 
-template<int N, is_scalar_v T, typename OTHER_T> requires has_common_type<OTHER_T, T>
+template<int N, scalar T, typename OTHER_T> requires HasCommonType<OTHER_T, T>
 Vector<N, std::common_type_t<T, OTHER_T>> operator*(const OTHER_T scalar, const Vector<N, T>& vector) {
     Vector<N, std::common_type_t<T, OTHER_T>> result;
 
@@ -417,7 +417,7 @@ Vector<N, std::common_type_t<T, OTHER_T>> operator*(const OTHER_T scalar, const 
     return result;
 }
 
-template<int N, is_scalar_v T>
+template<int N, scalar T>
 T Vector<N, T>::dot(const Vector<N, T>& other, const DotProductConjugationBehavior behavior) const {
     T result = {};
 
@@ -439,13 +439,13 @@ T Vector<N, T>::dot(const Vector<N, T>& other, const DotProductConjugationBehavi
     return result;
 }
 
-template<int N, is_scalar_v T>
+template<int N, scalar T>
 T Vector<N, T>::operator*(const Vector<N, T>& other) const {
     return dot(other);
 }
 
-template<int N, is_scalar_v T>
-template<typename OTHER_T> requires has_common_type<OTHER_T, T>
+template<int N, scalar T>
+template<typename OTHER_T> requires HasCommonType<OTHER_T, T>
 std::common_type_t<T, OTHER_T> Vector<N, T>::dot(const Vector<N, OTHER_T>& other, const DotProductConjugationBehavior behavior) const {
     std::common_type_t<T, OTHER_T> result = {};
 
@@ -467,8 +467,8 @@ std::common_type_t<T, OTHER_T> Vector<N, T>::dot(const Vector<N, OTHER_T>& other
     return result;
 }
 
-template<int N, is_scalar_v T>
-template<typename OTHER_T> requires has_common_type<OTHER_T, T>
+template<int N, scalar T>
+template<typename OTHER_T> requires HasCommonType<OTHER_T, T>
 std::common_type_t<T, OTHER_T> Vector<N, T>::operator*(const Vector<N, OTHER_T>& other) const {
     return dot(other);
 }

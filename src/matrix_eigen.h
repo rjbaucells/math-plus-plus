@@ -1,7 +1,7 @@
 #pragma once
 #include "matrix.h"
 
-template<int COLUMNS, int ROWS, is_scalar_v T>
+template<int COLUMNS, int ROWS, scalar T>
 template<int ITER>
 Matrix<COLUMNS, ROWS, T>::template LanczosAlgorithm<Matrix<ITER, ITER, T>, Matrix<ITER + 1, COLUMNS, T>> Matrix<COLUMNS, ROWS, T>::lanczosAlgorithm() const requires (isSquare) {
     if (!isHermitian())
@@ -39,12 +39,12 @@ Matrix<COLUMNS, ROWS, T>::template LanczosAlgorithm<Matrix<ITER, ITER, T>, Matri
     return {t, qMatrix};
 }
 
-template<int COLUMNS, int ROWS, is_scalar_v T>
+template<int COLUMNS, int ROWS, scalar T>
 T Matrix<COLUMNS, ROWS, T>::rayleighQuotient(const Vector<COLUMNS, T>& vec) const {
     return vec.dot(multiply(vec)) / vec.euclidianNormSquared();
 }
 
-template<int COLUMNS, int ROWS, is_scalar_v T>
+template<int COLUMNS, int ROWS, scalar T>
 Vector<COLUMNS, T> Matrix<COLUMNS, ROWS, T>::inverseIteration(InverseIterationParams<Vector<COLUMNS, T>, T, UnderlyingType> params) const {
     Vector<COLUMNS, T> b_k = params.startingVector;
     Matrix<COLUMNS, ROWS, T> thisMinusEigenIdentityInverse = subtract(params.eigenVal * identity()).inverse();
@@ -61,7 +61,7 @@ Vector<COLUMNS, T> Matrix<COLUMNS, ROWS, T>::inverseIteration(InverseIterationPa
     return b_k;
 }
 
-template<int COLUMNS, int ROWS, is_scalar_v T>
+template<int COLUMNS, int ROWS, scalar T>
 Matrix<COLUMNS, ROWS, T>::template EigenPair<Vector<COLUMNS, T>, T> Matrix<COLUMNS, ROWS, T>::rayleighQuotientIteration(RayleighQuotientIterationParams<Vector<COLUMNS, T>, T, UnderlyingType> params ) const {
     Vector<COLUMNS, T> b_k = params.vectorApproximation;
     T u_k = params.valueApproximation.value_or(rayleighQuotient(b_k));
@@ -80,7 +80,7 @@ Matrix<COLUMNS, ROWS, T>::template EigenPair<Vector<COLUMNS, T>, T> Matrix<COLUM
     return {b_k, u_k};
 }
 
-template<int COLUMNS, int ROWS, is_scalar_v T>
+template<int COLUMNS, int ROWS, scalar T>
 Matrix<COLUMNS, ROWS, T>::template EigenPair<Vector<COLUMNS, T>, T> Matrix<COLUMNS, ROWS, T>::powerIteration(PowerIterationParams<Vector<COLUMNS, T>, UnderlyingType> params) const {
     Vector<COLUMNS, T> b_k = params.vectorApproximation;
     T u_k = {};

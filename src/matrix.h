@@ -6,19 +6,7 @@
 #include "vector.h"
 #include <optional>
 
-template<int COLUMNS, int ROWS, is_scalar_v T>
-struct Matrix;
-
-template<typename T>
-struct is_matrix : std::false_type {};
-
-template<int COLUMNS, int ROWS, is_scalar_v T>
-struct is_matrix<Matrix<COLUMNS, ROWS, T>> : std::true_type {};
-
-template<typename T>
-concept is_matrix_v = is_matrix<T>::value;
-
-template<int COLUMNS, int ROWS, is_scalar_v T = float>
+template<int COLUMNS, int ROWS, scalar T = float>
 struct Matrix {
     static constexpr int columns = COLUMNS;
     static constexpr int rows = ROWS;
@@ -40,11 +28,13 @@ struct Matrix {
     template<typename OTHER_T> requires std::convertible_to<OTHER_T, T>
     Matrix(const Matrix<COLUMNS, ROWS, OTHER_T>& other);
 
+    static Matrix<COLUMNS, ROWS, T> random();
+
     // m = m
     Matrix<COLUMNS, ROWS, T>& operator=(const Matrix<COLUMNS, ROWS, T>& other);
 
     // m == m
-    bool equals(const Matrix<COLUMNS, ROWS, T>& other) const;
+    bool equals(const Matrix<COLUMNS, ROWS, T>& other, underlying_type_t<T> epsilon = ::epsilon<T>()) const;
     bool operator==(const Matrix<COLUMNS, ROWS, T>& other) const;
 
     // m + m
@@ -95,44 +85,44 @@ struct Matrix {
 
     // m == m
     template<typename OTHER_T> requires std::equality_comparable_with<OTHER_T, T>
-    bool equals(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const;
+    bool equals(const Matrix<COLUMNS, ROWS, OTHER_T>& other, underlying_type_t<T> epsilon = ::epsilon<T>()) const;
     template<typename OTHER_T> requires std::equality_comparable_with<OTHER_T, T>
     bool operator==(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const;
 
     // m + m
-    template<typename OTHER_T> requires has_common_type<OTHER_T, T>
+    template<typename OTHER_T> requires HasCommonType<OTHER_T, T>
     Matrix<COLUMNS, ROWS, std::common_type_t<T, OTHER_T>> add(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const;
-    template<typename OTHER_T> requires has_common_type<OTHER_T, T>
+    template<typename OTHER_T> requires HasCommonType<OTHER_T, T>
     Matrix<COLUMNS, ROWS, std::common_type_t<T, OTHER_T>> operator+(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const;
 
     // m - m
-    template<typename OTHER_T> requires has_common_type<OTHER_T, T>
+    template<typename OTHER_T> requires HasCommonType<OTHER_T, T>
     Matrix<COLUMNS, ROWS, std::common_type_t<T, OTHER_T>> subtract(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const;
-    template<typename OTHER_T> requires has_common_type<OTHER_T, T>
+    template<typename OTHER_T> requires HasCommonType<OTHER_T, T>
     Matrix<COLUMNS, ROWS, std::common_type_t<T, OTHER_T>> operator-(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const;
 
     // m * m
-    template<int OTHER_COLUMNS, typename OTHER_T> requires has_common_type<OTHER_T, T>
+    template<int OTHER_COLUMNS, typename OTHER_T> requires HasCommonType<OTHER_T, T>
     Matrix<OTHER_COLUMNS, ROWS, std::common_type_t<T, OTHER_T>> multiply(const Matrix<OTHER_COLUMNS, COLUMNS, OTHER_T>& other) const;
-    template<int OTHER_COLUMNS, typename OTHER_T> requires has_common_type<OTHER_T, T>
+    template<int OTHER_COLUMNS, typename OTHER_T> requires HasCommonType<OTHER_T, T>
     Matrix<OTHER_COLUMNS, ROWS, std::common_type_t<T, OTHER_T>> operator*(const Matrix<OTHER_COLUMNS, COLUMNS, OTHER_T>& other) const;
 
     // m * v
-    template<typename OTHER_T> requires has_common_type<OTHER_T, T>
+    template<typename OTHER_T> requires HasCommonType<OTHER_T, T>
     Vector<COLUMNS, std::common_type_t<T, OTHER_T>> multiply(const Vector<COLUMNS, OTHER_T>& other) const;
-    template<typename OTHER_T> requires has_common_type<OTHER_T, T>
+    template<typename OTHER_T> requires HasCommonType<OTHER_T, T>
     Vector<COLUMNS, std::common_type_t<T, OTHER_T>> operator*(const Vector<COLUMNS, OTHER_T>& other) const;
 
     // m * #
-    template<typename OTHER_T> requires has_common_type<OTHER_T, T>
+    template<typename OTHER_T> requires HasCommonType<OTHER_T, T>
     Matrix<COLUMNS, ROWS, std::common_type_t<T, OTHER_T>> multiply(OTHER_T val) const;
-    template<typename OTHER_T> requires has_common_type<OTHER_T, T>
+    template<typename OTHER_T> requires HasCommonType<OTHER_T, T>
     Matrix<COLUMNS, ROWS, std::common_type_t<T, OTHER_T>> operator*(OTHER_T val) const;
 
     // m / #
-    template<typename OTHER_T> requires has_common_type<OTHER_T, T>
+    template<typename OTHER_T> requires HasCommonType<OTHER_T, T>
     Matrix<COLUMNS, ROWS, std::common_type_t<T, OTHER_T>> divide(OTHER_T scalar) const;
-    template<typename OTHER_T> requires has_common_type<OTHER_T, T>
+    template<typename OTHER_T> requires HasCommonType<OTHER_T, T>
     Matrix<COLUMNS, ROWS, std::common_type_t<T, OTHER_T>> operator/(OTHER_T scalar) const;
 
     // m += m
@@ -161,7 +151,7 @@ struct Matrix {
 
     template<int N>
     Vector<N, T> applyHomogeneousTransformation(const Vector<N, T>& point) const requires (isSquare);
-    template<int N, typename OTHER_T> requires has_common_type<OTHER_T, T>
+    template<int N, typename OTHER_T> requires HasCommonType<OTHER_T, T>
     Vector<N, std::common_type_t<T, OTHER_T>> applyHomogeneousTransformation(const Vector<N, OTHER_T>& point) const requires (isSquare);
 
     T* operator[](int index);
@@ -285,22 +275,24 @@ public:
     Vector<ROWS, T> backwardsSubstitution(const Vector<ROWS, T>& b) const requires (isSquare);
 
     enum class LinearSystemAlgorithm {
-        inverse
+        inverse,
+        lu_factorization
     };
 
     Vector<COLUMNS, T> solveLinearSystem(const Vector<ROWS, T>& b, LinearSystemAlgorithm algorithm) const;
 
 private:
     Vector<COLUMNS, T> solveLinearSystemThroughInverse(const Vector<ROWS, T>& b) const requires (isSquare);
+    Vector<COLUMNS, T> solveLinearSystemThroughLu(const Vector<ROWS, T>& b) const requires (isSquare);
 
 public:
     Matrix<COLUMNS, ROWS, T> hadamardProduct(const Matrix<COLUMNS, ROWS, T>& other) const;
-    template<typename OTHER_T> requires has_common_type<OTHER_T, T>
+    template<typename OTHER_T> requires HasCommonType<OTHER_T, T>
     Matrix<COLUMNS, ROWS, std::common_type_t<T, OTHER_T>> hadamardProduct(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const;
 
     template<int OTHER_COLUMNS, int OTHER_ROWS>
     Matrix<COLUMNS * OTHER_COLUMNS, ROWS * OTHER_ROWS, T> kroneckerProduct(const Matrix<OTHER_COLUMNS, OTHER_ROWS, T>& other) const;
-    template<int OTHER_COLUMNS, int OTHER_ROWS, typename OTHER_T> requires has_common_type<OTHER_T, T>
+    template<int OTHER_COLUMNS, int OTHER_ROWS, typename OTHER_T> requires HasCommonType<OTHER_T, T>
     Matrix<COLUMNS * OTHER_COLUMNS, ROWS * OTHER_ROWS, std::common_type_t<T, OTHER_T>> kroneckerProduct(const Matrix<OTHER_COLUMNS, OTHER_ROWS, OTHER_T>& other) const;
 
     template<typename L_TYPE, typename U_TYPE, typename P_TYPE>
@@ -433,7 +425,7 @@ public:
 };
 
 // # * m
-template<int COLUMNS, int ROWS, is_scalar_v T>
+template<int COLUMNS, int ROWS, scalar T>
 Matrix<COLUMNS, ROWS, T> multiply(const T scalar, const Matrix<COLUMNS, ROWS, T>& matrix) {
     Matrix<COLUMNS, ROWS, T> result;
 
@@ -446,13 +438,13 @@ Matrix<COLUMNS, ROWS, T> multiply(const T scalar, const Matrix<COLUMNS, ROWS, T>
     return result;
 }
 
-template<int COLUMNS, int ROWS, is_scalar_v T>
+template<int COLUMNS, int ROWS, scalar T>
 Matrix<COLUMNS, ROWS, T> operator*(const T scalar, const Matrix<COLUMNS, ROWS, T>& matrix) {
     return multiply(scalar, matrix);
 }
 
 // # * m
-template<int COLUMNS, int ROWS, is_scalar_v T, typename OTHER_T> requires has_common_type<OTHER_T, T>
+template<int COLUMNS, int ROWS, scalar T, typename OTHER_T> requires HasCommonType<OTHER_T, T>
 Matrix<COLUMNS, ROWS, std::common_type_t<T, OTHER_T>> multiply(const OTHER_T scalar, const Matrix<COLUMNS, ROWS, T>& matrix) {
     Matrix<COLUMNS, ROWS, std::common_type_t<T, OTHER_T>> result;
 
@@ -465,13 +457,13 @@ Matrix<COLUMNS, ROWS, std::common_type_t<T, OTHER_T>> multiply(const OTHER_T sca
     return result;
 }
 
-template<int COLUMNS, int ROWS, is_scalar_v T, typename OTHER_T> requires has_common_type<OTHER_T, T>
+template<int COLUMNS, int ROWS, scalar T, typename OTHER_T> requires HasCommonType<OTHER_T, T>
 Matrix<COLUMNS, ROWS, std::common_type_t<T, OTHER_T>> operator*(const OTHER_T scalar, const Matrix<COLUMNS, ROWS, T>& matrix) {
     return multiply(scalar, matrix);
 }
 
 // block matrix
-template<int COLUMNS, int ROWS, int B_COLUMNS, int B_ROWS, is_scalar_v B_T>
+template<int COLUMNS, int ROWS, int B_COLUMNS, int B_ROWS, scalar B_T>
 struct Matrix<COLUMNS, ROWS, Matrix<B_COLUMNS, B_ROWS, B_T>> {
     static constexpr int columns = COLUMNS;
     static constexpr int rows = ROWS;

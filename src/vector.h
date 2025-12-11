@@ -3,22 +3,10 @@
 #include <random>
 #include "helper.h"
 
-template<int N, is_scalar_v T>
-struct Vector;
-
-template<typename T>
-struct is_vector : std::false_type {};
-
-template<int N, is_scalar_v T>
-struct is_vector<Vector<N, T>> : std::true_type {};
-
-template<typename T>
-concept is_vector_v = is_vector<T>::value;
-
-template<int COLUMNS, int ROWS, is_scalar_v T>
+template<int COLUMNS, int ROWS, scalar T>
 struct Matrix;
 
-template<int N, is_scalar_v T = float>
+template<int N, scalar T = float>
 struct Vector {
     static constexpr int n = N;
     static constexpr bool isComplex = is_complex_v<T>;
@@ -95,27 +83,27 @@ struct Vector {
     bool operator==(const Vector<N, OTHER_T>& other) const;
 
     // v + v
-    template<typename OTHER_T> requires has_common_type<OTHER_T, T>
+    template<typename OTHER_T> requires HasCommonType<OTHER_T, T>
     Vector<N, std::common_type_t<T, OTHER_T>> add(const Vector<N, OTHER_T>& other) const;
-    template<typename OTHER_T> requires has_common_type<OTHER_T, T>
+    template<typename OTHER_T> requires HasCommonType<OTHER_T, T>
     Vector<N, std::common_type_t<T, OTHER_T>> operator+(const Vector<N, OTHER_T>& other) const;
 
     // v - v
-    template<typename OTHER_T> requires has_common_type<OTHER_T, T>
+    template<typename OTHER_T> requires HasCommonType<OTHER_T, T>
     Vector<N, std::common_type_t<T, OTHER_T>> subtract(const Vector<N, OTHER_T>& other) const;
-    template<typename OTHER_T> requires has_common_type<OTHER_T, T>
+    template<typename OTHER_T> requires HasCommonType<OTHER_T, T>
     Vector<N, std::common_type_t<T, OTHER_T>> operator-(const Vector<N, OTHER_T>& other) const;
 
     // v * #
-    template<typename OTHER_T> requires has_common_type<OTHER_T, T>
+    template<typename OTHER_T> requires HasCommonType<OTHER_T, T>
     Vector<N, std::common_type_t<T, OTHER_T>> multiply(OTHER_T scalar) const;
-    template<typename OTHER_T> requires has_common_type<OTHER_T, T>
+    template<typename OTHER_T> requires HasCommonType<OTHER_T, T>
     Vector<N, std::common_type_t<T, OTHER_T>> operator*(OTHER_T scalar) const;
 
     // v / #
-    template<typename OTHER_T> requires has_common_type<OTHER_T, T>
+    template<typename OTHER_T> requires HasCommonType<OTHER_T, T>
     Vector<N, std::common_type_t<T, OTHER_T>> divide(OTHER_T scalar) const;
-    template<typename OTHER_T> requires has_common_type<OTHER_T, T>
+    template<typename OTHER_T> requires HasCommonType<OTHER_T, T>
     Vector<N, std::common_type_t<T, OTHER_T>> operator/(OTHER_T scalar) const;
 
     // v += v
@@ -142,9 +130,9 @@ struct Vector {
     template<typename OTHER_T> requires std::convertible_to<OTHER_T, T>
     Vector<N, T>& operator/=(OTHER_T scalar);
 
-    template<int COLUMNS, typename OTHER_T> requires has_common_type<OTHER_T, T>
+    template<int COLUMNS, typename OTHER_T> requires HasCommonType<OTHER_T, T>
     Vector<COLUMNS, std::common_type_t<T, OTHER_T>> multiply(const Matrix<COLUMNS, N, OTHER_T>& m) const;
-    template<int COLUMNS, typename OTHER_T> requires has_common_type<OTHER_T, T>
+    template<int COLUMNS, typename OTHER_T> requires HasCommonType<OTHER_T, T>
     Vector<COLUMNS, std::common_type_t<T, OTHER_T>> operator*(const Matrix<COLUMNS, N, OTHER_T>& m) const;
 
     explicit operator T*();
@@ -181,14 +169,14 @@ struct Vector {
     [[nodiscard]] T dot(const Vector<N, T>& other, DotProductConjugationBehavior behavior = first_argument) const;
     T operator*(const Vector<N, T>& other) const;
 
-    template<typename OTHER_T> requires has_common_type<OTHER_T, T>
+    template<typename OTHER_T> requires HasCommonType<OTHER_T, T>
     [[nodiscard]] std::common_type_t<T, OTHER_T> dot(const Vector<N, OTHER_T>& other, DotProductConjugationBehavior behavior = first_argument) const;
-    template<typename OTHER_T> requires has_common_type<OTHER_T, T>
+    template<typename OTHER_T> requires HasCommonType<OTHER_T, T>
     std::common_type_t<T, OTHER_T> operator*(const Vector<N, OTHER_T>& other) const;
 
     template<int OTHER_N>
     Matrix<OTHER_N, N, T> outerProductMatrix(const Vector<OTHER_N, T>& other) const;
-    template<int OTHER_N, typename OTHER_T> requires has_common_type<OTHER_T, T>
+    template<int OTHER_N, typename OTHER_T> requires HasCommonType<OTHER_T, T>
     Matrix<OTHER_N, N, std::common_type_t<T, OTHER_T>> outerProductMatrix(const Vector<OTHER_N, OTHER_T>& other) const;
 
     Vector<N, T> cross(const Vector<N, T>& other) const requires (N == 3);
@@ -197,16 +185,16 @@ struct Vector {
     Vector<N, std::common_type_t<T, UnderlyingType>> normalized() const;
 
     UnderlyingType angle(const Vector<N, T>& other, RotationType type = RotationType::radians) const;
-    template<typename OTHER_T> requires has_common_type<OTHER_T, T>
+    template<typename OTHER_T> requires HasCommonType<OTHER_T, T>
     std::common_type_t<UnderlyingType, typename Vector<N, OTHER_T>::UnderlyingType> angle(const Vector<N, OTHER_T>& other, RotationType type = RotationType::radians) const;
 
     std::common_type_t<T, UnderlyingType> scalarProjection(const Vector<N, T>& other) const;
-    template<typename OTHER_T> requires has_common_type<T, OTHER_T, typename Vector<N, OTHER_T>::UnderlyingType>
+    template<typename OTHER_T> requires HasCommonType<T, OTHER_T, typename Vector<N, OTHER_T>::UnderlyingType>
     std::common_type_t<T, OTHER_T, typename Vector<N, OTHER_T>::UnderlyingType> scalarProjection(const Vector<N, OTHER_T>& other) const;
 };
 
-template<int N, is_scalar_v T>
+template<int N, scalar T>
 Vector<N, T> operator*(T scalar, const Vector<N, T>& vector);
 
-template<int N, is_scalar_v T, typename OTHER_T> requires has_common_type<OTHER_T, T>
+template<int N, scalar T, typename OTHER_T> requires HasCommonType<OTHER_T, T>
 Vector<N, std::common_type_t<T, OTHER_T>> operator*(OTHER_T scalar, const Vector<N, T>& vector);

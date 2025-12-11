@@ -1,7 +1,7 @@
 #pragma once
 #include "vector.h"
 
-template<int N, is_scalar_v T>
+template<int N, scalar T>
 template<int V_SIZE>
 bool Vector<N, T>::isOrthogonal(const std::array<Vector<N, T>, V_SIZE>& vectors) {
     for (int i = 0; i < vectors.size(); i++) {
@@ -18,7 +18,7 @@ bool Vector<N, T>::isOrthogonal(const std::array<Vector<N, T>, V_SIZE>& vectors)
     return true;
 }
 
-template<int N, is_scalar_v T>
+template<int N, scalar T>
 template<int V_SIZE>
 bool Vector<N, T>::isOrthonormal(const std::array<Vector<N, T>, V_SIZE>& vectors) {
     for (int i = 0; i < vectors.size(); i++) {

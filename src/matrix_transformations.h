@@ -1,7 +1,7 @@
 #pragma once
 #include "matrix.h"
 
-template<int COLUMNS, int ROWS, is_scalar_v T>
+template<int COLUMNS, int ROWS, scalar T>
 template<int N>
 Vector<N, T> Matrix<COLUMNS, ROWS, T>::applyHomogeneousTransformation(const Vector<N, T>& point) const requires (isSquare) {
     Vector<COLUMNS, T> resizedPoint;
@@ -21,8 +21,8 @@ Vector<N, T> Matrix<COLUMNS, ROWS, T>::applyHomogeneousTransformation(const Vect
     return result;
 }
 
-template<int COLUMNS, int ROWS, is_scalar_v T>
-template<int N, typename OTHER_T> requires has_common_type<OTHER_T, T>
+template<int COLUMNS, int ROWS, scalar T>
+template<int N, typename OTHER_T> requires HasCommonType<OTHER_T, T>
 Vector<N, std::common_type_t<T, OTHER_T>> Matrix<COLUMNS, ROWS, T>::applyHomogeneousTransformation(const Vector<N, OTHER_T>& point) const requires (isSquare) {
     Vector<COLUMNS, std::common_type_t<T, OTHER_T>> resizedPoint;
 
@@ -41,7 +41,7 @@ Vector<N, std::common_type_t<T, OTHER_T>> Matrix<COLUMNS, ROWS, T>::applyHomogen
     return result;
 }
 
-template<int COLUMNS, int ROWS, is_scalar_v T>
+template<int COLUMNS, int ROWS, scalar T>
 Matrix<COLUMNS, ROWS, T> Matrix<COLUMNS, ROWS, T>::scalingMatrix(const Vector<COLUMNS, T>& factors) requires (isSquare) {
     Matrix<COLUMNS, ROWS, T> matrix;
 
@@ -52,7 +52,7 @@ Matrix<COLUMNS, ROWS, T> Matrix<COLUMNS, ROWS, T>::scalingMatrix(const Vector<CO
     return matrix;
 }
 
-template<int COLUMNS, int ROWS, is_scalar_v T>
+template<int COLUMNS, int ROWS, scalar T>
 Matrix<COLUMNS, ROWS, T> Matrix<COLUMNS, ROWS, T>::shearMatrix(const int i, const int j, const T k) requires (isSquare) {
     Matrix<COLUMNS, ROWS, T> matrix = identity();
 
@@ -61,7 +61,7 @@ Matrix<COLUMNS, ROWS, T> Matrix<COLUMNS, ROWS, T>::shearMatrix(const int i, cons
     return matrix;
 }
 
-template<int COLUMNS, int ROWS, is_scalar_v T>
+template<int COLUMNS, int ROWS, scalar T>
 Matrix<COLUMNS, ROWS, T> Matrix<COLUMNS, ROWS, T>::squeezeMatrix(const int i, const int j, const T k) requires (isSquare) {
     Matrix<COLUMNS, ROWS, T> matrix = identity();
 
@@ -71,7 +71,7 @@ Matrix<COLUMNS, ROWS, T> Matrix<COLUMNS, ROWS, T>::squeezeMatrix(const int i, co
     return matrix;
 }
 
-template<int COLUMNS, int ROWS, is_scalar_v T>
+template<int COLUMNS, int ROWS, scalar T>
 Matrix<COLUMNS, ROWS, T> Matrix<COLUMNS, ROWS, T>::rotationMatrixAboutOrigin(const T rot, const RotationType rotationType) requires (isSquare && COLUMNS == 2) {
     T asRadians = convert(rotationType, RotationType::radians, rot);
 
@@ -88,7 +88,7 @@ Matrix<COLUMNS, ROWS, T> Matrix<COLUMNS, ROWS, T>::rotationMatrixAboutOrigin(con
     return r;
 }
 
-template<int COLUMNS, int ROWS, is_scalar_v T>
+template<int COLUMNS, int ROWS, scalar T>
 Matrix<COLUMNS + 1, ROWS + 1, T> Matrix<COLUMNS, ROWS, T>::rotationMatrixAboutPoint(const Vector<COLUMNS, T>& p, const T rot, const RotationType rotationType) requires (isSquare && COLUMNS == 2) {
     Matrix<COLUMNS, ROWS, T> rotationMatrix = rotationMatrixAboutOrigin(rot, rotationType);
     Vector<COLUMNS, T> translationVector = (identity() - rotationMatrix) * p;
@@ -108,7 +108,7 @@ Matrix<COLUMNS + 1, ROWS + 1, T> Matrix<COLUMNS, ROWS, T>::rotationMatrixAboutPo
     return result;
 }
 
-template<int COLUMNS, int ROWS, is_scalar_v T>
+template<int COLUMNS, int ROWS, scalar T>
 Matrix<COLUMNS, ROWS, T> Matrix<COLUMNS, ROWS, T>::rotationMatrixAroundAxisThroughOrigin(const Vector<COLUMNS, T>& axis, const T rot, const RotationType rotationType) requires (isSquare && COLUMNS == 3) {
     T asRadians = convert(rotationType, RotationType::radians, rot);
 
@@ -120,7 +120,7 @@ Matrix<COLUMNS, ROWS, T> Matrix<COLUMNS, ROWS, T>::rotationMatrixAroundAxisThrou
     return r;
 }
 
-template<int COLUMNS, int ROWS, is_scalar_v T>
+template<int COLUMNS, int ROWS, scalar T>
 Matrix<COLUMNS + 1, ROWS + 1, T> Matrix<COLUMNS, ROWS, T>::rotationMatrixAroundAxisNotThroughOrigin(const Vector<COLUMNS, T>& axis, const Vector<COLUMNS, T>& point, const T rot, const RotationType rotationType) requires (isSquare && COLUMNS == 3) {
     Vector<COLUMNS, T> u = axis.normalize();
 
@@ -142,7 +142,7 @@ Matrix<COLUMNS + 1, ROWS + 1, T> Matrix<COLUMNS, ROWS, T>::rotationMatrixAroundA
     return result;
 }
 
-template<int COLUMNS, int ROWS, is_scalar_v T>
+template<int COLUMNS, int ROWS, scalar T>
 Matrix<COLUMNS, ROWS, T> Matrix<COLUMNS, ROWS, T>::rotationMatrixInPlaneThroughOrigin(const Vector<COLUMNS, T>& v1, const Vector<COLUMNS, T>& v2, const T rot, const RotationType rotationType) requires (isSquare && COLUMNS >= 3) {
     T asRadians = convert(rotationType, RotationType::radians, rot);
 
@@ -159,7 +159,7 @@ Matrix<COLUMNS, ROWS, T> Matrix<COLUMNS, ROWS, T>::rotationMatrixInPlaneThroughO
     return r;
 }
 
-template<int COLUMNS, int ROWS, is_scalar_v T>
+template<int COLUMNS, int ROWS, scalar T>
 Matrix<COLUMNS, ROWS, T> Matrix<COLUMNS, ROWS, T>::rotationMatrixInPLaneNotThroughOrigin(const Vector<COLUMNS, T>& v1, const Vector<COLUMNS, T>& v2, const Vector<COLUMNS, T>& point, const T rot, const RotationType rotationType) requires (isSquare && COLUMNS >= 3) {
     auto orthonormalized = Vector<COLUMNS, T>::orthonormalize({v1, v2});
 
@@ -185,12 +185,12 @@ Matrix<COLUMNS, ROWS, T> Matrix<COLUMNS, ROWS, T>::rotationMatrixInPLaneNotThrou
     return result;
 }
 
-template<int COLUMNS, int ROWS, is_scalar_v T>
+template<int COLUMNS, int ROWS, scalar T>
 Matrix<COLUMNS, ROWS, T> Matrix<COLUMNS, ROWS, T>::reflectionMatrixAlongAxisThroughOrigin(const Vector<COLUMNS, T>& axis) requires (isSquare) {
     return 2 * axis.outerProduct(axis) - identity();
 }
 
-template<int COLUMNS, int ROWS, is_scalar_v T>
+template<int COLUMNS, int ROWS, scalar T>
 Matrix<COLUMNS + 1, ROWS + 1, T> Matrix<COLUMNS, ROWS, T>::reflectionMatrixAlongAxisNotThroughOrigin(const Vector<COLUMNS, T>& axis, const Vector<COLUMNS, T>& point) requires (isSquare) {
     Matrix<COLUMNS, ROWS, T> reflectionMatrix = reflectionMatrixAlongAxisThroughOrigin(axis);
     Vector<COLUMNS, T> translationVector = (identity() - 2 * axis.outerProduct(axis)) * point;
@@ -210,7 +210,7 @@ Matrix<COLUMNS + 1, ROWS + 1, T> Matrix<COLUMNS, ROWS, T>::reflectionMatrixAlong
     return result;
 }
 
-template<int COLUMNS, int ROWS, is_scalar_v T>
+template<int COLUMNS, int ROWS, scalar T>
 Matrix<COLUMNS + 1, ROWS + 1, T> Matrix<COLUMNS, ROWS, T>::translationMatrix(const Vector<COLUMNS, T>& translation) requires (isSquare) {
     Matrix<COLUMNS + 1, ROWS + 1, T> matrix = Matrix<COLUMNS + 1, ROWS + 1, T>::identity();
 
@@ -221,7 +221,7 @@ Matrix<COLUMNS + 1, ROWS + 1, T> Matrix<COLUMNS, ROWS, T>::translationMatrix(con
     return matrix;
 }
 
-template<int COLUMNS, int ROWS, is_scalar_v T>
+template<int COLUMNS, int ROWS, scalar T>
 Matrix<COLUMNS, ROWS, T> Matrix<COLUMNS, ROWS, T>::orthoMatrix(const T left, const T right, const T bottom, const T top, const T near, const T far) requires (isSquare && COLUMNS == 4) {
     // identity
     Matrix<COLUMNS, ROWS, T> transformation = Matrix<COLUMNS, ROWS, T>::identity();
