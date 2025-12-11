@@ -1,10 +1,9 @@
 #pragma once
 #include <complex>
-
 #include "matrix.h"
 
 template<int COLUMNS, int ROWS, scalar T>
-Matrix<COLUMNS, ROWS, T>::template LUPDecomposition<Matrix<ROWS, ROWS, T>, Matrix<COLUMNS, ROWS, T>, Matrix<ROWS, ROWS, T>> Matrix<COLUMNS, ROWS, T>::lupDecomposition() const {
+Matrix<COLUMNS, ROWS, T>::template LUPDecomposition<Matrix<ROWS, ROWS, T>, Matrix<COLUMNS, ROWS, T>, Matrix<ROWS, ROWS, T>> Matrix<COLUMNS, ROWS, T>::lupDecomposition(int* numRowSwaps) const {
     Matrix<ROWS, ROWS, T> l = Matrix<ROWS, ROWS, T>::identity();
     Matrix<COLUMNS, ROWS, T> u = *this;
     Matrix<ROWS, ROWS, T> p = Matrix<ROWS, ROWS, T>::identity();
@@ -14,8 +13,7 @@ Matrix<COLUMNS, ROWS, T>::template LUPDecomposition<Matrix<ROWS, ROWS, T>, Matri
         // handle row swaps
         {
             int rowIndex = -1;
-            const T pivot = u[c][c];
-            UnderlyingType rowValue = std::norm(pivot);
+            UnderlyingType rowValue = std::norm(u[c][c]);
 
             // iterate through rows of this column. Looking for the biggest boi
             for (int r = c + 1; r < ROWS; r++) {
@@ -28,14 +26,14 @@ Matrix<COLUMNS, ROWS, T>::template LUPDecomposition<Matrix<ROWS, ROWS, T>, Matri
             }
 
             // we found nothing but we needed to find something
-            if (rowIndex == -1 && compare(pivot, 0)) {
+            if (rowIndex == -1 && compare(rowValue, 0)) {
                 throw std::runtime_error("Cannot LUP decompose singular matrix");
             }
 
             if (rowIndex != -1) {
                 // swap u and p rows like normal
-                u.swapRows(c, rowIndex);
-                p.swapRows(c, rowIndex);
+                u = u.swapRows(c, rowIndex);
+                p = p.swapRows(c, rowIndex);
 
                 // swap rows of l before column c
                 for (int i = 0; i < c; ++i) {
@@ -43,6 +41,9 @@ Matrix<COLUMNS, ROWS, T>::template LUPDecomposition<Matrix<ROWS, ROWS, T>, Matri
                     l[i][c] = l[i][rowIndex];
                     l[i][rowIndex] = temp;
                 }
+
+                if (numRowSwaps != nullptr)
+                    (*numRowSwaps)++;
             }
         }
 
@@ -67,7 +68,7 @@ Matrix<COLUMNS, ROWS, T>::template LUPDecomposition<Matrix<ROWS, ROWS, T>, Matri
 }
 
 template<int COLUMNS, int ROWS, scalar T>
-Matrix<COLUMNS, ROWS, T>::template LUPQDecomposition<Matrix<ROWS, ROWS, T>, Matrix<COLUMNS, ROWS, T>, Matrix<ROWS, ROWS, T>, Matrix<COLUMNS, COLUMNS, T>> Matrix<COLUMNS, ROWS, T>::lupqDecomposition() const {
+Matrix<COLUMNS, ROWS, T>::template LUPQDecomposition<Matrix<ROWS, ROWS, T>, Matrix<COLUMNS, ROWS, T>, Matrix<ROWS, ROWS, T>, Matrix<COLUMNS, COLUMNS, T>> Matrix<COLUMNS, ROWS, T>::lupqDecomposition(int* numRowSwaps, int* numColumnSwaps) const {
     Matrix<ROWS, ROWS, T> l = Matrix<ROWS, ROWS, T>::identity();
     Matrix<COLUMNS, ROWS, T> u = *this;
     Matrix<ROWS, ROWS, T> p = Matrix<ROWS, ROWS, T>::identity();
@@ -101,19 +102,25 @@ Matrix<COLUMNS, ROWS, T>::template LUPQDecomposition<Matrix<ROWS, ROWS, T>, Matr
             }
 
             if (rowIndex != c) {
-                u.swapRows(c, rowIndex);
-                p.swapRows(c, rowIndex);
+                u = u.swapRows(c, rowIndex);
+                p = p.swapRows(c, rowIndex);
                 // swap rows of L before column c
                 for (int i = 0; i < c; ++i) {
                     T temp = l[i][c];
                     l[i][c] = l[i][rowIndex];
                     l[i][rowIndex] = temp;
                 }
+
+                if (numRowSwaps != nullptr)
+                    (*numRowSwaps)++;
             }
 
             if (columnIndex != c) {
-                u.swapColumns(c, columnIndex);
-                q.swapColumns(c, columnIndex);
+                u = u.swapColumns(c, columnIndex);
+                q = q.swapColumns(c, columnIndex);
+
+                if (numColumnSwaps != nullptr)
+                    (*numColumnSwaps)++;
             }
         }
 

@@ -16,9 +16,9 @@ Vector<N, T>& Vector<N, T>::operator=(const Vector<N, T>& other) {
 
 // v == v
 template<int N, scalar T>
-bool Vector<N, T>::equals(const Vector<N, T>& other) const {
+bool Vector<N, T>::equals(const Vector<N, T>& other, underlying_type_t<T> precision) const {
     for (int i = 0; i < N; i++) {
-        if (!compare(data[i], other.data[i]))
+        if (!compare(data[i], other.data[i], precision))
             return false;
     }
 
@@ -195,9 +195,9 @@ Vector<N, T>& Vector<N, T>::operator=(const Vector<N, OTHER_T>& other) {
 // v == v
 template<int N, scalar T>
 template<typename OTHER_T> requires std::equality_comparable_with<OTHER_T, T>
-bool Vector<N, T>::equals(const Vector<N, OTHER_T>& other) const {
+bool Vector<N, T>::equals(const Vector<N, OTHER_T>& other, const std::common_type_t<underlying_type_t<T>, underlying_type_t<OTHER_T>> precision) const {
     for (int i = 0; i < N; i++) {
-        if (!compare(data[i], other.data[i]))
+        if (!compare(data[i], other.data[i], precision))
             return false;
     }
 

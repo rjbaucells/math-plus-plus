@@ -31,7 +31,7 @@ struct Vector {
     Vector<N, T>& operator=(const Vector<N, T>& other);
 
     // v == v
-    bool equals(const Vector<N, T>& other) const;
+    bool equals(const Vector<N, T>& other, underlying_type_t<T> precision = ::epsilon<T>()) const;
     bool operator==(const Vector<N, T>& other) const;
 
     // v + v
@@ -78,7 +78,7 @@ struct Vector {
 
     // v == v
     template<typename OTHER_T> requires std::equality_comparable_with<OTHER_T, T>
-    bool equals(const Vector<N, OTHER_T>& other) const;
+    bool equals(const Vector<N, OTHER_T>& other, std::common_type_t<underlying_type_t<T>, underlying_type_t<OTHER_T>> precision = epsilon<std::common_type_t<underlying_type_t<T>, underlying_type_t<OTHER_T>>>()) const;
     template<typename OTHER_T> requires std::equality_comparable_with<OTHER_T, T>
     bool operator==(const Vector<N, OTHER_T>& other) const;
 

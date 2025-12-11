@@ -13,10 +13,10 @@ Matrix<COLUMNS, ROWS, T>& Matrix<COLUMNS, ROWS, T>::operator=(const Matrix<COLUM
 
 // m == m
 template<int COLUMNS, int ROWS, scalar T>
-bool Matrix<COLUMNS, ROWS, T>::equals(const Matrix<COLUMNS, ROWS, T>& other, const underlying_type_t<T> epsilon) const {
+bool Matrix<COLUMNS, ROWS, T>::equals(const Matrix<COLUMNS, ROWS, T>& other, const underlying_type_t<T> precision) const {
     for (int c = 0; c < COLUMNS; c++) {
         for (int r = 0; r < ROWS; r++) {
-            if (!compare(data[c][r], other.data[c][r], epsilon))
+            if (!compare(data[c][r], other.data[c][r], precision))
                 return false;
         }
     }
@@ -235,10 +235,10 @@ Matrix<COLUMNS, ROWS, T>& Matrix<COLUMNS, ROWS, T>::operator=(const Matrix<COLUM
 template<int COLUMNS, int ROWS, scalar T>
 template<typename OTHER_T>
 requires std::equality_comparable_with<OTHER_T, T>
-bool Matrix<COLUMNS, ROWS, T>::equals(const Matrix<COLUMNS, ROWS, OTHER_T>& other, const underlying_type_t<T> epsilon) const {
+bool Matrix<COLUMNS, ROWS, T>::equals(const Matrix<COLUMNS, ROWS, OTHER_T>& other, const std::common_type_t<underlying_type_t<T>, underlying_type_t<OTHER_T>> precision) const {
     for (int c = 0; c < COLUMNS; c++) {
         for (int r = 0; r < ROWS; r++) {
-            if (!compare(data[c][r], other.data[c][r], epsilon))
+            if (!compare(data[c][r], other.data[c][r], precision))
                 return false;
         }
     }

@@ -1,6 +1,25 @@
 #include <gtest/gtest.h>
 #include "math++/math.h"
 
+// epsilon tests
+static_assert(epsilon<float>() == FLT_EPSILON, "Epsilon function has incorrect epsilon for float");
+static_assert(epsilon<double>() == DBL_EPSILON, "Epsilon function has incorrect epsilon for double");
+static_assert(epsilon<long double>() == LDBL_EPSILON, "Epsilon function has incorrect epsilon for long double");
+
+static_assert(epsilon<int>() == 1, "Epsilon function has incorrect epsilon for int");
+static_assert(epsilon<long>() == 1, "Epsilon function has incorrect epsilon for long");
+static_assert(epsilon<long long>() == 1, "Epsilon function has incorrect epsilon for long long");
+static_assert(epsilon<short>() == 1, "Epsilon function has incorrect epsilon for short");
+
+static_assert(epsilon<unsigned int>() == 1, "Epsilon function has incorrect epsilon for unsigned int");
+static_assert(epsilon<unsigned long>() == 1, "Epsilon function has incorrect epsilon for unsigned long");
+static_assert(epsilon<unsigned long long>() == 1, "Epsilon function has incorrect epsilon for unsigned long long");
+static_assert(epsilon<unsigned short>() == 1, "Epsilon function has incorrect epsilon for unsigned short");
+
+static_assert(epsilon<std::complex<float>>() == FLT_EPSILON, "Epsilon function has incorrect epsilon for complex<float>");
+static_assert(epsilon<std::complex<double>>() == DBL_EPSILON, "Epsilon function has incorrect epsilon for complex<double>");
+static_assert(epsilon<std::complex<long double>>() == LDBL_EPSILON, "Epsilon function has incorrect epsilon for complex<long double>");
+
 // float with float
 TEST(Helper, compare_f_f_true) {
     // arrange

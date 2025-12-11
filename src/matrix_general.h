@@ -184,12 +184,6 @@ Matrix<COLUMNS, ROWS, T> Matrix<COLUMNS, ROWS, T>::inverse() const requires (isS
     }
 }
 
-enum DeterminantAlgorithm {
-    laplace,
-    triangular,
-    hessenberg
-};
-
 template<int COLUMNS, int ROWS, scalar T>
 T Matrix<COLUMNS, ROWS, T>::determinant(const DeterminantAlgorithm algorithm) const requires (isSquare) {
     if constexpr (COLUMNS == 1) {
@@ -209,6 +203,9 @@ T Matrix<COLUMNS, ROWS, T>::determinant(const DeterminantAlgorithm algorithm) co
                 return triangularDeterminant();
             case tridiagonal:
                 return tridiagonalDeterminant();
+            case lu:
+                return luDeterminant();
+            case laplace:
             default:
                 return laplaceDeterminant();
         }
@@ -221,10 +218,9 @@ T Matrix<COLUMNS, ROWS, T>::laplaceDeterminant() const requires (isSquare) {
     int sign = 1;
 
     for (int c = 0; c < COLUMNS; c++) {
-        Matrix<COLUMNS - 1, ROWS - 1, T> insideMatrix = removeColumnAndRow(c, 0);
-
-        result += sign * data[c][0] * insideMatrix.determinant();
-        sign *= -1;
+        Matrix<COLUMNS - 1, ROWS - 1, T> sub = removeColumnAndRow(c, 0);
+        result += sign * sub.determinant() * data[c][0];
+        sign = -sign;
     }
 
     return result;
@@ -232,7 +228,7 @@ T Matrix<COLUMNS, ROWS, T>::laplaceDeterminant() const requires (isSquare) {
 
 template<int COLUMNS, int ROWS, scalar T>
 T Matrix<COLUMNS, ROWS, T>::triangularDeterminant() const requires (isSquare) {
-    T result = {};
+    T result = 1;
 
     for (int i = 0; i < COLUMNS; i++) {
         result *= data[i][i];
@@ -244,6 +240,17 @@ T Matrix<COLUMNS, ROWS, T>::triangularDeterminant() const requires (isSquare) {
 template<int COLUMNS, int ROWS, scalar T>
 T Matrix<COLUMNS, ROWS, T>::tridiagonalDeterminant() const requires (isSquare) {}
 
+
+template<int COLUMNS, int ROWS, scalar T>
+T Matrix<COLUMNS, ROWS, T>::luDeterminant() const requires (isSquare) {
+    int numRowSwaps = 0;
+    auto [l, u, p] = lupDecomposition(&numRowSwaps);
+
+    if (numRowSwaps % 2 == 0)
+        return u.determinant(triangular);
+
+    return u.determinant(triangular) * -1;
+}
 
 template<int COLUMNS, int ROWS, scalar T>
 std::string Matrix<COLUMNS, ROWS, T>::toString() const {
@@ -299,13 +306,17 @@ template<int NUM_COLUMNS_TO_REMOVE>
 Matrix<COLUMNS - NUM_COLUMNS_TO_REMOVE, ROWS, T> Matrix<COLUMNS, ROWS, T>::removeColumns(const std::array<int, NUM_COLUMNS_TO_REMOVE>& columnsToRemove) const {
     Matrix<COLUMNS - NUM_COLUMNS_TO_REMOVE, ROWS, T> m;
 
+    int subC = 0;
     for (int c = 0; c < COLUMNS; c++) {
         if (std::find(columnsToRemove.begin(), columnsToRemove.end(), c))
             continue;
 
+        int subR = 0;
         for (int r = 0; r < ROWS; r++) {
-            m[c][r] = data[c][r];
+            m[subC][subR] = data[c][r];
+            subR++;
         }
+        subC++;
     }
 
     return m;
@@ -317,11 +328,13 @@ Matrix<COLUMNS, ROWS - NUM_ROWS_TO_REMOVE, T> Matrix<COLUMNS, ROWS, T>::removeRo
     Matrix<COLUMNS, ROWS - NUM_ROWS_TO_REMOVE, T> m;
 
     for (int c = 0; c < COLUMNS; c++) {
+        int subR = 0;
         for (int r = 0; r < ROWS; r++) {
             if (std::find(rowsToRemove.begin(), rowsToRemove.end(), r))
                 continue;
 
-            m[c][r] = data[c][r];
+            m[c][subR] = data[c][r];
+            subR++;
         }
     }
 
@@ -333,16 +346,20 @@ template<int NUM_COLUMNS_TO_REMOVE, int NUM_ROWS_TO_REMOVE>
 Matrix<COLUMNS - NUM_COLUMNS_TO_REMOVE, ROWS - NUM_ROWS_TO_REMOVE, T> Matrix<COLUMNS, ROWS, T>::removeColumnsAndRows(const std::array<int, NUM_COLUMNS_TO_REMOVE>& columnsToRemove, const std::array<int, NUM_ROWS_TO_REMOVE>& rowsToRemove) const {
     Matrix<COLUMNS - NUM_COLUMNS_TO_REMOVE, ROWS - NUM_ROWS_TO_REMOVE, T> m;
 
+    int subC = 0;
     for (int c = 0; c < COLUMNS; c++) {
         if (std::find(columnsToRemove.begin(), columnsToRemove.end(), c))
             continue;
 
+        int subR = 0;
         for (int r = 0; r < ROWS; r++) {
             if (std::find(rowsToRemove.begin(), rowsToRemove.end(), r))
                 continue;
 
-            m[c][r] = data[c][r];
+            m[subC][subR] = data[c][r];
+            subR++;
         }
+        subC++;
     }
 
     return m;
@@ -352,13 +369,15 @@ template<int COLUMNS, int ROWS, scalar T>
 Matrix<COLUMNS - 1, ROWS, T> Matrix<COLUMNS, ROWS, T>::removeColumn(const int columnToRemove) const {
     Matrix<COLUMNS - 1, ROWS, T> m;
 
+    int subC = 0;
     for (int c = 0; c < COLUMNS; c++) {
         if (c == columnToRemove)
             continue;
 
         for (int r = 0; r < ROWS; r++) {
-            m[c][r] = data[c][r];
+            m[subC][r] = data[c][r];
         }
+        subC++;
     }
 
     return m;
@@ -369,11 +388,13 @@ Matrix<COLUMNS, ROWS - 1, T> Matrix<COLUMNS, ROWS, T>::removeRow(const int rowTo
     Matrix<COLUMNS, ROWS - 1, T> m;
 
     for (int c = 0; c < COLUMNS; c++) {
+        int subR = 0;
         for (int r = 0; r < ROWS; r++) {
             if (r == rowToRemove)
                 continue;
 
-            m[c][r] = data[c][r];
+            m[c][subR] = data[c][r];
+            subR++;
         }
     }
 
@@ -384,58 +405,42 @@ template<int COLUMNS, int ROWS, scalar T>
 Matrix<COLUMNS - 1, ROWS - 1, T> Matrix<COLUMNS, ROWS, T>::removeColumnAndRow(const int columnToRemove, const int rowToRemove) const {
     Matrix<COLUMNS - 1, ROWS - 1, T> m;
 
+    int subC = 0;
     for (int c = 0; c < COLUMNS; c++) {
         if (c == columnToRemove)
             continue;
 
+        int subR = 0;
         for (int r = 0; r < ROWS; r++) {
             if (r == rowToRemove)
                 continue;
 
-            m[c][r] = data[c][r];
+            m[subC][subR] = data[c][r];
+            subR++;
         }
+        subC++;
     }
 
     return m;
 }
 
 template<int COLUMNS, int ROWS, scalar T>
-Matrix<COLUMNS, ROWS, T> Matrix<COLUMNS, ROWS, T>::swapRows(const int rowA, const int rowB) {
-    Matrix<COLUMNS, ROWS, T> m = *this;
-
-    T temp[COLUMNS] = {};
+Matrix<COLUMNS, ROWS, T> Matrix<COLUMNS, ROWS, T>::swapRows(const int rowA, const int rowB) const {
+    Matrix<COLUMNS, ROWS, T> m(*this);
 
     for (int c = 0; c < COLUMNS; c++) {
-        temp[c] = m[c][rowA];
-    }
-
-    for (int c = 0; c < COLUMNS; c++) {
-        m[c][rowA] = m[c][rowB];
-    }
-
-    for (int c = 0; c < COLUMNS; c++) {
-        m[c][rowB] = temp[c];
+        std::swap(m[c][rowA], m[c][rowB]);
     }
 
     return m;
 }
 
 template<int COLUMNS, int ROWS, scalar T>
-Matrix<COLUMNS, ROWS, T> Matrix<COLUMNS, ROWS, T>::swapColumns(const int columnA, const int columnB) {
-    Matrix<COLUMNS, ROWS, T> m = *this;
-
-    T temp[ROWS] = {};
+Matrix<COLUMNS, ROWS, T> Matrix<COLUMNS, ROWS, T>::swapColumns(const int columnA, const int columnB) const {
+    Matrix<COLUMNS, ROWS, T> m(*this);
 
     for (int r = 0; r < ROWS; r++) {
-        temp[r] = m[columnA][r];
-    }
-
-    for (int r = 0; r < COLUMNS; r++) {
-        m[columnA][r] = m[columnB][r];
-    }
-
-    for (int r = 0; r < COLUMNS; r++) {
-        m[columnB][r] = temp[r];
+        std::swap(m[columnA][r], m[columnB][r]);
     }
 
     return m;
@@ -839,7 +844,7 @@ Vector<COLUMNS, T> Matrix<COLUMNS, ROWS, T>::solveLinearSystemThroughInverse(con
 
 template<int COLUMNS, int ROWS, scalar T>
 Vector<COLUMNS, T> Matrix<COLUMNS, ROWS, T>::solveLinearSystemThroughLu(const Vector<ROWS, T>& b) const requires (isSquare) {
-    auto [l,u,p] = lupDecomposition();
+    auto [l,u, p] = lupDecomposition();
 
     Vector<ROWS, T> y = l.forwardSubstitution(p * b);
     Vector<ROWS, T> x = u.backwardsSubstitution(y);

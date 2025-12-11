@@ -34,7 +34,7 @@ struct Matrix {
     Matrix<COLUMNS, ROWS, T>& operator=(const Matrix<COLUMNS, ROWS, T>& other);
 
     // m == m
-    bool equals(const Matrix<COLUMNS, ROWS, T>& other, underlying_type_t<T> epsilon = ::epsilon<T>()) const;
+    bool equals(const Matrix<COLUMNS, ROWS, T>& other, underlying_type_t<T> precision = ::epsilon<T>()) const;
     bool operator==(const Matrix<COLUMNS, ROWS, T>& other) const;
 
     // m + m
@@ -85,7 +85,7 @@ struct Matrix {
 
     // m == m
     template<typename OTHER_T> requires std::equality_comparable_with<OTHER_T, T>
-    bool equals(const Matrix<COLUMNS, ROWS, OTHER_T>& other, underlying_type_t<T> epsilon = ::epsilon<T>()) const;
+    bool equals(const Matrix<COLUMNS, ROWS, OTHER_T>& other, std::common_type_t<underlying_type_t<T>, underlying_type_t<OTHER_T>> precision = epsilon<std::common_type_t<underlying_type_t<T>, underlying_type_t<OTHER_T>>>()) const;
     template<typename OTHER_T> requires std::equality_comparable_with<OTHER_T, T>
     bool operator==(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const;
 
@@ -167,7 +167,8 @@ struct Matrix {
     enum DeterminantAlgorithm {
         laplace,
         triangular,
-        tridiagonal
+        tridiagonal,
+        lu
     };
 
     T determinant(DeterminantAlgorithm algorithm = laplace) const requires (isSquare);
@@ -176,6 +177,7 @@ private:
     T laplaceDeterminant() const requires (isSquare);
     T triangularDeterminant() const requires (isSquare);
     T tridiagonalDeterminant() const requires (isSquare);
+    T luDeterminant() const requires (isSquare);
 
 public:
     static Matrix<COLUMNS, ROWS, T> scalingMatrix(const Vector<COLUMNS, T>& factors) requires (isSquare);
@@ -210,8 +212,8 @@ public:
     Matrix<COLUMNS, ROWS - 1, T> removeRow(int rowToRemove) const;
     Matrix<COLUMNS - 1, ROWS - 1, T> removeColumnAndRow(int columnToRemove, int rowToRemove) const;
 
-    Matrix<COLUMNS, ROWS, T> swapRows(int rowA, int rowB);
-    Matrix<COLUMNS, ROWS, T> swapColumns(int columnA, int columnB);
+    Matrix<COLUMNS, ROWS, T> swapRows(int rowA, int rowB) const;
+    Matrix<COLUMNS, ROWS, T> swapColumns(int columnA, int columnB) const;
 
     explicit operator const T*() const;
 
@@ -302,7 +304,7 @@ public:
         P_TYPE p;
     };
 
-    LUPDecomposition<Matrix<ROWS, ROWS, T>, Matrix<COLUMNS, ROWS, T>, Matrix<ROWS, ROWS, T>> lupDecomposition() const;
+    LUPDecomposition<Matrix<ROWS, ROWS, T>, Matrix<COLUMNS, ROWS, T>, Matrix<ROWS, ROWS, T>> lupDecomposition(int* numRowSwaps = nullptr) const;
 
     template<typename L_TYPE, typename U_TYPE, typename P_TYPE, typename Q_TYPE>
     struct LUPQDecomposition {
@@ -312,7 +314,7 @@ public:
         Q_TYPE q;
     };
 
-    LUPQDecomposition<Matrix<ROWS, ROWS, T>, Matrix<COLUMNS, ROWS, T>, Matrix<ROWS, ROWS, T>, Matrix<COLUMNS, COLUMNS, T>> lupqDecomposition() const;
+    LUPQDecomposition<Matrix<ROWS, ROWS, T>, Matrix<COLUMNS, ROWS, T>, Matrix<ROWS, ROWS, T>, Matrix<COLUMNS, COLUMNS, T>> lupqDecomposition(int* numRowSwaps = nullptr, int* numColumnSwaps = nullptr) const;
 
     template<typename L_TYPE, typename U_TYPE>
     struct LUDecomposition {
