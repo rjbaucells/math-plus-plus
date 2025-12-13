@@ -48,7 +48,7 @@ You should see: `LLDB initialized for math++ debugging`
 In an LLDB session, manually import the formatter:
 
 ```bash
-(lldb) command script import /workspaces/math-plus-plus/lldb_formatters.py
+(lldb) command script import lldb_formatters.py
 ```
 
 ### Method 3: VS Code Debugging
@@ -65,7 +65,7 @@ The formatters will be automatically loaded.
 
 1. **Build the project with debug symbols**:
    ```bash
-   cd /workspaces/math-plus-plus/build
+   cd build
    cmake -DCMAKE_BUILD_TYPE=Debug ..
    cmake --build .
    ```
@@ -140,7 +140,7 @@ You can modify `lldb_formatters.py` to customize:
 
 3. Manually test import:
    ```lldb
-   (lldb) command script import /workspaces/math-plus-plus/lldb_formatters.py
+   (lldb) command script import lldb_formatters.py
    ```
 
 ### Type not recognized

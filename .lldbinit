@@ -4,9 +4,8 @@
 # These come from system LLDB scripts and are harmless.
 
 # Import custom formatters for Matrix and other math++ types
-command script import /workspaces/math-plus-plus/lldb_formatters.py
+command script import lldb_formatters.py
 
 # Register the formatters
 type synthetic add -x "^Matrix<[^>]+>$" --python-class lldb_formatters.MatrixSyntheticProvider
 type summary add -x "^Matrix<[^>]+>$" --python-function lldb_formatters.matrix_summary
-
