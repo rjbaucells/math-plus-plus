@@ -1,26 +1,12 @@
 #pragma once
 
-#include <cassert>
-#include <complex>
 #include <regex>
-#include <stdexcept>
 #include <string>
 #include "helper.h"
 #include "vector.h"
+#include <optional>
 
-template<int COLUMNS, int ROWS, is_scalar_v T>
-struct Matrix;
-
-template<typename T>
-struct is_matrix : std::false_type {};
-
-template<int COLUMNS, int ROWS, is_scalar_v T>
-struct is_matrix<Matrix<COLUMNS, ROWS, T>> : std::true_type {};
-
-template<typename T>
-concept is_matrix_v = is_matrix<T>::value;
-
-template<int COLUMNS, int ROWS, is_scalar_v T = float>
+template<int COLUMNS, int ROWS, scalar T = float>
 struct Matrix {
     static constexpr int columns = COLUMNS;
     static constexpr int rows = ROWS;
@@ -42,11 +28,13 @@ struct Matrix {
     template<typename OTHER_T> requires std::convertible_to<OTHER_T, T>
     Matrix(const Matrix<COLUMNS, ROWS, OTHER_T>& other);
 
+    static Matrix<COLUMNS, ROWS, T> random();
+
     // m = m
     Matrix<COLUMNS, ROWS, T>& operator=(const Matrix<COLUMNS, ROWS, T>& other);
 
     // m == m
-    bool equals(const Matrix<COLUMNS, ROWS, T>& other) const;
+    bool equals(const Matrix<COLUMNS, ROWS, T>& other, underlying_type_t<T> precision = ::epsilon<T>()) const;
     bool operator==(const Matrix<COLUMNS, ROWS, T>& other) const;
 
     // m + m
@@ -96,45 +84,45 @@ struct Matrix {
     Matrix<COLUMNS, ROWS, T>& operator=(const Matrix<COLUMNS, ROWS, OTHER_T>& other);
 
     // m == m
-    template<typename OTHER_T> requires equality_comparable<OTHER_T, T>
-    bool equals(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const;
-    template<typename OTHER_T> requires equality_comparable<OTHER_T, T>
+    template<typename OTHER_T> requires std::equality_comparable_with<OTHER_T, T>
+    bool equals(const Matrix<COLUMNS, ROWS, OTHER_T>& other, std::common_type_t<underlying_type_t<T>, underlying_type_t<OTHER_T>> precision = epsilon<std::common_type_t<underlying_type_t<T>, underlying_type_t<OTHER_T>>>()) const;
+    template<typename OTHER_T> requires std::equality_comparable_with<OTHER_T, T>
     bool operator==(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const;
 
     // m + m
-    template<typename OTHER_T> requires has_common_type<OTHER_T, T>
+    template<typename OTHER_T> requires HasCommonType<OTHER_T, T>
     Matrix<COLUMNS, ROWS, std::common_type_t<T, OTHER_T>> add(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const;
-    template<typename OTHER_T> requires has_common_type<OTHER_T, T>
+    template<typename OTHER_T> requires HasCommonType<OTHER_T, T>
     Matrix<COLUMNS, ROWS, std::common_type_t<T, OTHER_T>> operator+(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const;
 
     // m - m
-    template<typename OTHER_T> requires has_common_type<OTHER_T, T>
+    template<typename OTHER_T> requires HasCommonType<OTHER_T, T>
     Matrix<COLUMNS, ROWS, std::common_type_t<T, OTHER_T>> subtract(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const;
-    template<typename OTHER_T> requires has_common_type<OTHER_T, T>
+    template<typename OTHER_T> requires HasCommonType<OTHER_T, T>
     Matrix<COLUMNS, ROWS, std::common_type_t<T, OTHER_T>> operator-(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const;
 
     // m * m
-    template<int OTHER_COLUMNS, typename OTHER_T> requires has_common_type<OTHER_T, T>
+    template<int OTHER_COLUMNS, typename OTHER_T> requires HasCommonType<OTHER_T, T>
     Matrix<OTHER_COLUMNS, ROWS, std::common_type_t<T, OTHER_T>> multiply(const Matrix<OTHER_COLUMNS, COLUMNS, OTHER_T>& other) const;
-    template<int OTHER_COLUMNS, typename OTHER_T> requires has_common_type<OTHER_T, T>
+    template<int OTHER_COLUMNS, typename OTHER_T> requires HasCommonType<OTHER_T, T>
     Matrix<OTHER_COLUMNS, ROWS, std::common_type_t<T, OTHER_T>> operator*(const Matrix<OTHER_COLUMNS, COLUMNS, OTHER_T>& other) const;
 
     // m * v
-    template<typename OTHER_T> requires has_common_type<OTHER_T, T>
+    template<typename OTHER_T> requires HasCommonType<OTHER_T, T>
     Vector<COLUMNS, std::common_type_t<T, OTHER_T>> multiply(const Vector<COLUMNS, OTHER_T>& other) const;
-    template<typename OTHER_T> requires has_common_type<OTHER_T, T>
+    template<typename OTHER_T> requires HasCommonType<OTHER_T, T>
     Vector<COLUMNS, std::common_type_t<T, OTHER_T>> operator*(const Vector<COLUMNS, OTHER_T>& other) const;
 
     // m * #
-    template<typename OTHER_T> requires has_common_type<OTHER_T, T>
+    template<typename OTHER_T> requires HasCommonType<OTHER_T, T>
     Matrix<COLUMNS, ROWS, std::common_type_t<T, OTHER_T>> multiply(OTHER_T val) const;
-    template<typename OTHER_T> requires has_common_type<OTHER_T, T>
+    template<typename OTHER_T> requires HasCommonType<OTHER_T, T>
     Matrix<COLUMNS, ROWS, std::common_type_t<T, OTHER_T>> operator*(OTHER_T val) const;
 
     // m / #
-    template<typename OTHER_T> requires has_common_type<OTHER_T, T>
+    template<typename OTHER_T> requires HasCommonType<OTHER_T, T>
     Matrix<COLUMNS, ROWS, std::common_type_t<T, OTHER_T>> divide(OTHER_T scalar) const;
-    template<typename OTHER_T> requires has_common_type<OTHER_T, T>
+    template<typename OTHER_T> requires HasCommonType<OTHER_T, T>
     Matrix<COLUMNS, ROWS, std::common_type_t<T, OTHER_T>> operator/(OTHER_T scalar) const;
 
     // m += m
@@ -163,7 +151,7 @@ struct Matrix {
 
     template<int N>
     Vector<N, T> applyHomogeneousTransformation(const Vector<N, T>& point) const requires (isSquare);
-    template<int N, typename OTHER_T> requires has_common_type<OTHER_T, T>
+    template<int N, typename OTHER_T> requires HasCommonType<OTHER_T, T>
     Vector<N, std::common_type_t<T, OTHER_T>> applyHomogeneousTransformation(const Vector<N, OTHER_T>& point) const requires (isSquare);
 
     T* operator[](int index);
@@ -179,7 +167,8 @@ struct Matrix {
     enum DeterminantAlgorithm {
         laplace,
         triangular,
-        hessenberg
+        tridiagonal,
+        lu
     };
 
     T determinant(DeterminantAlgorithm algorithm = laplace) const requires (isSquare);
@@ -187,6 +176,8 @@ struct Matrix {
 private:
     T laplaceDeterminant() const requires (isSquare);
     T triangularDeterminant() const requires (isSquare);
+    T tridiagonalDeterminant() const requires (isSquare);
+    T luDeterminant() const requires (isSquare);
 
 public:
     static Matrix<COLUMNS, ROWS, T> scalingMatrix(const Vector<COLUMNS, T>& factors) requires (isSquare);
@@ -221,14 +212,14 @@ public:
     Matrix<COLUMNS, ROWS - 1, T> removeRow(int rowToRemove) const;
     Matrix<COLUMNS - 1, ROWS - 1, T> removeColumnAndRow(int columnToRemove, int rowToRemove) const;
 
-    Matrix<COLUMNS, ROWS, T> swapRows(int rowA, int rowB);
-    Matrix<COLUMNS, ROWS, T> swapColumns(int columnA, int columnB);
+    Matrix<COLUMNS, ROWS, T> swapRows(int rowA, int rowB) const;
+    Matrix<COLUMNS, ROWS, T> swapColumns(int columnA, int columnB) const;
 
     explicit operator const T*() const;
 
     explicit operator T*();
 
-    static Matrix<COLUMNS, ROWS, T> identity() requires (isSquare);
+    constexpr static Matrix<COLUMNS, ROWS, T> identity() requires (isSquare);
 
     [[nodiscard]] bool isRowEchelon(bool pivotMustBeOne = false) const;
     Matrix<COLUMNS, ROWS, T> toRowEchelon() const;
@@ -282,6 +273,30 @@ public:
 
     [[nodiscard]] bool isFrobeniusMatrix() const requires (isSquare);
 
+    Vector<ROWS, T> forwardSubstitution(const Vector<ROWS, T>& b) const requires (isSquare);
+    Vector<ROWS, T> backwardsSubstitution(const Vector<ROWS, T>& b) const requires (isSquare);
+
+    enum class LinearSystemAlgorithm {
+        inverse,
+        lu_factorization
+    };
+
+    Vector<COLUMNS, T> solveLinearSystem(const Vector<ROWS, T>& b, LinearSystemAlgorithm algorithm) const;
+
+private:
+    Vector<COLUMNS, T> solveLinearSystemThroughInverse(const Vector<ROWS, T>& b) const requires (isSquare);
+    Vector<COLUMNS, T> solveLinearSystemThroughLu(const Vector<ROWS, T>& b) const requires (isSquare);
+
+public:
+    Matrix<COLUMNS, ROWS, T> hadamardProduct(const Matrix<COLUMNS, ROWS, T>& other) const;
+    template<typename OTHER_T> requires HasCommonType<OTHER_T, T>
+    Matrix<COLUMNS, ROWS, std::common_type_t<T, OTHER_T>> hadamardProduct(const Matrix<COLUMNS, ROWS, OTHER_T>& other) const;
+
+    template<int OTHER_COLUMNS, int OTHER_ROWS>
+    Matrix<COLUMNS * OTHER_COLUMNS, ROWS * OTHER_ROWS, T> kroneckerProduct(const Matrix<OTHER_COLUMNS, OTHER_ROWS, T>& other) const;
+    template<int OTHER_COLUMNS, int OTHER_ROWS, typename OTHER_T> requires HasCommonType<OTHER_T, T>
+    Matrix<COLUMNS * OTHER_COLUMNS, ROWS * OTHER_ROWS, std::common_type_t<T, OTHER_T>> kroneckerProduct(const Matrix<OTHER_COLUMNS, OTHER_ROWS, OTHER_T>& other) const;
+
     template<typename L_TYPE, typename U_TYPE, typename P_TYPE>
     struct LUPDecomposition {
         L_TYPE l;
@@ -289,7 +304,7 @@ public:
         P_TYPE p;
     };
 
-    LUPDecomposition<Matrix<ROWS, ROWS, T>, Matrix<COLUMNS, ROWS, T>, Matrix<ROWS, ROWS, T>> lupDecomposition() const;
+    LUPDecomposition<Matrix<ROWS, ROWS, T>, Matrix<COLUMNS, ROWS, T>, Matrix<ROWS, ROWS, T>> lupDecomposition(int* numRowSwaps = nullptr) const;
 
     template<typename L_TYPE, typename U_TYPE, typename P_TYPE, typename Q_TYPE>
     struct LUPQDecomposition {
@@ -299,7 +314,7 @@ public:
         Q_TYPE q;
     };
 
-    LUPQDecomposition<Matrix<ROWS, ROWS, T>, Matrix<COLUMNS, ROWS, T>, Matrix<ROWS, ROWS, T>, Matrix<COLUMNS, COLUMNS, T>> lupqDecomposition() const;
+    LUPQDecomposition<Matrix<ROWS, ROWS, T>, Matrix<COLUMNS, ROWS, T>, Matrix<ROWS, ROWS, T>, Matrix<COLUMNS, COLUMNS, T>> lupqDecomposition(int* numRowSwaps = nullptr, int* numColumnSwaps = nullptr) const;
 
     template<typename L_TYPE, typename U_TYPE>
     struct LUDecomposition {
@@ -370,123 +385,87 @@ public:
     template<int ITER>
     LanczosAlgorithm<Matrix<ITER, ITER, T>, Matrix<ITER + 1, COLUMNS, T>> lanczosAlgorithm() const requires (isSquare);
 
-    /**
-     * Used to get an eigen-value approximation from an eigen-vector approximation
-     * @param vec eigen-vector approximation
-     * @return corresponding eigen-value approximation for given vector @a vec
-     */
     T rayleighQuotient(const Vector<COLUMNS, T>& vec) const;
 
-    template<typename EIGENVECTOR_TYPE, typename EIGENVALUE_TYPE>
-    struct PowerIteration {
-        EIGENVECTOR_TYPE vector;
-        EIGENVALUE_TYPE value;
+    template<typename VECTOR_TYPE, typename VALUE_TYPE>
+    struct EigenPair {
+        VECTOR_TYPE eigenVector;
+        VALUE_TYPE eigenValue;
     };
 
-    PowerIteration<Vector<COLUMNS, T>, T> powerIteration(int maxIterations, T tolerance = 1e-12) const;
+    template<typename VECTOR_TYPE, typename VALUE_TYPE, typename TOLERANCE_TYPE>
+    struct InverseIterationParams {
+        const VALUE_TYPE valueApproximation;
+
+        const int maxIterations = 100;
+        const VECTOR_TYPE vectorApproximation = VECTOR_TYPE::random();
+        const TOLERANCE_TYPE tolerance = 1e-12;
+    };
+
+    // eigen-vector approximation from eigen-value approximation
+    Vector<COLUMNS, T> inverseIteration(InverseIterationParams<Vector<COLUMNS, T>, T, UnderlyingType> params) const;
+
+    template<typename VECTOR_TYPE, typename VALUE_TYPE, typename TOLERANCE_TYPE>
+    struct RayleighQuotientIterationParams {
+        const int maxIterations = 100;
+        const VECTOR_TYPE vectorApproximation = VECTOR_TYPE::random();
+        const std::optional<VALUE_TYPE> valueApproximation = std::nullopt;
+        const TOLERANCE_TYPE tolerance = 1e-12;
+    };
+
+    EigenPair<Vector<COLUMNS, T>, T> rayleighQuotientIteration(RayleighQuotientIterationParams<Vector<COLUMNS, T>, T, UnderlyingType> params = RayleighQuotientIterationParams<Vector<COLUMNS, T>, T, T>()) const;
+
+    template<typename VECTOR_TYPE, typename TOLERANCE_TYPE>
+    struct PowerIterationParams {
+        const int maxIterations = 100;
+        const VECTOR_TYPE vectorApproximation = VECTOR_TYPE::random();
+        const TOLERANCE_TYPE tolerance = 1e-12;
+    };
+
+    // greatest eigen-value and eigen-vector approximation
+    EigenPair<Vector<COLUMNS, T>, T> powerIteration(PowerIterationParams<Vector<COLUMNS, T>, UnderlyingType> params = PowerIterationParams<Vector<COLUMNS, T>, UnderlyingType>()) const;
 };
 
-template<int COLUMNS, int ROWS, is_scalar_v T>
-Matrix<COLUMNS, ROWS, T> multiply(const T lhs, const Matrix<COLUMNS, ROWS, T>& rhs) {
-    return rhs.multiply(lhs);
-}
-
-template<int COLUMNS, int ROWS, is_scalar_v T>
-Matrix<COLUMNS, ROWS, T> operator*(const T lhs, const Matrix<COLUMNS, ROWS, T>& rhs) {
-    return multiply(lhs, rhs);
-}
-
-template<int COLUMNS, int ROWS, is_scalar_v T, typename OTHER_T> requires std::convertible_to<OTHER_T, T>
-Matrix<COLUMNS, ROWS, T> multiply(const OTHER_T lhs, const Matrix<COLUMNS, ROWS, T>& rhs) {
-    return rhs.multiply(lhs);
-}
-
-template<int COLUMNS, int ROWS, is_scalar_v T, typename OTHER_T> requires std::convertible_to<OTHER_T, T>
-Matrix<COLUMNS, ROWS, T> operator*(const OTHER_T lhs, const Matrix<COLUMNS, ROWS, T>& rhs) {
-    return multiply(lhs, rhs);
-}
-
-template<int N, is_scalar_v T>
-Matrix<N, N, T> Vector<N, T>::crossProductMatrix() const requires (N == 3) {
-    return {{0, -data[2], data[1]}, {data[2], 0, -data[0]}, {-data[1], data[0], 0}};
-}
-
-template<int N, is_scalar_v T>
-template<int OTHER_N>
-Matrix<OTHER_N, N, T> Vector<N, T>::outerProductMatrix(const Vector<OTHER_N, T>& v) const {
-    Matrix<OTHER_N, N, T> result;
-
-    for (int c = 0; c < result.columns; c++) {
-        for (int r = 0; r < result.rows; r++) {
-            if constexpr (isComplex)
-                result[c][r] = data[r] * std::conj(v[c]);
-            else
-                result[c][r] = data[r] * v[c];
-        }
-    }
-
-    return result;
-}
-
-template<int N, is_scalar_v T>
-template<int OTHER_N, typename OTHER_T> requires std::convertible_to<OTHER_T, T>
-Matrix<OTHER_N, N, T> Vector<N, T>::outerProductMatrix(const Vector<OTHER_N, OTHER_T>& v) const {
-    Matrix<OTHER_N, N, T> result;
-
-    for (int c = 0; c < result.columns; c++) {
-        for (int r = 0; r < result.rows; r++) {
-            if constexpr (isComplex)
-                result[c][r] = data[r] * std::conj(v[c]);
-            else
-                result[c][r] = data[r] * v[c];
-        }
-    }
-
-    return result;
-}
-
-template<int N, is_scalar_v T>
-template<int COLUMNS>
-Vector<COLUMNS, T> Vector<N, T>::multiply(const Matrix<COLUMNS, N, T>& m) const {
-    Vector<COLUMNS, T> result;
+// # * m
+template<int COLUMNS, int ROWS, scalar T>
+Matrix<COLUMNS, ROWS, T> multiply(const T scalar, const Matrix<COLUMNS, ROWS, T>& matrix) {
+    Matrix<COLUMNS, ROWS, T> result;
 
     for (int c = 0; c < COLUMNS; c++) {
-        for (int r = 0; r < N; r++) {
-            result[c] += data[r] * m[c][r];
+        for (int r = 0; r < ROWS; r++) {
+            result[c][r] = scalar * matrix[c][r];
         }
     }
 
     return result;
 }
 
-template<int N, is_scalar_v T>
-template<int COLUMNS>
-Vector<COLUMNS, T> Vector<N, T>::operator*(const Matrix<COLUMNS, N, T>& m) const {
-    return multiply(m);
+template<int COLUMNS, int ROWS, scalar T>
+Matrix<COLUMNS, ROWS, T> operator*(const T scalar, const Matrix<COLUMNS, ROWS, T>& matrix) {
+    return multiply(scalar, matrix);
 }
 
-template<int N, is_scalar_v T>
-template<int COLUMNS, typename OTHER_T> requires std::convertible_to<OTHER_T, T>
-Vector<COLUMNS, T> Vector<N, T>::multiply(const Matrix<COLUMNS, N, OTHER_T>& m) const {
-    Vector<COLUMNS, T> result;
+// # * m
+template<int COLUMNS, int ROWS, scalar T, typename OTHER_T> requires HasCommonType<OTHER_T, T>
+Matrix<COLUMNS, ROWS, std::common_type_t<T, OTHER_T>> multiply(const OTHER_T scalar, const Matrix<COLUMNS, ROWS, T>& matrix) {
+    Matrix<COLUMNS, ROWS, std::common_type_t<T, OTHER_T>> result;
 
     for (int c = 0; c < COLUMNS; c++) {
-        for (int r = 0; r < N; r++) {
-            result[c] += data[r] * m[r][c];
+        for (int r = 0; r < ROWS; r++) {
+            result[c][r] = scalar * matrix[c][r];
         }
     }
 
     return result;
 }
 
-template<int N, is_scalar_v T>
-template<int COLUMNS, typename OTHER_T> requires std::convertible_to<OTHER_T, T>
-Vector<COLUMNS, T> Vector<N, T>::operator*(const Matrix<COLUMNS, N, OTHER_T>& m) const {
-    return multiply(m);
+template<int COLUMNS, int ROWS, scalar T, typename OTHER_T> requires HasCommonType<OTHER_T, T>
+Matrix<COLUMNS, ROWS, std::common_type_t<T, OTHER_T>> operator*(const OTHER_T scalar, const Matrix<COLUMNS, ROWS, T>& matrix) {
+    return multiply(scalar, matrix);
 }
 
 // block matrix
-template<int COLUMNS, int ROWS, int B_COLUMNS, int B_ROWS, is_scalar_v B_T>
+template<int COLUMNS, int ROWS, int B_COLUMNS, int B_ROWS, scalar B_T>
 struct Matrix<COLUMNS, ROWS, Matrix<B_COLUMNS, B_ROWS, B_T>> {
     static constexpr int columns = COLUMNS;
     static constexpr int rows = ROWS;

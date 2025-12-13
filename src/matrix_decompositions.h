@@ -1,8 +1,9 @@
 #pragma once
+#include <complex>
 #include "matrix.h"
 
-template<int COLUMNS, int ROWS, is_scalar_v T>
-Matrix<COLUMNS, ROWS, T>::template LUPDecomposition<Matrix<ROWS, ROWS, T>, Matrix<COLUMNS, ROWS, T>, Matrix<ROWS, ROWS, T>> Matrix<COLUMNS, ROWS, T>::lupDecomposition() const {
+template<int COLUMNS, int ROWS, scalar T>
+Matrix<COLUMNS, ROWS, T>::template LUPDecomposition<Matrix<ROWS, ROWS, T>, Matrix<COLUMNS, ROWS, T>, Matrix<ROWS, ROWS, T>> Matrix<COLUMNS, ROWS, T>::lupDecomposition(int* numRowSwaps) const {
     Matrix<ROWS, ROWS, T> l = Matrix<ROWS, ROWS, T>::identity();
     Matrix<COLUMNS, ROWS, T> u = *this;
     Matrix<ROWS, ROWS, T> p = Matrix<ROWS, ROWS, T>::identity();
@@ -12,12 +13,11 @@ Matrix<COLUMNS, ROWS, T>::template LUPDecomposition<Matrix<ROWS, ROWS, T>, Matri
         // handle row swaps
         {
             int rowIndex = -1;
-            const T pivot = u[c][c];
-            T rowValue = std::norm(pivot);
+            UnderlyingType rowValue = std::norm(u[c][c]);
 
             // iterate through rows of this column. Looking for the biggest boi
             for (int r = c + 1; r < ROWS; r++) {
-                T curValue = std::norm(u[c][r]);
+                UnderlyingType curValue = std::norm(u[c][r]);
 
                 if (curValue > rowValue) {
                     rowIndex = r;
@@ -26,14 +26,14 @@ Matrix<COLUMNS, ROWS, T>::template LUPDecomposition<Matrix<ROWS, ROWS, T>, Matri
             }
 
             // we found nothing but we needed to find something
-            if (rowIndex == -1 && compare(pivot, 0)) {
+            if (rowIndex == -1 && compare(rowValue, 0)) {
                 throw std::runtime_error("Cannot LUP decompose singular matrix");
             }
 
             if (rowIndex != -1) {
                 // swap u and p rows like normal
-                u.swapRows(c, rowIndex);
-                p.swapRows(c, rowIndex);
+                u = u.swapRows(c, rowIndex);
+                p = p.swapRows(c, rowIndex);
 
                 // swap rows of l before column c
                 for (int i = 0; i < c; ++i) {
@@ -41,6 +41,9 @@ Matrix<COLUMNS, ROWS, T>::template LUPDecomposition<Matrix<ROWS, ROWS, T>, Matri
                     l[i][c] = l[i][rowIndex];
                     l[i][rowIndex] = temp;
                 }
+
+                if (numRowSwaps != nullptr)
+                    (*numRowSwaps)++;
             }
         }
 
@@ -64,8 +67,8 @@ Matrix<COLUMNS, ROWS, T>::template LUPDecomposition<Matrix<ROWS, ROWS, T>, Matri
     return {l, u, p};
 }
 
-template<int COLUMNS, int ROWS, is_scalar_v T>
-Matrix<COLUMNS, ROWS, T>::template LUPQDecomposition<Matrix<ROWS, ROWS, T>, Matrix<COLUMNS, ROWS, T>, Matrix<ROWS, ROWS, T>, Matrix<COLUMNS, COLUMNS, T>> Matrix<COLUMNS, ROWS, T>::lupqDecomposition() const {
+template<int COLUMNS, int ROWS, scalar T>
+Matrix<COLUMNS, ROWS, T>::template LUPQDecomposition<Matrix<ROWS, ROWS, T>, Matrix<COLUMNS, ROWS, T>, Matrix<ROWS, ROWS, T>, Matrix<COLUMNS, COLUMNS, T>> Matrix<COLUMNS, ROWS, T>::lupqDecomposition(int* numRowSwaps, int* numColumnSwaps) const {
     Matrix<ROWS, ROWS, T> l = Matrix<ROWS, ROWS, T>::identity();
     Matrix<COLUMNS, ROWS, T> u = *this;
     Matrix<ROWS, ROWS, T> p = Matrix<ROWS, ROWS, T>::identity();
@@ -80,11 +83,11 @@ Matrix<COLUMNS, ROWS, T>::template LUPQDecomposition<Matrix<ROWS, ROWS, T>, Matr
 
             const T pivot = u[c][c];
 
-            T maxValue = std::norm(pivot);
+            UnderlyingType maxValue = std::norm(pivot);
 
             for (int i = c; i < COLUMNS; i++) {
                 for (int j = c; j < ROWS; j++) {
-                    T curValue = std::norm(u[i][j]);
+                    UnderlyingType curValue = std::norm(u[i][j]);
 
                     if (curValue > maxValue) {
                         maxValue = curValue;
@@ -99,19 +102,25 @@ Matrix<COLUMNS, ROWS, T>::template LUPQDecomposition<Matrix<ROWS, ROWS, T>, Matr
             }
 
             if (rowIndex != c) {
-                u.swapRows(c, rowIndex);
-                p.swapRows(c, rowIndex);
+                u = u.swapRows(c, rowIndex);
+                p = p.swapRows(c, rowIndex);
                 // swap rows of L before column c
                 for (int i = 0; i < c; ++i) {
                     T temp = l[i][c];
                     l[i][c] = l[i][rowIndex];
                     l[i][rowIndex] = temp;
                 }
+
+                if (numRowSwaps != nullptr)
+                    (*numRowSwaps)++;
             }
 
             if (columnIndex != c) {
-                u.swapColumns(c, columnIndex);
-                q.swapColumns(c, columnIndex);
+                u = u.swapColumns(c, columnIndex);
+                q = q.swapColumns(c, columnIndex);
+
+                if (numColumnSwaps != nullptr)
+                    (*numColumnSwaps)++;
             }
         }
 
@@ -135,7 +144,7 @@ Matrix<COLUMNS, ROWS, T>::template LUPQDecomposition<Matrix<ROWS, ROWS, T>, Matr
     return {l, u, p, q};
 }
 
-template<int COLUMNS, int ROWS, is_scalar_v T>
+template<int COLUMNS, int ROWS, scalar T>
 Matrix<COLUMNS, ROWS, T>::template LUDecomposition<Matrix<ROWS, ROWS, T>, Matrix<COLUMNS, ROWS, T>> Matrix<COLUMNS, ROWS, T>::luDecomposition() const {
     Matrix<ROWS, ROWS, T> l = Matrix<ROWS, ROWS, T>::identity();
     Matrix<COLUMNS, ROWS, T> u = *this;
@@ -165,7 +174,7 @@ Matrix<COLUMNS, ROWS, T>::template LUDecomposition<Matrix<ROWS, ROWS, T>, Matrix
     return {l, u};
 }
 
-template<int COLUMNS, int ROWS, is_scalar_v T>
+template<int COLUMNS, int ROWS, scalar T>
 Matrix<COLUMNS, ROWS, T>::template LDUDecomposition<Matrix<ROWS, ROWS, T>, Matrix<ROWS, ROWS, T>, Matrix<COLUMNS, ROWS, T>> Matrix<COLUMNS, ROWS, T>::lduDecomposition() const {
     Matrix<ROWS, ROWS, T> l = Matrix<ROWS, ROWS, T>::identity();
     Matrix<ROWS, ROWS, T> d = Matrix<ROWS, ROWS, T>::identity();
@@ -204,7 +213,7 @@ Matrix<COLUMNS, ROWS, T>::template LDUDecomposition<Matrix<ROWS, ROWS, T>, Matri
     return {l, d, u};
 }
 
-template<int COLUMNS, int ROWS, is_scalar_v T>
+template<int COLUMNS, int ROWS, scalar T>
 Matrix<COLUMNS, ROWS, T>::template CholeskyDecomposition<Matrix<COLUMNS, ROWS, T>, Matrix<ROWS, COLUMNS, T>> Matrix<COLUMNS, ROWS, T>::choleskyDecomposition(const bool allowPositiveSemiDefinite) const requires (isSquare) {
     if (!isHermitian()) {
         throw std::runtime_error("Cannot find Cholesky Decomposition of non hermitian/symmetric matrix");
@@ -246,7 +255,7 @@ Matrix<COLUMNS, ROWS, T>::template CholeskyDecomposition<Matrix<COLUMNS, ROWS, T
     return {l, l.conjugateTranspose()};
 }
 
-template<int COLUMNS, int ROWS, is_scalar_v T>
+template<int COLUMNS, int ROWS, scalar T>
 Matrix<COLUMNS, ROWS, T>::template LDLDecomposition<Matrix<COLUMNS, ROWS, T>, Matrix<COLUMNS, ROWS, T>, Matrix<ROWS, COLUMNS, T>> Matrix<COLUMNS, ROWS, T>::ldlDecomposition() const requires (isSquare) {
     Matrix<COLUMNS, ROWS, T> l;
     Matrix<COLUMNS, ROWS, T> d;
@@ -283,7 +292,7 @@ Matrix<COLUMNS, ROWS, T>::template LDLDecomposition<Matrix<COLUMNS, ROWS, T>, Ma
         {l, d, l.conjugateTranspose()};
 }
 
-template<int COLUMNS, int ROWS, is_scalar_v T>
+template<int COLUMNS, int ROWS, scalar T>
 Matrix<COLUMNS, ROWS, T>::template QRDecomposition<Matrix<ROWS, ROWS, T>, Matrix<COLUMNS, ROWS, T>> Matrix<COLUMNS, ROWS, T>::qrDecomposition() const requires (isSquare) {
     std::array<Vector<ROWS>, COLUMNS> a = getColumnVectors();
     std::array<Vector<ROWS>, COLUMNS> u = {};

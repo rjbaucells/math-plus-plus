@@ -1,4 +1,5 @@
 #include "curve.h"
+#include "math++/math.h"
 
 Curve::Curve(const std::initializer_list<Vector<2>> points) {
     points_.reserve(points.size());
