@@ -29,6 +29,38 @@ def _unwrap_swig(obj):
     return obj
 
 
+def _format_matrix_grid(columns, rows, values, value_type):
+    """
+    Format matrix values in a grid layout.
+    
+    Args:
+        columns: Number of columns
+        rows: Number of rows
+        values: Flat list of values in column-major order
+        value_type: The element type (float, int, etc)
+        
+    Returns:
+        Formatted string showing the matrix as a grid
+    """
+    # Build 2D array in row-major order for display
+    matrix = []
+    for row in range(rows):
+        row_values = []
+        for col in range(columns):
+            idx = col * rows + row
+            row_values.append(values[idx])
+        matrix.append(row_values)
+    
+    # Format as {{row1}, {row2}, ...}
+    row_strings = []
+    for row in matrix:
+        row_str = ', '.join(str(v) for v in row)
+        row_strings.append(f"{{{row_str}}}")
+    
+    result = ', '.join(row_strings)
+    return f"{{{result}}}"
+
+
 def matrix_summary(valobj, internal_dict):
     """
     Provides a summary string for Matrix objects.
@@ -74,15 +106,20 @@ def matrix_summary(valobj, internal_dict):
         rows = int(match.group(2))
         value_type = match.group(3).strip()
         
-        # Get the data array
-        data_member = val.GetChildMemberWithName('data')
+        # Try to get the non-synthetic value (unwrap const/reference)
+        actual_val = val.GetNonSyntheticValue() if hasattr(val, 'GetNonSyntheticValue') else val
         
-        if not data_member or not data_member.IsValid():
-            return f"Matrix<{columns}x{rows}, {value_type}>"
+        # If it's a reference type, dereference it
+        if actual_val.GetType().IsReferenceType():
+            actual_val = actual_val.Dereference()
         
-        # For small matrices, show a preview of values
+        # Try to access data member first (faster)
+        data_member = actual_val.GetChildMemberWithName('data')
+        
+        # For small matrices, show values
         if columns <= 4 and rows <= 4:
-            try:
+            # If we can access data member directly, use it
+            if data_member and data_member.IsValid():
                 values = []
                 for col in range(columns):
                     col_array = data_member.GetChildAtIndex(col)
@@ -95,9 +132,33 @@ def matrix_summary(valobj, internal_dict):
                                     values.append(val_str)
                 
                 if len(values) == columns * rows:
-                    preview = ', '.join(values[:min(6, len(values))])
-                    suffix = '...' if len(values) > 6 else ''
-                    return f"Matrix<{columns}x{rows}, {value_type}> [{preview}{suffix}]"
+                    return _format_matrix_grid(columns, rows, values, value_type)
+            
+            # Fallback: read raw memory directly
+            try:
+                import lldb
+                addr = actual_val.GetLoadAddress()
+                if addr != lldb.LLDB_INVALID_ADDRESS:
+                    # Map type to size
+                    type_sizes = {'float': 4, 'double': 8, 'int': 4, 'long': 8}
+                    elem_size = type_sizes.get(value_type, 4)
+                    
+                    process = actual_val.GetProcess()
+                    error = lldb.SBError()
+                    values = []
+                    
+                    for col in range(columns):
+                        for row in range(rows):
+                            offset = (col * rows + row) * elem_size
+                            data = process.ReadMemory(addr + offset, elem_size, error)
+                            if error.Success():
+                                import struct
+                                format_char = {'float': 'f', 'double': 'd', 'int': 'i', 'long': 'q'}.get(value_type, 'f')
+                                val_num = struct.unpack(format_char, data)[0]
+                                values.append(f"{val_num:.6g}" if isinstance(val_num, float) else str(val_num))
+                    
+                    if len(values) == columns * rows:
+                        return _format_matrix_grid(columns, rows, values, value_type)
             except:
                 pass
         
@@ -134,7 +195,18 @@ class MatrixSyntheticProvider:
         Returns:
             Total number of elements (columns * rows)
         """
-        return self.columns * self.rows
+        # Always return at least 1 to force expand button to show
+        count = self.columns * self.rows
+        return count if count > 0 else 0
+    
+    def has_children(self):
+        """
+        Indicates whether this object has children.
+        
+        Returns:
+            True if the matrix has elements
+        """
+        return (self.columns > 0 and self.rows > 0)
     
     def get_child_index(self, name):
         """
@@ -147,10 +219,7 @@ class MatrixSyntheticProvider:
             Index of the child or -1 if not found
         """
         try:
-            # Parse names like "[col,row]" or "data"
-            if name == "data":
-                return -1
-            
+            # Parse names like "[col,row]"
             match = re.match(r'\[(\d+),(\d+)\]', name)
             if match:
                 col = int(match.group(1))
@@ -176,24 +245,51 @@ class MatrixSyntheticProvider:
         
         try:
             # Convert linear index to column/row
-            col = index % self.columns
             row = index // self.columns
+            col = index % self.columns
             
-            # Access data[col][row]
-            col_array = self.data_member.GetChildAtIndex(col)
-            if not col_array.IsValid():
-                return None
+            # Get actual value
+            actual_val = self.valobj.GetNonSyntheticValue() if hasattr(self.valobj, 'GetNonSyntheticValue') else self.valobj
+            if actual_val.GetType().IsReferenceType():
+                actual_val = actual_val.Dereference()
             
-            element = col_array.GetChildAtIndex(row)
-            if not element.IsValid():
-                return None
+            # Try to access data member
+            data_member = actual_val.GetChildMemberWithName('data')
+            if data_member and data_member.IsValid():
+                col_array = data_member.GetChildAtIndex(col)
+                if col_array and col_array.IsValid():
+                    element = col_array.GetChildAtIndex(row)
+                    if element and element.IsValid():
+                        return element.CreateChildAtOffset(f"[{row},{col}]", 0, element.GetType())
             
-            # Create a named value for display
-            name = f"[{col},{row}]"
-            return element.CreateChildAtOffset(name, 0, element.GetType())
+            # Fallback: read from memory
+            try:
+                import lldb
+                addr = actual_val.GetLoadAddress()
+                if addr != lldb.LLDB_INVALID_ADDRESS:
+                    type_sizes = {'float': 4, 'double': 8, 'int': 4, 'long': 8}
+                    elem_size = type_sizes.get(self.value_type, 4)
+                    
+                    offset = (col * self.rows + row) * elem_size
+                    
+                    # Create type
+                    if self.value_type == 'float':
+                        elem_type = actual_val.GetTarget().GetBasicType(lldb.eBasicTypeFloat)
+                    elif self.value_type == 'double':
+                        elem_type = actual_val.GetTarget().GetBasicType(lldb.eBasicTypeDouble)
+                    elif self.value_type == 'int':
+                        elem_type = actual_val.GetTarget().GetBasicType(lldb.eBasicTypeInt)
+                    else:
+                        elem_type = actual_val.GetTarget().GetBasicType(lldb.eBasicTypeFloat)
+                    
+                    return actual_val.CreateChildAtOffset(f"[{row},{col}]", offset, elem_type)
+            except:
+                pass
             
         except Exception as e:
-            return None
+            pass
+        
+        return None
     
     def update(self):
         """
@@ -215,14 +311,10 @@ class MatrixSyntheticProvider:
                 self.rows = 0
                 self.value_type = "unknown"
             
-            # Get the data member
-            self.data_member = self.valobj.GetChildMemberWithName('data')
-            
         except Exception as e:
             self.columns = 0
             self.rows = 0
             self.value_type = "error"
-            self.data_member = None
     
     def has_children(self):
         """
@@ -231,7 +323,7 @@ class MatrixSyntheticProvider:
         Returns:
             True if the matrix has elements
         """
-        return self.num_children() > 0
+        return (self.columns > 0 and self.rows > 0)
 
 
 # If running standalone, provide usage information
