@@ -199,13 +199,13 @@ T Matrix<COLUMNS, ROWS, T>::determinant(const DeterminantAlgorithm algorithm) co
     }
     else {
         switch (algorithm) {
-            case triangular:
+            case DeterminantAlgorithm::triangular:
                 return triangularDeterminant();
-            case tridiagonal:
+            case DeterminantAlgorithm::tridiagonal:
                 return tridiagonalDeterminant();
-            case lu:
+            case DeterminantAlgorithm::lu:
                 return luDeterminant();
-            case laplace:
+            case DeterminantAlgorithm::laplace:
             default:
                 return laplaceDeterminant();
         }
@@ -240,16 +240,15 @@ T Matrix<COLUMNS, ROWS, T>::triangularDeterminant() const requires (isSquare) {
 template<int COLUMNS, int ROWS, scalar T>
 T Matrix<COLUMNS, ROWS, T>::tridiagonalDeterminant() const requires (isSquare) {}
 
-
 template<int COLUMNS, int ROWS, scalar T>
 T Matrix<COLUMNS, ROWS, T>::luDeterminant() const requires (isSquare) {
     int numRowSwaps = 0;
     auto [l, u, p] = lupDecomposition(&numRowSwaps);
 
     if (numRowSwaps % 2 == 0)
-        return u.determinant(triangular);
+        return u.determinant(DeterminantAlgorithm::triangular);
 
-    return u.determinant(triangular) * -1;
+    return u.determinant(DeterminantAlgorithm::triangular) * -1;
 }
 
 template<int COLUMNS, int ROWS, scalar T>
@@ -459,111 +458,97 @@ constexpr Matrix<COLUMNS, ROWS, T> Matrix<COLUMNS, ROWS, T>::identity() requires
 
 template<int COLUMNS, int ROWS, scalar T>
 Matrix<COLUMNS, ROWS, T> Matrix<COLUMNS, ROWS, T>::toRowEchelon() const {
-    Matrix<COLUMNS, ROWS, T> m = *this;
+    Matrix<COLUMNS, ROWS, T> a = *this;
 
-    for (int c = 0; c < std::min(ROWS, COLUMNS); c++) {
-        // handle row swaps
-        {
-            int rowIndex = -1;
-            const T pivot = m[c][c];
-            T rowValue = std::abs(pivot);
+    int pivotRow = 0;
+    for (int c = 0; c < std::min(COLUMNS, ROWS); c++) {
+        int rowIndex = -1;
+        UnderlyingType value = std::norm(a[c][pivotRow]);
 
-            // iterate through rows of this column. Looking for the biggest boi
-            for (int r = c + 1; r < ROWS; r++) {
-                T curValue = std::abs(m[c][r]);
+        for (int r = pivotRow + 1; r < ROWS; r++) {
+            UnderlyingType curValue = std::norm(a[c][r]);
 
-                if (curValue > rowValue) {
-                    rowIndex = r;
-                    rowValue = curValue;
-                }
-            }
-
-            // we found nothing so we skip this column
-            if (rowIndex == -1 && compare(pivot, 0.0)) {
-                continue;
-            }
-
-            if (rowIndex != -1 && rowIndex != c) {
-                // swap u and p rows like normal
-                m.swapRows(c, rowIndex);
+            if (curValue > value) {
+                value = curValue;
+                rowIndex = r;
             }
         }
 
-        const T pivot = m[c][c];
-
-        // iterate through things beneath that pivot in the matrix
-        for (int r = c + 1; r < ROWS; r++) {
-            T val = m[c][r];
-
-            T multiplierToPivotRow = val / pivot;
-
-            // do this row minus other row times multiplier
-            for (int i = c; i < COLUMNS; i++) {
-                m[i][r] += -multiplierToPivotRow * m[i][c];
-            }
+        // this column doesn't have a pivot, continue to next column
+        if (rowIndex == -1 && compare(value, 0)) {
+            continue;
         }
+
+        if (rowIndex != -1) {
+            a = a.swapRows(pivotRow, rowIndex);
+        }
+
+        const T pivot = a[c][pivotRow];
+        for (int r = pivotRow + 1; r < ROWS; r++) {
+            T multiplier = a[c][r] / pivot;
+            for (int i = c + 1; i < COLUMNS; i++) {
+                a[i][r] -= multiplier * a[i][pivotRow];
+            }
+            // avoid floating point arithmetic
+            a[c][r] = 0;
+        }
+
+        pivotRow++;
     }
 
-    return m;
+    return a;
 }
 
 template<int COLUMNS, int ROWS, scalar T>
 Matrix<COLUMNS, ROWS, T> Matrix<COLUMNS, ROWS, T>::toReducedRowEchelon() const {
-    Matrix<COLUMNS, ROWS, T> m = *this;
+    Matrix<COLUMNS, ROWS, T> a = *this;
 
-    for (int c = 0; c < std::min(ROWS, COLUMNS); c++) {
-        // handle row swaps
-        {
-            int rowIndex = -1;
-            const T pivot = m[c][c];
-            T rowValue = std::abs(pivot);
+    int pivotRow = 0;
+    for (int c = 0; c < std::min(COLUMNS, ROWS); c++) {
+        UnderlyingType rowValue = std::norm(a[c][pivotRow]);
+        int rowIndex = -1;
 
-            // iterate through rows of this column. Looking for the biggest boi
-            for (int r = c + 1; r < ROWS; r++) {
-                T curValue = std::abs(m[c][r]);
+        for (int r = pivotRow + 1; r < ROWS; r++) {
+            UnderlyingType curValue = std::norm(a[c][r]);
 
-                if (curValue > rowValue) {
-                    rowIndex = r;
-                    rowValue = curValue;
-                }
+            if (curValue > rowValue) {
+                rowIndex = r;
+                rowValue = curValue;
             }
+        }
 
-            // we found nothing so we skip this column
-            if (rowIndex == -1 && compare(pivot, 0)) {
+        if (rowIndex == -1 && compare(rowValue, 0)) {
+            continue;
+        }
+
+        if (rowIndex != -1) {
+            a = a.swapRows(pivotRow, rowIndex);
+        }
+
+        const T pivotPreNormalize = a[c][pivotRow];
+        for (int cc = c + 1; cc < COLUMNS; cc++) {
+            a[cc][pivotRow] /= pivotPreNormalize;
+        }
+
+        // avoid floating point arithmetic
+        a[c][pivotRow] = 1;
+
+        for (int r = 0; r < ROWS; r++) {
+            if (r == pivotRow)
                 continue;
-            }
 
-            if (rowIndex != -1 && rowIndex != c) {
-                // swap u and p rows like normal
-                m.swapRows(c, rowIndex);
+            T multiplier = a[c][r];
+            for (int i = c + 1; i < COLUMNS; i++) {
+                a[i][r] -= multiplier * a[i][pivotRow];
             }
+            // avoid floating point arithmetic
+            a[c][r] = 0;
         }
 
-        {
-            // normalize pivot row to 1
-            T value = m[c][c];
-            for (int cc = c + 1; cc < COLUMNS; cc++) {
-                m[cc][c] /= value;
-            }
-            m[c][c] = 1;
-        }
-
-        const T pivot = m[c][c];
-
-        // iterate through things beneath that pivot in the matrix
-        for (int r = c + 1; r < ROWS; r++) {
-            T val = m[c][r];
-
-            T multiplierToPivotRow = val / pivot;
-
-            // do this row minus other row times multiplier
-            for (int i = c; i < COLUMNS; i++) {
-                m[i][r] += -multiplierToPivotRow * m[i][c];
-            }
-        }
+        pivotRow++;
     }
 
-    return m;
+    return a;
 }
 
 template<int COLUMNS, int ROWS, scalar T>
@@ -831,6 +816,8 @@ Vector<COLUMNS, T> Matrix<COLUMNS, ROWS, T>::solveLinearSystem(const Vector<ROWS
     switch (algorithm) {
         case LinearSystemAlgorithm::lu_factorization:
             return solveLinearSystemThroughLu(b);
+        case LinearSystemAlgorithm::row_reduction:
+            return solveLinearSystemThroughRowReduction(b);
         default:
         case LinearSystemAlgorithm::inverse:
             return solveLinearSystemThroughInverse(b);
@@ -850,4 +837,36 @@ Vector<COLUMNS, T> Matrix<COLUMNS, ROWS, T>::solveLinearSystemThroughLu(const Ve
     Vector<ROWS, T> x = u.backwardsSubstitution(y);
 
     return x;
+}
+
+template<int COLUMNS, int ROWS, scalar T>
+Vector<COLUMNS, T> Matrix<COLUMNS, ROWS, T>::solveLinearSystemThroughRowReduction(const Vector<ROWS, T>& b) const requires (isSquare) {
+    Matrix<COLUMNS + 1, ROWS, T> a;
+
+    for (int c = 0; c < COLUMNS; c++) {
+        for (int r = 0; r < ROWS; r++) {
+            a[c][r] = data[c][r];
+        }
+    }
+
+    a.setColumnVector(COLUMNS, b);
+
+    a = a.toReducedRowEchelon();
+
+    Vector<ROWS, T> x = a.getColumnVector(COLUMNS);
+    return x;
+}
+
+template<int COLUMNS, int ROWS, scalar T>
+template<int K>
+Matrix<K, K, T> Matrix<COLUMNS, ROWS, T>::upperLeftSubMatrix() const requires (isSquare) {
+    Matrix<K, K, T> result;
+
+    for (int c = 0; c < K; c++) {
+        for (int r = 0; r < K; r++) {
+            result[c][r] = data[c][r];
+        }
+    }
+
+    return result;
 }

@@ -1,333 +1,402 @@
-"""
-LLDB Pretty Printer for math++ Matrix class
+# Pretty printer for math++ types
 
-This module provides custom formatters for the Matrix template class
-to display matrices in a human-readable format during debugging sessions.
+# it doesnt matter if we cant import lldb because LLDB injects its own python stuff
+import lldb
 
-Usage:
-    In LLDB, run: command script import /path/to/lldb_formatters.py
-    Or add to .lldbinit file for automatic loading
-"""
-
-try:
-    import lldb
-except ImportError:
-    # LLDB module not available when running standalone
-    pass
-
+from typing import Any, Dict
 import re
-
+import shlex
 
 def _unwrap_swig(obj):
-    """Unwrap SWIG proxy objects to get the actual LLDB object."""
-    # Try multiple unwrapping strategies
+    """Get the actual c++ object"""
+
+    # try to get the internal storage
     if hasattr(obj, '__dict__') and 'this' in obj.__dict__:
         return obj.__dict__['this']
+
+    # try getting the "this" pointer
     if hasattr(obj, 'this'):
         return getattr(obj, 'this')
-    # Already unwrapped or different type
+
+    # its already unwrapped
     return obj
 
 
-def _format_matrix_grid(columns, rows, values, value_type):
-    """
-    Format matrix values in a grid layout.
-    
-    Args:
-        columns: Number of columns
-        rows: Number of rows
-        values: Flat list of values in column-major order
-        value_type: The element type (float, int, etc)
-        
-    Returns:
-        Formatted string showing the matrix as a grid
-    """
-    # Build 2D array in row-major order for display
-    matrix = []
-    for row in range(rows):
-        row_values = []
-        for col in range(columns):
-            idx = col * rows + row
-            row_values.append(values[idx])
-        matrix.append(row_values)
-    
-    # Format as {{row1}, {row2}, ...}
-    row_strings = []
-    for row in matrix:
-        row_str = ', '.join(str(v) for v in row)
-        row_strings.append(f"{{{row_str}}}")
-    
-    result = ', '.join(row_strings)
-    return f"{{{result}}}"
+def _format_matrix_grid(columns: int, rows: int, value_type: str, data: list[str]) -> str:
+    string = f"= ["
+
+    for r in range(rows):
+        string += "["
+        for c in range(columns):
+            string += data[c * rows + r]
+
+            if c < columns - 1:
+                string += ", "
+
+        string += "]"
+
+        if r < rows - 1:
+            string += ", "
+
+    string += "]"
+    return string
 
 
-def matrix_summary(valobj, internal_dict):
+def matrix_summary(matrix_obj: Any, internal_dict: Dict[str, Any]) -> str:
     """
-    Provides a summary string for Matrix objects.
-    
+    A summary string showing matrix dimensions and type, and if its small enough inline it.
+
     Args:
-        valobj: LLDB SBValue object representing the Matrix
+        matrix_obj: LLDB SBValue object representing the Matrix
         internal_dict: Internal dictionary for caching
-        
-    Returns:
-        A summary string showing matrix dimensions and type
     """
+
     try:
-        # Try to get the actual LLDB SBValue - handle SWIG proxy
-        val = valobj
-        
-        # Check if it's callable (sometimes SWIG objects are)
-        if callable(valobj):
-            val = valobj()
-        
-        # Try direct unwrap
-        if not hasattr(val, 'GetTypeName'):
-            val = _unwrap_swig(valobj)
-        
-        # Last resort: try to import lldb and cast
+        # get the actual matrix object
+        val: Any = matrix_obj
+
+        if callable(matrix_obj):
+            val = matrix_obj()
+
+        if not hasattr(val, 'GetTypeName') and '_unwrap_swig' in globals():
+            val = _unwrap_swig(matrix_obj)
+
         if not hasattr(val, 'GetTypeName'):
             try:
-                import lldb
-                # The valobj might need to be casted
-                if str(type(valobj)) == "<class 'SwigPyObject'>":
+                if str(type(matrix_obj)) == "<class 'SwigPyObject'>":
                     return "Matrix<?, ?> (SWIG binding issue - use 'p' instead of 'fr v')"
-            except:
+            except Exception:
                 pass
-        
-        # Get type name
-        type_name = val.GetTypeName()
-        
-        # Parse Matrix<COLUMNS, ROWS, T> pattern
-        match = re.match(r'Matrix<(\d+),\s*(\d+),\s*(.+)>', type_name)
+
+        # parse the Matrix<COLUMNS, ROWS, T> for COLUMNS, ROWS, and T
+        type_name: str = val.GetTypeName()
+        match = re.search(r'(?:const\s+)?Matrix<\s*(\d+)\s*,\s*(\d+)\s*,\s*([^>]+)\s*>(?:\s*[*&]+)?',type_name)
+
         if not match:
-            return f"Matrix ({type_name})"
-        
-        columns = int(match.group(1))
-        rows = int(match.group(2))
-        value_type = match.group(3).strip()
-        
-        # Try to get the non-synthetic value (unwrap const/reference)
-        actual_val = val.GetNonSyntheticValue() if hasattr(val, 'GetNonSyntheticValue') else val
-        
-        # If it's a reference type, dereference it
+            return type_name
+
+        COLUMNS: int = int(match.group(1))
+        ROWS: int = int(match.group(2))
+        T: str = match.group(3).strip()
+
+        # get the real deal stuff, dereference if needed
+        actual_val: Any = val.GetNonSyntheticValue() if hasattr(val, 'GetNonSyntheticValue') else val
+
         if actual_val.GetType().IsReferenceType():
             actual_val = actual_val.Dereference()
-        
-        # Try to access data member first (faster)
-        data_member = actual_val.GetChildMemberWithName('data')
-        
-        # For small matrices, show values
-        if columns <= 4 and rows <= 4:
-            # If we can access data member directly, use it
-            if data_member and data_member.IsValid():
-                values = []
-                for col in range(columns):
-                    col_array = data_member.GetChildAtIndex(col)
-                    if col_array and col_array.IsValid():
-                        for row in range(rows):
-                            val_elem = col_array.GetChildAtIndex(row)
-                            if val_elem and val_elem.IsValid():
-                                val_str = val_elem.GetValue()
-                                if val_str:
-                                    values.append(val_str)
-                
-                if len(values) == columns * rows:
-                    return _format_matrix_grid(columns, rows, values, value_type)
-            
-            # Fallback: read raw memory directly
-            try:
-                import lldb
-                addr = actual_val.GetLoadAddress()
-                if addr != lldb.LLDB_INVALID_ADDRESS:
-                    # Map type to size
-                    type_sizes = {'float': 4, 'double': 8, 'int': 4, 'long': 8}
-                    elem_size = type_sizes.get(value_type, 4)
-                    
-                    process = actual_val.GetProcess()
-                    error = lldb.SBError()
-                    values = []
-                    
-                    for col in range(columns):
-                        for row in range(rows):
-                            offset = (col * rows + row) * elem_size
-                            data = process.ReadMemory(addr + offset, elem_size, error)
-                            if error.Success():
-                                import struct
-                                format_char = {'float': 'f', 'double': 'd', 'int': 'i', 'long': 'q'}.get(value_type, 'f')
-                                val_num = struct.unpack(format_char, data)[0]
-                                values.append(f"{val_num:.6g}" if isinstance(val_num, float) else str(val_num))
-                    
-                    if len(values) == columns * rows:
-                        return _format_matrix_grid(columns, rows, values, value_type)
-            except:
-                pass
-        
-        return f"Matrix<{columns}x{rows}, {value_type}>"
-        
+
+        # matrix too big to inline, return blank
+        if COLUMNS > 6 or ROWS > 6:
+            return ""
+
+        # access the .data field
+        data_member: Any = actual_val.GetChildMemberWithName('data')
+
+        # if we can access the .data member
+        if data_member and data_member.IsValid():
+            values: list[str] = []
+
+            # iterate columns
+            for c in range(COLUMNS):
+                col_array: Any = data_member.GetChildAtIndex(c)
+
+                # invalid column, return blank
+                if not col_array or not col_array.IsValid():
+                    return ""
+
+                # iterate rows
+                for r in range(ROWS):
+                    element_val: Any = col_array.GetChildAtIndex(r)
+
+                    # invalid element, append ?
+                    if not element_val or not element_val.IsValid():
+                        values.append("?")
+                        continue
+
+                    formatted_val = format_scalar(element_val, 3)
+                    values.append(formatted_val)
+
+            # if we got the correct number of stuffs, return it nicely formatted
+            if len(values) == COLUMNS * ROWS:
+                return _format_matrix_grid(COLUMNS, ROWS, T, values)
+
+        if 'lldb' not in globals():
+            return ""
+
+        # else we need to try via the raw memory
+        try:
+            # get the matrix's memory address
+            addr: int = actual_val.GetLoadAddress()
+
+            # make sure its legit
+            if lldb and addr == lldb.LLDB_INVALID_ADDRESS:
+                return "(error: invalid memory address)"
+
+            # get the element type (not string like T) via template parameters
+            elem_type: Any = matrix_obj.GetType().GetTemplateArgumentType(2)
+
+            # calculate byte size
+            elem_byte_size: int = elem_type.GetByteSize()
+
+            values: list[str] = []
+
+            # iterate columns
+            for c in range(COLUMNS):
+                # iterate rows
+                for r in range(ROWS):
+                    # calculate memory offset
+                    offset: int = (c * ROWS + r) * elem_byte_size
+
+                    # get the value at that address using the proper type
+                    element_val: Any = matrix_obj.CreateValueFromAddress(f"[{c}, {r}]", addr + offset, elem_type)
+
+                    # invalid element, append ?
+                    if not element_val or not element_val.IsValid():
+                        values.append("?")
+                        continue
+
+                    formatted_val = format_scalar(element_val, 3)
+                    values.append(formatted_val)
+
+            if len(values) == COLUMNS * ROWS:
+                return _format_matrix_grid(COLUMNS, ROWS, T, values)
+
+        except Exception as e:
+            return f"(error: {str(e)})"
+
     except Exception as e:
-        return f"Matrix<?, ?> (error: {str(e)})"
+        return f"(error: {str(e)})"
+
+    return ""
 
 
-class MatrixSyntheticProvider:
+def format_scalar(element, precision: int = 3) -> str:
     """
-    Synthetic children provider for Matrix template class.
-    
-    This class allows LLDB to display matrix elements in a structured way,
-    showing individual elements with their row/column positions.
+    Format a scalar as a string
+
+    Args:
+        element: The value to be formatted (SBValue)
+        precision: For floating-point numbers, how many decimals of precision (int)
+
+    Supported types:
+        - short (1)
+        - unsigned short (2)
+        - int (3)
+        - unsigned int (4)
+        - long (5)
+        - unsigned long (6)
+        - long long (7)
+        - unsigned long long (8)
+        - float (9.10)
+        - double (11.12)
+        - long double (13.14)
+        - std::complex<short> (1 + 2i)
+        - std::complex<unsigned short> (3 + 4i)
+        - std::complex<int> (5 + 6i)
+        - std::complex<unsigned int> (7 + 8i)
+        - std::complex<long> (9 + 10i)
+        - std::complex<unsigned long> (11 + 12i)
+        - std::complex<long long> (13 + 14i)
+        - std::complex<unsigned long long> (15 + 16i)
+        - std::complex<float> (17.18 + 19.20i)
+        - std::complex<double> (21.22 + 23.24i)
+        - std::complex<long double> (25.26 + 27.28i)
     """
-    
-    def __init__(self, valobj, internal_dict):
-        """
-        Initialize the synthetic provider.
-        
-        Args:
-            valobj: LLDB SBValue object representing the Matrix
-            internal_dict: Internal dictionary for caching
-        """
-        # Unwrap SWIG proxy
-        self.valobj = _unwrap_swig(valobj)
-        self.update()
-    
-    def num_children(self):
-        """
-        Returns the number of children (matrix elements).
-        
-        Returns:
-            Total number of elements (columns * rows)
-        """
-        # Always return at least 1 to force expand button to show
-        count = self.columns * self.rows
-        return count if count > 0 else 0
-    
-    def has_children(self):
-        """
-        Indicates whether this object has children.
-        
-        Returns:
-            True if the matrix has elements
-        """
-        return (self.columns > 0 and self.rows > 0)
-    
-    def get_child_index(self, name):
-        """
-        Get the index for a child by name.
-        
-        Args:
-            name: Child name (e.g., "[0,0]", "[1,2]")
-            
-        Returns:
-            Index of the child or -1 if not found
-        """
-        try:
-            # Parse names like "[col,row]"
-            match = re.match(r'\[(\d+),(\d+)\]', name)
-            if match:
-                col = int(match.group(1))
-                row = int(match.group(2))
-                if 0 <= col < self.columns and 0 <= row < self.rows:
-                    return row * self.columns + col
-        except:
-            pass
-        return -1
-    
-    def get_child_at_index(self, index):
-        """
-        Get the child element at the given index.
-        
-        Args:
-            index: Linear index (0 to columns*rows-1)
-            
-        Returns:
-            LLDB SBValue representing the matrix element
-        """
-        if index < 0 or index >= self.num_children():
-            return None
-        
-        try:
-            # Convert linear index to column/row
-            row = index // self.columns
-            col = index % self.columns
-            
-            # Get actual value
-            actual_val = self.valobj.GetNonSyntheticValue() if hasattr(self.valobj, 'GetNonSyntheticValue') else self.valobj
-            if actual_val.GetType().IsReferenceType():
-                actual_val = actual_val.Dereference()
-            
-            # Try to access data member
-            data_member = actual_val.GetChildMemberWithName('data')
-            if data_member and data_member.IsValid():
-                col_array = data_member.GetChildAtIndex(col)
-                if col_array and col_array.IsValid():
-                    element = col_array.GetChildAtIndex(row)
-                    if element and element.IsValid():
-                        return element.CreateChildAtOffset(f"[{row},{col}]", 0, element.GetType())
-            
-            # Fallback: read from memory
-            try:
-                import lldb
-                addr = actual_val.GetLoadAddress()
-                if addr != lldb.LLDB_INVALID_ADDRESS:
-                    type_sizes = {'float': 4, 'double': 8, 'int': 4, 'long': 8}
-                    elem_size = type_sizes.get(self.value_type, 4)
-                    
-                    offset = (col * self.rows + row) * elem_size
-                    
-                    # Create type
-                    if self.value_type == 'float':
-                        elem_type = actual_val.GetTarget().GetBasicType(lldb.eBasicTypeFloat)
-                    elif self.value_type == 'double':
-                        elem_type = actual_val.GetTarget().GetBasicType(lldb.eBasicTypeDouble)
-                    elif self.value_type == 'int':
-                        elem_type = actual_val.GetTarget().GetBasicType(lldb.eBasicTypeInt)
-                    else:
-                        elem_type = actual_val.GetTarget().GetBasicType(lldb.eBasicTypeFloat)
-                    
-                    return actual_val.CreateChildAtOffset(f"[{row},{col}]", offset, elem_type)
-            except:
-                pass
-            
-        except Exception as e:
-            pass
-        
-        return None
-    
-    def update(self):
-        """
-        Update internal state when the variable changes.
-        
-        This method is called by LLDB to refresh the provider's state.
-        """
-        try:
-            # Extract template parameters from type name
-            type_name = self.valobj.GetTypeName()
-            match = re.match(r'Matrix<(\d+),\s*(\d+),\s*(.+)>', type_name)
-            
-            if match:
-                self.columns = int(match.group(1))
-                self.rows = int(match.group(2))
-                self.value_type = match.group(3).strip()
+
+    if not element or not element.IsValid():
+        return "?"
+
+    elem_type = element.GetType()
+    type_name = elem_type.GetName()
+
+    # std::complex<T>
+    if "complex" in type_name and "value_type" not in type_name:
+        # sometimes we need to access it through the private members
+        real_val = element.GetChildMemberWithName("__re_")
+        imag_val = element.GetChildMemberWithName("__im_")
+
+        # we might have to access it via _M_value
+        if not real_val or not real_val.IsValid() or not imag_val or not imag_val.IsValid():
+            val = element.GetChildMemberWithName("_M_value")
+            real_val = val.GetChildAtIndex(0)
+            imag_val = val.GetChildAtIndex(1)
+
+        real_str = format_scalar(real_val)
+        imag_str = format_scalar(imag_val)
+
+        # handle negative image nicely (1 - 4i) instead of (1 + -4i)
+        if imag_str.startswith('-'):
+            imag_str_without_minus = imag_str.rstrip('-')
+            return f"{real_str} - {imag_str_without_minus}i"
+        else:
+            return f"{real_str} + {imag_str}i"
+
+    # floating point
+    if lldb and elem_type.GetTypeClass() == lldb.eTypeClassBuiltin and ("float" in type_name or "double" in type_name):
+        # get it as a double
+        num = float(element.GetValue())
+        # format
+        formatted = f"{num:.{precision}f}"
+        # return with whitespace removed
+        return formatted.rstrip(".")
+
+    # integers
+    return element.GetValue()
+
+
+
+def print_matrix(debugger, command, result, internal_dict):
+    try:
+        # split matrix name from precision thing
+        args = shlex.split(command)
+
+        if not args:
+            result.PutCString("Usage: print_matrix <variable> [-p PRECISION]")
+            return
+
+        input_matrix = args[0]
+
+        # default
+        precision = 3
+
+        # get the precision argument
+        i = 1
+        while i < len(args):
+            if args[i] == "-p" and i + 1 < len(args):
+                try:
+                    precision = int(args[i + 1])
+                except ValueError:
+                    result.PutCString("invalid precision number: " + args[i + 1])
+                    return
+                i += 2
             else:
-                self.columns = 0
-                self.rows = 0
-                self.value_type = "unknown"
-            
-        except Exception as e:
-            self.columns = 0
-            self.rows = 0
-            self.value_type = "error"
-    
-    def has_children(self):
-        """
-        Indicates whether this object has children.
-        
-        Returns:
-            True if the matrix has elements
-        """
-        return (self.columns > 0 and self.rows > 0)
+                i += 1
+
+        # get the SBValue from the incoming matrix variable
+        target = debugger.GetSelectedTarget()
+        frame = target.GetProcess().GetSelectedThread().GetSelectedFrame()
+        matrix_obj = frame.FindVariable(input_matrix.strip())
+
+        if not matrix_obj.IsValid():
+            result.PutCString(f"Variable '{input_matrix}' not found")
+            return
+
+        # get the actual matrix object
+        val: Any = matrix_obj
+
+        if callable(matrix_obj):
+            val = matrix_obj()
+
+        if not hasattr(val, 'GetTypeName') and '_unwrap_swig' in globals():
+            val = _unwrap_swig(matrix_obj)
+
+        if not hasattr(val, 'GetTypeName'):
+            try:
+                if str(type(matrix_obj)) == "<class 'SwigPyObject'>":
+                    result.PutCString("Could not get actual matrix object")
+                    return
+            except Exception:
+                pass
+
+        # parse the Matrix<COLUMNS, ROWS, T> for COLUMNS, ROWS, and T
+        type_name: str = val.GetTypeName()
+        match = re.search(r'(?:const\s+)?Matrix<\s*(\d+)\s*,\s*(\d+)\s*,\s*([^>]+)\s*>(?:\s*[*&]+)?',type_name)
+
+        if not match:
+            result.PutCString(f"Could not read matrix type to extract COLUMNS, ROWS, and T")
+            return
+
+        COLUMNS: int = int(match.group(1))
+        ROWS: int = int(match.group(2))
+        T: str = match.group(3).strip()
+
+        # get the real deal stuff, dereference if needed
+        actual_val: Any = val.GetNonSyntheticValue() if hasattr(val, 'GetNonSyntheticValue') else val
+
+        if actual_val.GetType().IsReferenceType():
+            actual_val = actual_val.Dereference()
+
+        # access the .data field
+        data_member: Any = actual_val.GetChildMemberWithName('data')
+
+        # if we can access the .data member
+        if data_member and data_member.IsValid():
+            ss = f"Matrix<{COLUMNS}, {ROWS}, {T}>\n"
+
+            for r in range(ROWS):
+                ss += "["
+                for c in range(COLUMNS):
+                    col_array: Any = data_member.GetChildAtIndex(c)
+
+                    # invalid column, return blank
+                    if not col_array or not col_array.IsValid():
+                        result.PutCString(f"Invalid column a index {c}")
+                        return
+
+                    element_val: Any = col_array.GetChildAtIndex(r)
+
+                    # invalid element, append ?
+                    if not element_val or not element_val.IsValid():
+                        ss += "?"
+                        continue
+
+                    ss += format_scalar(element_val, precision)
+
+                    if c < COLUMNS - 1:
+                        ss += ", "
+
+                ss += "]\n"
+
+            ss += ""
+            result.PutCString(ss)
+            return
+
+        # get the matrix's memory address
+        addr: int = actual_val.GetLoadAddress()
+
+        # make sure its legit
+        if lldb and addr == lldb.LLDB_INVALID_ADDRESS:
+            result.PutCString("(error: invalid memory address)")
+            return
+
+        # get the element type (not string like T) via template parameters
+        elem_type: Any = matrix_obj.GetType().GetTemplateArgumentType(2)
+
+        # calculate byte size
+        elem_byte_size: int = elem_type.GetByteSize()
+
+        ss = f"Matrix<{COLUMNS}, {ROWS}, {T}>\n"
+        # iterate rows
+        for r in range(ROWS):
+            ss += "["
+            # iterate columns
+            for c in range(COLUMNS):
+                # calculate memory offset
+                offset: int = (c * ROWS + r) * elem_byte_size
+
+                # get the value at that address using the proper type
+                element_val: Any = matrix_obj.CreateValueFromAddress(f"[{c}, {r}]", addr + offset, elem_type)
+
+                # invalid element, append ?
+                if not element_val or not element_val.IsValid():
+                    ss += "?"
+                    continue
+
+                ss += format_scalar(element_val, 3)
+
+                if c < COLUMNS - 1:
+                    ss += ", "
+
+            ss += "]\n"
+
+        result.PutCString(ss)
+        return
+
+    except Exception as e:
+        result.PutCString(f"Error: {e}")
 
 
-# If running standalone, provide usage information
+# if running the script itself
 if __name__ == "__main__":
-    print(__doc__)
-    print("\nThis script should be imported into LLDB, not run directly.")
-    print("Usage: (lldb) command script import /path/to/lldb_formatters.py")
+    print("This script is meant to be ran by LLDB, not directly.")
+    print("To use it: command script import /path/to/lldb_formatters.py")
