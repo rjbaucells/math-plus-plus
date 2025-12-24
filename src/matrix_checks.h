@@ -168,6 +168,7 @@ bool Matrix<COLUMNS, ROWS, T>::isPositiveDefiniteSylvester() const requires (isS
     if constexpr (K > COLUMNS)
         return true;
     else {
+        int k = K;
         T upperLeftSubMatrixDeterminant = upperLeftSubMatrix<K>().determinant(Matrix<K, K, T>::DeterminantAlgorithm::lu);
         bool isPositiveDefiniteK1 = isPositiveDefiniteSylvester<K + 1>();
         return upperLeftSubMatrixDeterminant > 0 && isPositiveDefiniteK1;
