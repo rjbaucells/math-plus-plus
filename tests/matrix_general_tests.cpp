@@ -102,7 +102,7 @@ TEST(MatrixGeneral, inverse_3x3) {
     // act
     const Matrix<3, 3> inverse = a.inverse();
     // assert
-    ASSERT_TRUE(inverse.equals(expected, 001));
+    ASSERT_TRUE(inverse.equals(expected, 0.01));
 }
 
 TEST(MatrixGeneral, inverse_random) {
@@ -122,8 +122,8 @@ TEST(MatrixGeneral, inverse_random) {
         const Matrix<3, 3> aInverse = a * inverse;
         const Matrix<3, 3> inverseA = inverse * a;
 
-        ASSERT_TRUE(aInverse.equals(identity, 01));
-        ASSERT_TRUE(inverseA.equals(identity, 01));
+        ASSERT_TRUE(aInverse.equals(identity, 0.1));
+        ASSERT_TRUE(inverseA.equals(identity, 0.1));
         break;
     }
 }
@@ -159,7 +159,7 @@ TEST(MatrixGeneral, reduced_row_echelon_form) {
     const Matrix<4, 3> rref = m.toReducedRowEchelon();
 
     // assert
-    ASSERT_TRUE(rref.equals(expected, 01));
+    ASSERT_TRUE(rref.equals(expected, 0.1));
 }
 
 TEST(MatrixChecks, reduced_row_echelon_skip_pivot_column) {
@@ -204,7 +204,7 @@ TEST(MatrixGeneral, solve_linear_system_inverse) {
     // act
     const Vector<3> x = a.solveLinearSystem(b, Matrix<3, 3>::LinearSystemAlgorithm::inverse);
     // assert
-    ASSERT_TRUE(x.equals(expected, 01));
+    ASSERT_TRUE(x.equals(expected, 0.1));
 }
 
 TEST(MatrixGeneral, solve_linear_system_lu) {
