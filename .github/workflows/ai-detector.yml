@@ -8,4 +8,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Run ai code detector
-        uses: rbaucells/ai-code-detector-github-action@v1.3.0
+        uses: rbaucells/ai-code-detector-github-action@v1.4.0
+        with:
+          gemini-api-key: '${{secrets.GEMINI_API_KEY}}'
+          token: '${{github.token}}'
