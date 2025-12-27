@@ -164,14 +164,14 @@ struct Matrix {
 
     Matrix<COLUMNS, ROWS, T> inverse() const requires (isSquare);
 
-    enum DeterminantAlgorithm {
+    enum class DeterminantAlgorithm {
         laplace,
         triangular,
         tridiagonal,
         lu
     };
 
-    T determinant(DeterminantAlgorithm algorithm = laplace) const requires (isSquare);
+    T determinant(DeterminantAlgorithm algorithm = DeterminantAlgorithm::laplace) const requires (isSquare);
 
 private:
     T laplaceDeterminant() const requires (isSquare);
@@ -222,10 +222,12 @@ public:
     constexpr static Matrix<COLUMNS, ROWS, T> identity() requires (isSquare);
 
     [[nodiscard]] bool isRowEchelon(bool pivotMustBeOne = false) const;
-    Matrix<COLUMNS, ROWS, T> toRowEchelon() const;
+    Matrix<COLUMNS, ROWS, T> toRowEchelon(bool doRowSwaps = true) const;
 
     [[nodiscard]] bool isReducedRowEchelon() const;
     Matrix<COLUMNS, ROWS, T> toReducedRowEchelon() const;
+
+    [[nodiscard]] bool isRowEchelonOfThis(const Matrix<COLUMNS, ROWS, T>& ref, UnderlyingType precision = 0.01) const;
 
     [[nodiscard]] int rank() const;
 
@@ -235,10 +237,34 @@ public:
     [[nodiscard]] bool isHermitian() const requires (isSquare);
     [[nodiscard]] bool isSkewHermitian() const requires (isSquare);
 
-    [[nodiscard]] bool isPositiveDefinite() const;
-    [[nodiscard]] bool isPositiveSemiDefinite() const;
-    [[nodiscard]] bool isNegativeDefinite() const;
-    [[nodiscard]] bool isNegativeSemiDefinite() const;
+    template<int K>
+    Matrix<K, K, T> upperLeftSubMatrix() const requires (isSquare);
+
+    Matrix<COLUMNS, ROWS, T> symmetricPart() const requires (isSquare);
+    Matrix<COLUMNS, ROWS, T> antiSymmetricPart() const requires (isSquare);
+
+    enum class PositiveDefiniteAlgorithm {
+        cholesky,
+        cholesky_non_symmetric,
+        ldl,
+        ldl_non_symmetric,
+        pivots,
+        pivots_non_symmetric,
+        sylvester,
+        sylvester_non_symmetric,
+    };
+
+    [[nodiscard]] bool isPositiveDefinite(PositiveDefiniteAlgorithm algorithm = PositiveDefiniteAlgorithm::sylvester) const requires (isSquare);
+private:
+    template<int K = 1>
+    [[nodiscard]] bool isPositiveDefiniteSylvester() const requires (isSquare);
+    [[nodiscard]] bool isPositiveDefiniteLdl() const requires (isSquare);
+    [[nodiscard]] bool isPositiveDefiniteCholesky() const requires (isSquare);
+    [[nodiscard]] bool isPositiveDefinitePivots() const requires (isSquare);
+public:
+    [[nodiscard]] bool isPositiveSemiDefinite() const requires (isSquare);
+    [[nodiscard]] bool isNegativeDefinite() const requires (isSquare);
+    [[nodiscard]] bool isNegativeSemiDefinite() const requires (isSquare);
 
     Vector<ROWS, T> getColumnVector(int i) const;
     std::array<Vector<ROWS>, COLUMNS> getColumnVectors() const;
@@ -278,7 +304,8 @@ public:
 
     enum class LinearSystemAlgorithm {
         inverse,
-        lu_factorization
+        lu_factorization,
+        row_reduction
     };
 
     Vector<COLUMNS, T> solveLinearSystem(const Vector<ROWS, T>& b, LinearSystemAlgorithm algorithm) const;
@@ -286,6 +313,7 @@ public:
 private:
     Vector<COLUMNS, T> solveLinearSystemThroughInverse(const Vector<ROWS, T>& b) const requires (isSquare);
     Vector<COLUMNS, T> solveLinearSystemThroughLu(const Vector<ROWS, T>& b) const requires (isSquare);
+    Vector<COLUMNS, T> solveLinearSystemThroughRowReduction(const Vector<ROWS, T>& b) const requires (isSquare);
 
 public:
     Matrix<COLUMNS, ROWS, T> hadamardProduct(const Matrix<COLUMNS, ROWS, T>& other) const;

@@ -1,0 +1,11 @@
+name: ai-detector.yml
+on: [pull_request]
+jobs:
+  detect-ai-gen-code:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Run ai code detector
+        uses: rbaucells/ai-code-detector-github-action@v1.0.0
