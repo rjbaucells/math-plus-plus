@@ -8,4 +8,4 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Run ai code detector
-        uses: rbaucells/ai-code-detector-github-action@v1.1.0
+        uses: rbaucells/ai-code-detector-github-action@v1.2.0
