@@ -457,30 +457,36 @@ constexpr Matrix<COLUMNS, ROWS, T> Matrix<COLUMNS, ROWS, T>::identity() requires
 }
 
 template<int COLUMNS, int ROWS, scalar T>
-Matrix<COLUMNS, ROWS, T> Matrix<COLUMNS, ROWS, T>::toRowEchelon() const {
+Matrix<COLUMNS, ROWS, T> Matrix<COLUMNS, ROWS, T>::toRowEchelon(const bool doRowSwaps) const {
     Matrix<COLUMNS, ROWS, T> a = *this;
 
     int pivotRow = 0;
     for (int c = 0; c < std::min(COLUMNS, ROWS); c++) {
-        int rowIndex = -1;
-        UnderlyingType value = std::norm(a[c][pivotRow]);
+        if (doRowSwaps) {
+            int rowIndex = -1;
+            UnderlyingType value = std::norm(a[c][pivotRow]);
 
-        for (int r = pivotRow + 1; r < ROWS; r++) {
-            UnderlyingType curValue = std::norm(a[c][r]);
+            for (int r = pivotRow + 1; r < ROWS; r++) {
+                UnderlyingType curValue = std::norm(a[c][r]);
 
-            if (curValue > value) {
-                value = curValue;
-                rowIndex = r;
+                if (curValue > value) {
+                    value = curValue;
+                    rowIndex = r;
+                }
+            }
+
+            // this column doesn't have a pivot, continue to next column
+            if (rowIndex == -1 && compare(value, 0)) {
+                continue;
+            }
+
+            if (rowIndex != -1) {
+                a = a.swapRows(pivotRow, rowIndex);
             }
         }
 
-        // this column doesn't have a pivot, continue to next column
-        if (rowIndex == -1 && compare(value, 0)) {
-            continue;
-        }
-
-        if (rowIndex != -1) {
-            a = a.swapRows(pivotRow, rowIndex);
+        if (!doRowSwaps && compare(a[c][pivotRow], 0)) {
+            throw std::runtime_error("Could not reduce matrix to row echelon form without the use of row swaps");
         }
 
         const T pivot = a[c][pivotRow];
@@ -865,6 +871,32 @@ Matrix<K, K, T> Matrix<COLUMNS, ROWS, T>::upperLeftSubMatrix() const requires (i
     for (int c = 0; c < K; c++) {
         for (int r = 0; r < K; r++) {
             result[c][r] = data[c][r];
+        }
+    }
+
+    return result;
+}
+
+template<int COLUMNS, int ROWS, scalar T>
+Matrix<COLUMNS, ROWS, T> Matrix<COLUMNS, ROWS, T>::symmetricPart() const requires (isSquare) {
+    Matrix<COLUMNS, ROWS, T> result;
+
+    for (int c = 0; c < COLUMNS; c++) {
+        for (int r = 0; r < ROWS; r++) {
+            result[c][r] = (data[c][r] + data[r][c]) / 2;
+        }
+    }
+
+    return result;
+}
+
+template<int COLUMNS, int ROWS, scalar T>
+Matrix<COLUMNS, ROWS, T> Matrix<COLUMNS, ROWS, T>::antiSymmetricPart() const requires (isSquare) {
+    Matrix<COLUMNS, ROWS, T> result;
+
+    for (int c = 0; c < COLUMNS; c++) {
+        for (int r = 0; r < ROWS; r++) {
+            result[c][r] = (data[c][r] - data[r][c]) / 2;
         }
     }
 

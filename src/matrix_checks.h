@@ -73,7 +73,6 @@ bool Matrix<COLUMNS, ROWS, T>::isReducedRowEchelon() const {
                             return false;
                     }
 
-                    foundNonZero = true;
                     lastPivotColumn = c;
                 }
 
@@ -154,8 +153,20 @@ bool Matrix<COLUMNS, ROWS, T>::isSkewHermitian() const requires (isSquare) {
 template<int COLUMNS, int ROWS, scalar T>
 bool Matrix<COLUMNS, ROWS, T>::isPositiveDefinite(const PositiveDefiniteAlgorithm algorithm) const requires (isSquare) {
     switch (algorithm) {
+        case PositiveDefiniteAlgorithm::cholesky:
+            return isPositiveDefiniteCholesky();
+        case PositiveDefiniteAlgorithm::cholesky_non_symmetric:
+            return symmetricPart().isPositiveDefiniteCholesky();
         case PositiveDefiniteAlgorithm::ldl:
             return isPositiveDefiniteLdl();
+        case PositiveDefiniteAlgorithm::ldl_non_symmetric:
+            return symmetricPart().isPositiveDefiniteLdl();
+        case PositiveDefiniteAlgorithm::pivots:
+            return isPositiveDefinitePivots();
+        case PositiveDefiniteAlgorithm::pivots_non_symmetric:
+            return symmetricPart().isPositiveDefinitePivots();
+        case PositiveDefiniteAlgorithm::sylvester_non_symmetric:
+            return symmetricPart().isPositiveDefiniteSylvester();
         case PositiveDefiniteAlgorithm::sylvester:
         default:
             return isPositiveDefiniteSylvester();
@@ -168,7 +179,6 @@ bool Matrix<COLUMNS, ROWS, T>::isPositiveDefiniteSylvester() const requires (isS
     if constexpr (K > COLUMNS)
         return true;
     else {
-        int k = K;
         T upperLeftSubMatrixDeterminant = upperLeftSubMatrix<K>().determinant(Matrix<K, K, T>::DeterminantAlgorithm::lu);
         bool isPositiveDefiniteK1 = isPositiveDefiniteSylvester<K + 1>();
         return upperLeftSubMatrixDeterminant > 0 && isPositiveDefiniteK1;
@@ -177,7 +187,48 @@ bool Matrix<COLUMNS, ROWS, T>::isPositiveDefiniteSylvester() const requires (isS
 
 template<int COLUMNS, int ROWS, scalar T>
 bool Matrix<COLUMNS, ROWS, T>::isPositiveDefiniteLdl() const requires (isSquare) {
+    auto [l, d, lt] = ldlDecomposition();
 
+    for (int c = 0; c < COLUMNS; c++) {
+        T curValue = d[c][c];
+
+        if (curValue < 0 || compare(curValue, 0)) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+template<int COLUMNS, int ROWS, scalar T>
+bool Matrix<COLUMNS, ROWS, T>::isPositiveDefiniteCholesky() const requires (isSquare) {
+    try {
+        choleskyDecomposition(false);
+        return true;
+    }
+    catch ([[maybe_unused]] std::exception& e) {
+        return false;
+    }
+}
+
+template<int COLUMNS, int ROWS, scalar T>
+bool Matrix<COLUMNS, ROWS, T>::isPositiveDefinitePivots() const requires (isSquare) {
+    try {
+        Matrix<COLUMNS, ROWS, T> ref = toRowEchelon(false);
+
+        for (int c = 0; c < COLUMNS; c++) {
+            T curValue = ref[c][c];
+
+            if (curValue < 0 || compare(curValue, 0)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+    catch ([[maybe_unused]] std::exception& e) {
+        return false;
+    }
 }
 
 template<int COLUMNS, int ROWS, scalar T>

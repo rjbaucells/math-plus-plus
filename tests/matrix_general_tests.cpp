@@ -228,3 +228,23 @@ TEST(MatrixGeneral, solve_linear_system_rr) {
     // assert
     ASSERT_TRUE(x == expected);
 }
+
+TEST(MatrixGeneral, symmetric_part) {
+    // arrange
+    constexpr Matrix<2, 2> m = {{1, 2}, {3, 4}};
+    constexpr Matrix<2, 2> expected = {{1, 2.5f}, {2.5f, 4}};
+    // act
+    const Matrix<2, 2> symmetricPart = m.symmetricPart();
+    // assert
+    ASSERT_TRUE(symmetricPart == expected);
+}
+
+TEST(MatrixGeneral, anti_symmetric_part) {
+    // arrange
+    constexpr Matrix<2, 2> m = {{1, 2}, {3, 4}};
+    constexpr Matrix<2, 2> expected = {{0, -0.5f}, {0.5f, 0}};
+    // act
+    const Matrix<2, 2> symmetricPart = m.antiSymmetricPart();
+    // assert
+    ASSERT_TRUE(symmetricPart == expected);
+}
